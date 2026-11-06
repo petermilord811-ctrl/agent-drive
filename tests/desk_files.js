@@ -28,7 +28,9 @@ const VERBOSE = !!process.env.DESK_VERBOSE;
 const ok = (c, m) => { if (c) { pass++; if (VERBOSE) console.log('  ok: ' + m); } else { fail++; console.error('  FAIL: ' + m); } };
 const WIN = process.platform === 'win32';
 const LIVE = process.env.AGENT_DRIVE_LIVE !== '0';
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-files-'));
+// realpath.native: a temp folder given in its short 8.3 form (GitHub's Windows runners: C:\Users\RUNNER~1\...) is
+// worked in under its long name, which is the `full` path the scripts report
+const tmp = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'desk-files-')));
 const b64d = (s) => Buffer.from(s, 'base64');
 const OPS = ['stat', 'read', 'write', 'rm', 'camera', 'audio'];
 const SYSS = ['windows', 'linux'];
