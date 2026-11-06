@@ -1,0 +1,32 @@
+name: CI
+
+# Every pull request -- and every push to main -- is checked on Linux and Windows before it can reach anyone:
+# the kit's own checks (catalog and tool headers, no secrets, no private data) and its tests.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Check the kit
+        run: node kit.js check
+      - name: Test
+        run: npm test
+        env:
+          AGENT_DRIVE_LIVE: '0'   # the live parts open windows and read a desktop; CI has none

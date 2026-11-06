@@ -1,0 +1,27 @@
+{
+  "name": "agent-drive",
+  "version": "1.0.0",
+  "description": "Let an AI agent operate a real computer through ScreenMirror -- with a person's consent at every step. Skills, an MCP server, and one checked verb table.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petermilord811-ctrl/agent-drive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/petermilord811-ctrl/agent-drive/issues"
+  },
+  "homepage": "https://github.com/petermilord811-ctrl/agent-drive#readme",
+  "keywords": ["agent", "computer-use", "mcp", "remote-control", "screenmirror", "automation", "claude"],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "agent-drive-mcp": "mcp/server.js"
+  },
+  "scripts": {
+    "test": "node tests/run.js",
+    "check": "node kit.js check",
+    "kit": "node kit.js",
+    "mcp": "node mcp/server.js"
+  }
+}

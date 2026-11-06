@@ -1,0 +1,20 @@
+# Who reviews what. A pull request needs a review from the owner of every path it touches.
+#
+# The core every skill stands on is owned by the maintainers. A skill is owned by whoever wrote it: when you
+# add skills/<your-skill>/, add a line for it below in the same pull request, and you review its changes from then on.
+
+*                       @petermilord811-ctrl
+
+# The core: the session, the verb table, the agent's rules, the contributor tooling
+/core/                  @petermilord811-ctrl
+/drive/                 @petermilord811-ctrl
+/vision/                @petermilord811-ctrl
+/mcp/                   @petermilord811-ctrl
+/dev/                   @petermilord811-ctrl
+/kit.js                 @petermilord811-ctrl
+/AGENTS.md              @petermilord811-ctrl
+/config/                @petermilord811-ctrl
+/.github/               @petermilord811-ctrl
+
+# Skills -- one line per skill folder, its author(s):
+# /skills/fill-a-form/  @your-github-name

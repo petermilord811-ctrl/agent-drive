@@ -1,0 +1,10 @@
+# Text is stored with LF everywhere, whatever the contributor's platform -- a CRLF diff on Windows is every line.
+* text=auto eol=lf
+*.ps1 text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

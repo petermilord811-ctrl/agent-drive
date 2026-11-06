@@ -1,0 +1,23 @@
+name: Skill proposal
+description: A kind of task the agent should learn to do well
+labels: [skill]
+body:
+  - type: input
+    id: slug
+    attributes:
+      label: Skill name (the folder)
+      description: "Short, lowercase, hyphenated, unique -- `fill-a-form`, not `form`. Check `node kit.js skills` first."
+    validations:
+      required: true
+  - type: textarea
+    id: when
+    attributes:
+      label: When to use it
+      description: The kind of task, and how the agent recognises it.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it should work
+      description: The steps, what proves each one done (a milestone's check), and the pitfalls you already know.

@@ -1,0 +1,10 @@
+{
+  "_comment": "sudoku.com/evil at 1920x1080, measured 2026-10-25 (proven exact on a 51-cell fill, 0 mistakes). These are the values baked into skills/solve-a-sudoku/sudoku.js. Geometry shifts with the browser top chrome (a bookmarks bar / infobar pushes the board down) -- re-measure if Mistakes climb. origin = pixel center of cell (row 0, col 0); step = [dx between cols, dy between rows]; buttons = on-screen number-pad tile centers.",
+  "origin": [490, 247],
+  "step": [55.3, 55.1],
+  "buttons": {
+    "1": [1033, 392], "2": [1142, 392], "3": [1250, 392],
+    "4": [1033, 497], "5": [1142, 497], "6": [1250, 497],
+    "7": [1033, 601], "8": [1142, 601], "9": [1250, 601]
+  }
+}

@@ -1,0 +1,30 @@
+name: Bug report
+description: Something in the kit did the wrong thing, or failed
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command(s) you sent and the answer you got (done.json), and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: "The kit version (`node kit.js version`), the host's OS (Windows / Ubuntu X11 / Wayland), the app or site."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: The smallest sequence of commands that shows it. Never paste a join key, a relay address you want kept private, or a real screenshot.
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Not a security problem
+      options:
+        - label: This is not a consent or privacy problem (those go to SECURITY.md, privately)
+          required: true

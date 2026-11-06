@@ -1,0 +1,24 @@
+# Runtime scratch — written per run, never shared. `--serve <dir>` and the helpers live here.
+work/
+*.log
+cmd.json
+done.json
+ready.json
+stopped.json
+reconnect.json
+
+# Secrets — the join key, relay URLs, API keys. Copy .env.example to .env and fill it in.
+.env
+.env.*
+!.env.example
+
+# Personal working logs — keep your own continuity notes; don't commit them.
+SESSION-LOG.md
+*.local.md
+*.local.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+node_modules/

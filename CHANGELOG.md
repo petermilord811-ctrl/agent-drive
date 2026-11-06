@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to agent-drive. The version follows [Semantic Versioning](https://semver.org/):
+a **major** for a change that breaks a skill, a script or the serve protocol; a **minor** for something new;
+a **patch** for a fix. Each pull request adds its line under **Unreleased**; a release moves them under its number.
+
+## Unreleased
+
+## 1.0.0 — 2026-11-06
+
+The first public release, as its own repository.
+
+### The session
+- Every command is checked against one verb table before it runs (`core/verbs.js`, `node kit.js verbs`); common
+  slips are renamed and reported in `fixed`, anything else is refused; a plan is checked whole.
+- `look` returns a picture sized for reading with its scale; clicks may be given in its pixels (`lx/ly`); any
+  action may carry `look:{}`; a region is cut on the host where it can.
+- Screenshots fetched in 128 KB slices, four at a time; the agent pauses its copy of the video stream.
+- `confirm`: any negation, deferral or hesitation is a no; the standing yes fills only a silent window.
+- A relay whose name stops resolving is dialled at its last address (TLS still checks the name).
+- `access {shell|control|terminal}` asks for more on a new Allow card mid-visit; watch-only visits.
+- `terminal` — the Terminal panel's shell, as its own consent.
+- Typing is like a person by default (the ScreenMirror Type window's own planner); `human:0` is instant.
+- `windows`, `focus`, `launch`, `controls` — windows and controls by name (never a value; passwords flagged).
+- Text read locally when a host has no reader; `captcha` hands a CAPTCHA to the operator.
+- Every picture a visit takes is deleted when it ends (`keep:1` / `--keep-captures`).
+
+### Working at scale
+- Missions: milestones achieved only with proof; `drive/replay.js` saves a proven job as a skill and replays it.
+- An MCP server (`mcp/server.js`).
+- `kit.js check / new / update / contribute` for contributors; CI on every pull request.

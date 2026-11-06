@@ -1,0 +1,16 @@
+{
+  "goal": "Complete the survey at https://example.com/survey",
+  "done": "the survey's completion page (thank you / your responses were recorded) is on screen",
+  "milestones": [
+    { "t": "Open the survey in a new tab", "done": "the survey's first page is on screen",
+      "steps": ["Open a new tab", "Type the address", "Wait for the page"] },
+    { "t": "Start the survey", "done": "the first question is on screen",
+      "steps": ["Read the start page", "Press Start"] },
+    { "t": "Answer page 1", "done": "the next page's first question is on screen",
+      "steps": ["Read the questions", "Answer each one", "Press Next"] },
+    { "t": "Answer the remaining pages", "done": "the last page is answered and its Submit button is on screen",
+      "steps": ["Read the questions", "Answer each one", "Press Next until Submit shows"] },
+    { "t": "Submit", "done": "the completion page is on screen",
+      "steps": ["Press Submit", "Wait for the completion page"] }
+  ]
+}
