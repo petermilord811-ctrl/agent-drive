@@ -34,7 +34,7 @@ anyone can add — and every contributor's improvement reaches everyone through 
 
 ## What you need
 
-- **This repository** — no dependencies to install. **Node.js ≥ 18.** (Python + Pillow only for
+- **This repository** — no dependencies to install. **Node.js ≥ 22.** (Python + Pillow only for
   `vision/crop.py` and `vision/detect_grid.py`.)
 - **A machine running the ScreenMirror host**, reachable on a ScreenMirror relay, with **a person who can
   press Allow**.

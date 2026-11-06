@@ -178,7 +178,8 @@ function contribute(message, yes) {
   if (!isRepo()) { console.error('this kit is not a git checkout -- clone it (or fork it on GitHub) first'); return 2; }
   const msg = String(message || '').trim();
   if (!msg) { console.error('say what you changed: node kit.js contribute "the sudoku skill reads faint grid lines"'); return 2; }
-  const changes = git(['status', '--porcelain']).split('\n').filter(Boolean);
+  // untrimmed: a porcelain line is "XY path", and its leading space (an unstaged change) is part of the format
+  const changes = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((l) => l.trim());
   if (!changes.length) { console.log('nothing to contribute: no changes here'); return 0; }
   console.log('checking first -- what CI will check:');
   if (check()) { console.error('fix the problems above, then contribute again'); return 1; }
