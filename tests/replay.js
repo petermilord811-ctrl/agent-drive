@@ -118,6 +118,38 @@ try {
   ok(r.code === 5 && /not proven/.test(r.out), 'a proof that does not hold stops it (exit 5)');
   r = runReplay(path.join(tmp, 'missing.json'));
   ok(r.code === 2, 'a missing recipe is exit 2');
+  ok(frames().some((c) => c.do === 'mission' && c.op === 'plan' && c.replay === 1), 'a replay says it is one (replay:1), so the serve never drafts a skill from it');
+
+  // ---- DRAFTS: the skill a proven job writes itself (the serve calls draft() at mission finish)
+  {
+    const { draft, slugOf } = require(REPLAY);
+    process.env.SM_SKILLS_DIR = skills;
+    ok(slugOf('Sign in and open the report!') === 'sign-in-and-open-the-report' && slugOf('Fill in the Ünïcode form') === 'fill-in-the-unicode-form' &&
+       slugOf('a b c d e f g h') === 'a-b-c-d-e-f' && slugOf('???') === 'a-proven-job', 'a job\'s goal becomes a skill name: lowercase words, at most six');
+    const d = draft(visit);
+    const ddir = path.join(skills, '_drafts', 'sign-in-and-open-the-report');
+    ok(d.ok && d.name === 'sign-in-and-open-the-report' && d.dir === ddir && d.milestones === 2 && fs.existsSync(path.join(ddir, 'replay.json')),
+       'a proven job is drafted into skills/_drafts/<name>/ (' + JSON.stringify([d.ok, d.name, d.why]) + ')');
+    const rd = fs.readFileSync(path.join(ddir, 'README.md'), 'utf8');
+    ok(/^---\nname: sign-in-and-open-the-report\nwhen: /.test(rd) && /Draft — written by the agent/.test(rd) && /Typed text it stores: `pat@example\.test` — and 1 secret\(s\), never recorded/.test(rd),
+       'its README says it is a draft, and lists the typed text it stores for whoever reviews it');
+    ok(JSON.stringify(d.typed) === '["pat@example.test"]' && d.secrets === 1, '...and so does the answer the serve gets');
+    const d2 = draft(visit);
+    ok(d2.ok && d2.name === 'sign-in-and-open-the-report-2', 'a second draft of the same job does not overwrite the first');
+    const named = draft(visit, { name: 'sign-in-report' });
+    ok(!named.ok && named.exists, 'a job the library already has a skill for is not drafted');
+    ok(!draft(path.join(tmp, 'nowhere')).ok, 'nothing proven -> no draft, and no throw');
+    // promote: nothing moves without --yes; then it joins the library, its draft note gone
+    let po = execFileSync(node, [REPLAY, 'promote', 'sign-in-and-open-the-report'], { env, encoding: 'utf8' });
+    ok(/stores this typed text:\n {4}"pat@example\.test"/.test(po) && /nothing moved/.test(po) && fs.existsSync(ddir), 'promote shows the typed text and moves nothing without --yes');
+    po = execFileSync(node, [REPLAY, 'promote', 'sign-in-and-open-the-report', '--yes'], { env, encoding: 'utf8' });
+    const lib = path.join(skills, 'sign-in-and-open-the-report');
+    const lr = fs.existsSync(path.join(lib, 'README.md')) ? fs.readFileSync(path.join(lib, 'README.md'), 'utf8') : '';
+    ok(/is in the library/.test(po) && !fs.existsSync(ddir) && fs.existsSync(path.join(lib, 'replay.json')) && !/Draft — written|draft:begin/.test(lr) && /^---\nname: sign-in-and-open-the-report/.test(lr),
+       'with --yes the draft joins the library, its draft note taken out');
+    let pc = 0; try { execFileSync(node, [REPLAY, 'promote', 'no-such-draft', '--yes'], { env, stdio: 'ignore' }); } catch (e) { pc = e.status; }
+    ok(pc === 2, 'promoting a draft that is not there is exit 2');
+  }
 } finally {
   try { fake.kill(); } catch (_) {}
   try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {}

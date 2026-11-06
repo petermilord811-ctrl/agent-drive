@@ -67,7 +67,8 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
   reverse it, and offer the reversal.
 - **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting
   commands are refused and the room is asked (`budget {more:1}`).
-- **Self-updating skills.** When a new task type is solved, write the skill folder
-  automatically so the library grows without being asked.
+- **Self-updating skills.** ✅ 2026-11-06: a planned job that finishes proven, that no skill did and that was not a
+  replay, is drafted into `skills/_drafts/<name>/` (gitignored); `node drive/replay.js promote <name> --yes` adds a
+  reviewed draft to the library -- a recipe stores typed text, so a person reads it first.
 - **Scheduled / triggered runs.** A task that fires on a schedule or an event (pairs with the relay's
   health/alert signals).

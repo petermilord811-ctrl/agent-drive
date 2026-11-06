@@ -130,6 +130,10 @@ milestone it worked on (`steps.jsonl`, beside `mission.json`). After a job finis
 only; a secret's text is never recorded — it prints the typed text it stored, check it). Next time the same job
 is one command, no driver turns: `node drive/replay.js run skills/<name>/replay.json <serve-dir> [--secret …]` posts
 the plan, runs each milestone as one `plan`, proves it, and stops at the first one that does not hold.
+**The serve drafts it for you:** when a planned job finishes with nothing failed, no skill already did it and it
+was not itself a replay, the `finish` answer carries `draft` — the job saved as `skills/_drafts/<name>/`
+(gitignored) with the typed text it stores. Tell the operator, check that text holds nothing private, then
+`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off).
 
 **A new situation changes the plan — out loud, with its reason:**
 

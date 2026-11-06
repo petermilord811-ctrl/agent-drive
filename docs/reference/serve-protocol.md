@@ -86,7 +86,7 @@ it explain each verb.
 | `expect` | `until` | is the predicate true now? |  |
 | `wait` | `until` `poll` | poll until true, or time out |  |
 | `plan` | `steps` | many steps in one command; if/then/else and repeat/until; stops at the first that fails |  |
-| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` `preview` `checkpoints` `checkpoint` | the job's big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again |  |
+| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` `preview` `checkpoints` `checkpoint` `replay` | the job's big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again |  |
 | `chat` | `text` `to` | say it in the session chat | `say`, `message`, `message`→`text`, `msg`→`text`, `body`→`text` |
 | `chat-img` | `file` `text` `to` `name` `w` `h` | post a picture to the chat | `path`→`file`, `image`→`file`, `img`→`file` |
 | `chat-wait` | `since` | wait for the next human reply |  |
@@ -217,7 +217,7 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 | `change` | `m`, `to?`, `done?`, `check?`, `steps?`, `why` | Rename or redefine a milestone (its row keeps its history). Changing what proves an achieved one opens it again. |
 | `split` | `m`, `into:[{t, done, …}, …]`, `why` | One milestone becomes several; the first carries it on. |
 | `skip` / `fail` | `m`, `why` | Not needed / cannot be done — said in the room; the plan moves on, and the report keeps it. |
-| `finish` | `file?`, `say?` | Every milestone achieved, skipped or failed → the report (one line per milestone, its time or reason, how often the plan changed), the picture and "Anything else, or shall I sign off?" as ONE message, panel green. Refused, naming them, while any is open. |
+| `finish` | `file?`, `say?` | Every milestone achieved, skipped or failed → the report (one line per milestone, its time or reason, how often the plan changed), the picture and "Anything else, or shall I sign off?" as ONE message, panel green. Refused, naming them, while any is open. A job with nothing failed, that no skill did and that is not a replay (`replay:1` on its plan) comes back with **`draft {name, dir, milestones, commands, typed, secrets}`**: it was saved as a draft skill in `skills/_drafts/<name>/` (`node drive/replay.js promote <name> --yes` after a person has read `typed`; `--no-drafts` turns it off). |
 | `show` · `resume` · `drop` | `why` for drop | The plan as text · reload `mission.json` after a restart · abandon it (said in the room). |
 
 `m` is a milestone's number ("3"), its id ("m3"), `current`, `next`, or part of its name. `add`, `change`, `split`,

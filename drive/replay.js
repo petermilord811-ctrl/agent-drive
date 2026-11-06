@@ -17,6 +17,9 @@
 //   run    posts the plan (the room sees it), then per milestone ONE `plan` of its commands -- one round trip --
 //          and proves it: the milestone's own check, else the last check the original run made there, else a
 //          picture shown to the room. Stops at the first milestone whose actions or proof fail, and says which.
+//   promote <name> [--yes]   a DRAFT joins the library. The serve writes one itself -- skills/_drafts/<name>/,
+//          gitignored -- when a planned job finishes with every milestone proven and no skill already did it
+//          (draft(), below). It prints the typed text the draft stores; only with --yes is it moved to skills/<name>/.
 //
 // Exit codes: 0 every milestone achieved; 2 usage / a bad recipe; 3 could not start (no serve answering, the plan
 // refused, a secret missing); 4 a milestone's actions failed; 5 a milestone's proof failed.
@@ -77,23 +80,90 @@ function build(dir) {
            stoppedAt, typed: typedTexts(all), commands: all.length };
 }
 
-function save(dir, name) {
-  if (!/^[a-z0-9][a-z0-9-]{1,60}$/.test(String(name || ''))) { console.error('a skill name is lowercase words joined by dashes, e.g. send-the-weekly-report'); return 2; }
-  const b = build(dir);
-  if (!b.ok) { console.error('[x] ' + b.why); return 3; }
-  const skillDir = path.join(process.env.SM_SKILLS_DIR || path.join(KIT, 'skills'), name);
+const skillsRoot = () => process.env.SM_SKILLS_DIR || path.join(KIT, 'skills');
+const SLUG = /^[a-z0-9][a-z0-9-]{1,60}$/;
+// A DRAFT is marked between these lines in its README; promoting it takes them out.
+const DRAFT_BEGIN = '<!-- draft:begin -->', DRAFT_END = '<!-- draft:end -->';
+
+// THE SKILL FOLDER: replay.json, and a README the catalog lists (`node kit.js skills`). A draft -- written by the
+// serve itself when a planned job finishes with every milestone proven -- says so at the top, with every piece of
+// typed text it stores, for whoever reviews it before it joins the library.
+function writeSkill(skillDir, name, b, draft) {
   fs.mkdirSync(skillDir, { recursive: true });
   const file = path.join(skillDir, 'replay.json');
   fs.writeFileSync(file, JSON.stringify(b.recipe, null, 1));
   const readme = path.join(skillDir, 'README.md');
   if (!fs.existsSync(readme)) {
     const r = b.recipe;
+    const note = draft ? [DRAFT_BEGIN, '> **Draft — written by the agent** after a job it finished with every milestone proven (' + r.saved.slice(0, 10) + ').',
+      '> It is not in the library until a person reviews it: check the typed text below holds nothing private, then',
+      '> `node drive/replay.js promote ' + name + '` — and `node kit.js contribute "a skill to …"` to share it.',
+      '>', '> Typed text it stores: ' + (b.typed.length ? b.typed.map((t) => '`' + String(t).slice(0, 60).replace(/`/g, "'") + '`').join(', ') : 'none') +
+      (r.secrets ? ' — and ' + r.secrets + ' secret(s), never recorded' : ''), DRAFT_END, ''] : [];
     fs.writeFileSync(readme, ['---', 'name: ' + name, 'when: ' + (r.goal || name) + ' -- a proven run, replayed with no driver turns', 'tags: replay, mission',
       'run: node drive/replay.js run skills/' + name + '/replay.json <serve-dir>' + (r.secrets ? ' --secret <text>' + (r.secrets > 1 ? ' (×' + r.secrets + ')' : '') : ''), '---',
-      '# skill: ' + name, '', 'A proven run of “' + r.goal + '”, saved by `drive/replay.js` on ' + r.saved.slice(0, 10) + ' from `' + r.from + '`.',
+      '# skill: ' + name, ''].concat(note, ['A proven run of “' + r.goal + '”, saved by `drive/replay.js` on ' + r.saved.slice(0, 10) + ' from `' + r.from + '`.',
       'Replaying it posts the plan, runs each milestone\'s commands as one `plan`, and proves the milestone before going on.', '',
-      '## Milestones', ''].concat(r.milestones.map((m, i) => (i + 1) + '. ' + m.t + ' — done when ' + m.done + ' (' + m.cmds.length + ' commands)')).join('\n') + '\n');
+      '## Milestones', ''], r.milestones.map((m, i) => (i + 1) + '. ' + m.t + ' — done when ' + m.done + ' (' + m.cmds.length + ' commands)')).join('\n') + '\n');
   }
+  return file;
+}
+
+// A job's goal as a skill's name: lowercase words joined by dashes, at most six of them.
+function slugOf(goal) {
+  const words = String(goal || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(Boolean).slice(0, 6);
+  let s = words.join('-').slice(0, 60).replace(/-+$/, '');
+  if (s.length < 2) s = 'a-proven-job';
+  return SLUG.test(s) ? s : 'a-proven-job';
+}
+
+// A SKILL THAT WRITES ITSELF (the roadmap: "when a new task type is solved, write the skill folder automatically so
+// the library grows without being asked"). Called by the serve when a planned job finishes; never throws. Written
+// to skills/_drafts/<name>/ -- gitignored, and skipped by the catalog's checks -- because a recipe stores the text
+// that was typed, and only a person can tell whether that is private. `promote` puts a reviewed draft in the library.
+// Not drafted: a job that a skill already did, a replay of one, or a run with nothing proven to keep.
+function draft(dir, opts) {
+  try {
+    const o = opts || {};
+    const b = build(dir);
+    if (!b.ok) return { ok: false, why: b.why };
+    const name = o.name && SLUG.test(String(o.name)) ? String(o.name) : slugOf(b.recipe.goal);
+    if (fs.existsSync(path.join(skillsRoot(), name))) return { ok: false, why: 'the library already has skills/' + name, exists: true };
+    const drafts = path.join(skillsRoot(), '_drafts');
+    let slug = name;
+    for (let i = 2; fs.existsSync(path.join(drafts, slug)) && i < 10; i++) slug = name + '-' + i;
+    if (fs.existsSync(path.join(drafts, slug))) return { ok: false, why: 'too many drafts named ' + name };
+    const file = writeSkill(path.join(drafts, slug), slug, b, true);
+    return { ok: true, name: slug, dir: path.join(drafts, slug), file, milestones: b.recipe.milestones.length, commands: b.commands,
+             typed: b.typed.map((t) => String(t).slice(0, 80)), secrets: b.recipe.secrets, stoppedAt: b.stoppedAt || undefined };
+  } catch (e) { return { ok: false, why: 'the draft could not be written: ' + ((e && e.message) || e) }; }
+}
+
+// A reviewed draft joins the library: skills/_drafts/<name> -> skills/<name>, its draft note taken out.
+function promote(name, yes) {
+  if (!SLUG.test(String(name || ''))) { console.error('[x] a skill name is lowercase words joined by dashes (node drive/replay.js promote <name>)'); return 2; }
+  const from = path.join(skillsRoot(), '_drafts', name), to = path.join(skillsRoot(), name);
+  if (!fs.existsSync(from)) { console.error('[x] no draft skills/_drafts/' + name + ' (drafts: ' + (fs.existsSync(path.join(skillsRoot(), '_drafts')) ? fs.readdirSync(path.join(skillsRoot(), '_drafts')).join(', ') || 'none' : 'none') + ')'); return 2; }
+  if (fs.existsSync(to)) { console.error('[x] skills/' + name + ' already exists -- promote the draft under another name by renaming its folder first'); return 2; }
+  let typed = [];
+  try { typed = typedTexts(readJson(path.join(from, 'replay.json')).milestones.reduce((a, m) => a.concat(m.cmds || []), [])); } catch (e) { console.error('[x] the draft\'s replay.json cannot be read: ' + e.message); return 2; }
+  console.log('[.] skills/_drafts/' + name + ' stores this typed text:' + (typed.length ? '\n    ' + typed.map((t) => JSON.stringify(t.slice(0, 80))).join('\n    ') : ' none'));
+  if (!yes) { console.log('[.] nothing moved: if none of it is private, run again with --yes'); return 0; }
+  fs.renameSync(from, to);
+  const readme = path.join(to, 'README.md');
+  try {
+    const t = fs.readFileSync(readme, 'utf8'), a = t.indexOf(DRAFT_BEGIN), z = t.indexOf(DRAFT_END);
+    if (a >= 0 && z > a) fs.writeFileSync(readme, t.slice(0, a) + t.slice(z + DRAFT_END.length).replace(/^\r?\n/, ''));
+  } catch (_) {}
+  console.log('[+] skills/' + name + ' is in the library -- `node kit.js contribute "a skill to …"` shares it');
+  return 0;
+}
+
+function save(dir, name) {
+  if (!SLUG.test(String(name || ''))) { console.error('a skill name is lowercase words joined by dashes, e.g. send-the-weekly-report'); return 2; }
+  const b = build(dir);
+  if (!b.ok) { console.error('[x] ' + b.why); return 3; }
+  const file = writeSkill(path.join(skillsRoot(), name), name, b, false);
   console.log('[+] saved ' + b.recipe.milestones.length + ' proven milestone(s), ' + b.commands + ' command(s) -> ' + path.relative(KIT, file));
   if (b.stoppedAt) console.log('[.] the run stopped being proven at "' + b.stoppedAt.t + '" (' + b.stoppedAt.s + ') -- the recipe ends before it');
   if (b.recipe.secrets) console.log('[.] ' + b.recipe.secrets + ' secret(s) were not recorded: run it with --secret <text> for each, in order');
@@ -110,7 +180,7 @@ function run(recipeFile, dir, secrets) {
   let si = 0;
   const fill = (cmds) => walk(cmds, (v) => (v === SECRET ? secrets[si++] : v));
   const send = (cmd) => { try { return exchange(dir, cmd); } catch (e) { return { ok: false, why: e.message, dead: true }; } };
-  const plan = send({ do: 'mission', op: 'plan', why: 'replaying a proven run', plan: { goal: r.goal, done: r.done || undefined,
+  const plan = send({ do: 'mission', op: 'plan', why: 'replaying a proven run', replay: 1, plan: { goal: r.goal, done: r.done || undefined,
     milestones: r.milestones.map((m) => ({ t: m.t, done: m.done, check: m.check || undefined, steps: m.steps && m.steps.length ? m.steps : undefined })) } });
   if (!plan.ok) { console.error('[x] the plan was not accepted: ' + plan.why); return 3; }
   console.log('[+] replaying "' + r.goal + '": ' + r.milestones.length + ' milestone(s)');
@@ -148,12 +218,14 @@ if (require.main === module) {
   const mode = args[0];
   const secrets = [];
   const pos = [];
-  for (let i = 1; i < args.length; i++) { if (args[i] === '--secret') secrets.push(String(args[++i] == null ? '' : args[i])); else pos.push(args[i]); }
+  let yes = false;
+  for (let i = 1; i < args.length; i++) { if (args[i] === '--secret') secrets.push(String(args[++i] == null ? '' : args[i])); else if (args[i] === '--yes') yes = true; else pos.push(args[i]); }
   let code = 2;
   if (mode === 'save' && pos.length === 2) code = save(pos[0], pos[1]);
   else if (mode === 'run' && pos.length === 2) code = run(pos[0], pos[1], secrets);
-  else console.error('usage:\n  node drive/replay.js save <serve-dir> <skill-name>\n  node drive/replay.js run <replay.json> <serve-dir> [--secret <text>]...');
+  else if (mode === 'promote' && pos.length === 1) code = promote(pos[0], yes);
+  else console.error('usage:\n  node drive/replay.js save <serve-dir> <skill-name>\n  node drive/replay.js run <replay.json> <serve-dir> [--secret <text>]...\n  node drive/replay.js promote <draft-name> [--yes]');
   process.exit(code);
 }
 
-module.exports = { build, lastCheck, countSecrets };
+module.exports = { build, lastCheck, countSecrets, draft, promote, slugOf };

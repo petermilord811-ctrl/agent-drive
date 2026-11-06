@@ -222,6 +222,8 @@ const KEEP_CAPTURES = has('keep-captures') || /^(1|true|yes|on)$/i.test(String(p
 // --type-instant / SM_TYPE_HUMAN=0: type at machine speed unless a command says human:1 (the default is LIKE A PERSON)
 const TYPE_HUMAN = !(has('type-instant') || /^(0|false|no|off)$/i.test(String(process.env.SM_TYPE_HUMAN || '').trim()));
 const NO_IDLE = has('no-idle') || /^(0|false|no|off)$/i.test(String(process.env.SM_AGENT_IDLE || '').trim());
+// --no-drafts / SM_SKILL_DRAFTS=0: a planned job that finishes proven is NOT saved as a draft skill (drive/replay.js)
+const NO_DRAFTS = has('no-drafts') || /^(0|false|no|off)$/i.test(String(process.env.SM_SKILL_DRAFTS || '').trim());
 const ANNOUNCE = String(flag('announce', '') || '');
 // (the guard that these need --control lives below, with the other validations: `die` is a const and
 // this line used to sit above it, so the one invocation error it exists to report crashed in the
@@ -1106,6 +1108,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       try { fs.appendFileSync(stepsFile, JSON.stringify({ at: new Date().toISOString(), m, cmd: redact(cmd, r) }) + '\n'); } catch (_) {}
     };
     let missionFinishing = false;   // the job's own finish (not a tool's, mid-job) is going out
+    let missionReplay = false;      // the job under way is a replay of a saved skill (drive/replay.js): never re-drafted
     const saveMission = () => { try { const j = MS.toJSON(); if (j) fs.writeFileSync(missionFile, JSON.stringify(j, null, 1)); } catch (_) {} };
     // sendDrive attaches the whole picture: the line + the plan + the optional thought/next/per-step
     // status + FREE client-side metrics (elapsed base `since`, and `m` = actions/KB/round-trips from the
@@ -1749,7 +1752,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         let spec = cmd.plan && typeof cmd.plan === 'object' ? cmd.plan : cmd;
         if (spec !== cmd && cmd.checkpoints != null && spec.checkpoints == null) spec = Object.assign({}, spec, { checkpoints: cmd.checkpoints });
         const r = MS.plan(spec, why);
-        if (r.ok) newTask(MS.goal);   // a planned job is a task of its own: its budget starts here
+        if (r.ok) { newTask(MS.goal); missionReplay = !!cmd.replay; }   // a planned job is a task of its own: its budget starts here
         const preview = !!(cmd.preview || (spec && spec.preview)) && cmd.preview !== 0 && cmd.preview !== '0';
         if (!r.ok || !preview) return applied(r);
         // A PREVIEW: the plan goes to the room as a question, and nothing acts until they say yes (core/mission.js
@@ -1847,6 +1850,19 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const out = { ok: true, finished: true, report: r.report, mission: MS.brief() };
         if (cmd.file) { out.img = !!(finImg && finImg.ok); if (!out.img) out.imgWhy = finImg ? finImg.why : 'the picture did not go out'; }
         finImg = null;
+        // A SKILL THAT WRITES ITSELF: a job finished with nothing failed, that no skill already did and that is not a
+        // replay of one, is saved as a DRAFT skill (drive/replay.js draft) -- skills/_drafts/<name>/, gitignored, not
+        // in the library until a person has read the typed text it stores and promoted it.
+        const ms = (MS.toJSON() || {}).ms || [];
+        if (!NO_DRAFTS && !missionReplay && ms.length && !ms.some((m) => m.s === 'failed') && !ms.some((m) => m.skill)) {
+          let d;
+          try { d = require('../drive/replay.js').draft(dir); } catch (e) { d = { ok: false, why: e.message }; }
+          if (d && d.ok) {
+            out.draft = { name: d.name, dir: d.dir, milestones: d.milestones, commands: d.commands, typed: d.typed, secrets: d.secrets };
+            const tip = 'this job was saved as a DRAFT skill, ' + d.name + ' (' + d.milestones + ' proven milestone(s)): check its typed text holds nothing private, then `node drive/replay.js promote ' + d.name + ' --yes` puts it in the library';
+            if (!out.hint) out.hint = tip; else out.draftHint = tip;
+          } else if (d && !d.exists) out.draft = { saved: false, why: d.why };
+        }
         return reply(out);
       }
       if (op === 'show') return reply({ ok: true, text: MS.text(), mission: MS.brief() });

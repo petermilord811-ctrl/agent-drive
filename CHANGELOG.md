@@ -18,6 +18,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   `checkpoints:1` (or `checkpoint:true` on a milestone) asks after each milestone. A no, or no answer, holds the
   job — acting commands are refused until a yes; `mission ask` asks again and hears a yes already given.
 - The serve's own questions (a budget, a preview, a checkpoint) use `confirm`'s rules for what a reply means.
+- **Skills that write themselves**: a planned job that finishes proven — nothing failed, no skill already did it,
+  not a replay — is saved as a draft skill in `skills/_drafts/<name>/` (gitignored), and the `finish` answer says
+  so with the typed text it stores. `node drive/replay.js promote <name> --yes` puts a reviewed draft in the
+  library; `--no-drafts` turns drafting off. A replay marks its plan `replay:1`.
 
 ## 1.0.0 — 2026-11-06
 
