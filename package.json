@@ -13,7 +13,7 @@
   "homepage": "https://github.com/petermilord811-ctrl/agent-drive#readme",
   "keywords": ["agent", "computer-use", "mcp", "remote-control", "screenmirror", "automation", "claude"],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "bin": {
     "agent-drive-mcp": "mcp/server.js"

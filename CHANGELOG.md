@@ -6,6 +6,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- CI tests Node 22 and 24 (Node 20 reached its end of life), with the current checkout and setup-node actions;
+  the kit asks for Node ≥ 22.
+- `node kit.js contribute` lists every changed file correctly (the first one lost a character in the pull request).
+
 ## 1.0.0 — 2026-11-06
 
 The first public release, as its own repository.
