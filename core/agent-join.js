@@ -1261,7 +1261,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       else if (o.type === 'term-error') { term.error = String(o.message || ''); }
       else if (o.type === 'term-busy') { term.busy = !!Number(o.busy); }
     };
-    // A PERSON TOOK THE KEYBOARD: while the agent types, the watchers see "Claude (agent) is auto-typing" (typeAs);
+    // A PERSON TOOK THE KEYBOARD: while the agent types, the watchers see "SM Agent is auto-typing" (typeAs);
     // one who presses a key then sends `atstop` -- exactly as they would to a colleague's auto-typer -- and the run
     // gives way at its next key.
     let atStopAt = 0;
@@ -1405,7 +1405,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // ---- TYPING: like a person unless a command (or --type-instant) says otherwise -- keys, and open's address ----
     // ...AND THE WATCHERS ARE TOLD, as the viewer's own Type window tells them: `spot {k:'at', tot, done}` every two
     // seconds while a run lasts -- their page shows a card "<name> is auto-typing" with its progress, and the relay
-    // stamps the name, so it reads "Claude (agent)" -- and `{k:'at', off:1}` when it ends, however it ends. Typing
+    // stamps the name, so it reads "SM Agent" -- and `{k:'at', off:1}` when it ends, however it ends. Typing
     // that took a person's time used to happen with nothing on their screen but the letters. A run gives way the
     // same way the Type window's does: a person who presses a key sends `atstop` (onAtStop) and it stops.
     const AT_CAST_MS = 2000;

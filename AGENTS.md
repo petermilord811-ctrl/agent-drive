@@ -220,7 +220,7 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
    - **You type LIKE A PERSON by default** — `keys` (and the address `open` types) use the viewer's own "Like a
      person" rhythm: pauses, the odd slip fixed with Backspace, a person's time. `human:0` is instant typing, for
      the rare case speed is the point (a long block nobody watches); an operator's message stops a typing run.
-     The watchers see "Claude (agent) is auto-typing" while you type; if one of them presses a key, the run stops
+     The watchers see "SM Agent is auto-typing" while you type; if one of them presses a key, the run stops
      (`stoppedAt.tookKeyboard`) — they took the keyboard: look, and ask before typing again.
    - **Click by LABEL, not pixels, where you can:** `clickText {text:"New Game"}` OCRs the screen, finds
      the word and clicks it — no hand-measuring, and it survives a layout that shifts. (`find {as}` +

@@ -6,9 +6,9 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
-- While the agent types, everyone watching sees ScreenMirror's own "is auto-typing" card under its name ("Claude
-  (agent) is auto-typing", with its progress), exactly as a colleague's Type window raises it, and it comes down
-  when the typing ends. A person who presses a key stops the run, as they would stop a colleague's
+- While the agent types, everyone watching sees ScreenMirror's own "is auto-typing" card under its name ("SM Agent
+  is auto-typing", with its progress), exactly as a colleague's Type window raises it, and it comes down when the
+  typing ends. A person who presses a key stops the run, as they would stop a colleague's
   (`stoppedAt.tookKeyboard`). `autotype.run` takes an `onStep` callback.
 
 ## 1.0.0 — 2026-11-06
