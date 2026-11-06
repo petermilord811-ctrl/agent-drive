@@ -40,7 +40,7 @@ try {
   // a broken file is an empty memory, never a crash
   fs.writeFileSync(file, '{not json');
   ok(JSON.stringify(ra.fallbacks('relay.example.com', file)) === '[]', 'an unreadable file is an empty memory');
-  fs.writeFileSync(file, JSON.stringify({ toString: { ip: '1.2.3.4' } }));
+  fs.writeFileSync(file, JSON.stringify({ toString: { ip: '203.0.113.4' } }));
   ok(JSON.stringify(ra.fallbacks('constructor', file)) === '[]', 'prototype names are not entries');
 } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {} }
 

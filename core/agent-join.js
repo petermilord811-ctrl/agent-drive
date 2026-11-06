@@ -627,7 +627,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     say('[.] connecting to ' + relay + (reconnecting ? ' (reconnect)' : ''));
     const w = await openRelay(relay).catch((e) => { lastWhy = e.message; say('[x] ' + e.message); return null; });
     if (!w) continue;
-    say('[.] asking to join machine ' + HOST + ' as "' + AGENT + '"');
+    say('[.] asking to join machine ' + HOST + ' (agent tag "' + AGENT + '"; the relay names the visit)');
     w.send({ type: 'join-begin', key: KEY, host: HOST, agent: AGENT, task: TASK, control: !!asks.control, shell: !!asks.shell, term: !!asks.term });
     // The code, then the wait. The code is printed because it is what a person compares against the
     // card on their screen -- an agent that does not show it is asking them to approve on faith.
@@ -1318,7 +1318,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // panel appears at once rather than only on the first acting step. --no-announce drops the hello.
     if (!NO_ANNOUNCE) {
       // A greeting laid out like everything else the agent says: who and why, then how to work with it.
-      const intro = (ANNOUNCE || ('👋 **Hi — I’m an AI agent, here to ' + (TASK || 'help on this machine') + '.**\n' +
+      const intro = (ANNOUNCE || ('👋 **Hi — I’m SM Agent, an AI agent here to ' + (TASK || 'help on this machine') + '.**\n' +
                                   '- You’ll see each step on the **progress panel**.\n' +
                                   '- Write here any time — I’ll stop and answer.')).slice(0, 2000);
       try { ws.send({ type: 'chat', text: intro }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: intro, mine: true, sent: true }) + '\n'); } catch (_) {}
