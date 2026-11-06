@@ -88,6 +88,9 @@
 //            access {shell,terminal,control,why}  ask for MORE access mid-visit: a new Allow card; nothing changes without it
 //   DESKTOP  windows . focus {title|id} . launch {app,args} . controls {title|id}  -- windows, apps and a window's
 //            controls by NAME, run on the host through exec (core/desk.js; needs --shell); answers carry cx/cy to click
+//   FILES    fetch {path,out} . send {file,to,overwrite}  -- a file from / onto the machine, in chunks, said in the room
+//            camera {out,device} . audio {out,seconds}  -- one webcam photo / up to 7 s of what it is PLAYING: the
+//                                     room is asked every time and only a yes allows it (all four need --shell)
 //                   incoming chat is logged to <serve-dir>/chat.json, notes mirrored to notes.json
 //   THE ACTION TREE: with no tool's tree or flat plan in charge, every command lands in a nested tree the
 //   watchers' panel renders -- task > step > sub-step > action group > the live action -- with runs MERGED
@@ -1529,6 +1532,41 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       p.screen = { origin: deskOrigin, w: SW, h: SH };
     };
 
+    // ---- FILES, A WEBCAM PHOTO, A SOUND RECORDING: core/desk.js's stat / read / write / rm / camera / audio, each ONE
+    // command on the host through exec (the visit's shell consent). What is copied, put, photographed or recorded is
+    // said in the room as it happens; a photo and a recording each need the room's yes FIRST, every time.
+    const deskOp = async (op, args, ms) => {
+      const os = await deskOs();
+      if (!os.ok) return os;
+      const b = desk.build(op, args || {}, os.os);
+      if (!b.ok) return { ok: false, why: b.why };
+      const x = await runExec(b.cmd, ms || 30000);
+      if (x.transport) return { ok: false, why: x.why };
+      return desk.parse(op, x.output) || { ok: false, why: 'no answer from the host' };
+    };
+    // a send is one command per chunk: ~4.4 KB a command on Windows (cmd.exe's line), ~88 KB on Linux -- so a few MB
+    // to a Windows machine is already minutes. A fetch reads up to 360 KB a command.
+    const FETCH_MAX = 100 * 1048576, SEND_MAX = { windows: 2 * 1048576, linux: 25 * 1048576 };
+    // a whole file from the host, chunk by chunk (read: at most 360 KB a command)
+    const readAll = async (p, max) => {
+      const parts = []; let off = 0, total = 0, full = '';
+      for (;;) {
+        if (stopped) return { ok: false, why: stopped };
+        const r = await deskOp('read', { path: p, off }, 30000);
+        if (!r.ok) return r;
+        full = r.full || full; total = Number(r.total) || 0;
+        if (total > max) return { ok: false, why: full + ' is ' + humanBytes(total) + ' -- more than the ' + humanBytes(max) + ' a fetch copies' };
+        const buf = Buffer.from(String(r.b64 || ''), 'base64');
+        parts.push(buf); off += buf.length; wire += buf.length; trips++;
+        if (!buf.length || off >= total) break;
+      }
+      return { ok: true, buf: Buffer.concat(parts), total, full };
+    };
+    const humanBytes = (n) => (n < 1024 ? n + ' bytes' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+    const roomNote = (text) => { try { ws.send({ type: 'chat', text }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} };
+    const leaf = (p) => String(p || '').split(/[\\/]/).pop() || String(p || '');
+    const saveLocal = (out, buf) => { const f = path.resolve(String(out)); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); return f; };
+
     // LOOK: a fresh picture of (a region of) the screen, shrunk so its long edge is <= max, written to `out`,
     // with the scale back. It is remembered, so the next click can be given in its pixels (lx/ly).
     let lastLook = null;
@@ -2298,6 +2336,98 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               if (term.exit != null && !term.open) { res.exited = term.exit; }
               if (until && !seen) res.why = 'did not see "' + until.slice(0, 60) + '" in the output' + (stopped ? '' : ' before the timeout');
               reply(res);
+            }
+          }
+        } else if (cmd.do === 'fetch' || cmd.do === 'send' || cmd.do === 'camera' || cmd.do === 'audio') {
+          // FILES AND CAPTURES (core/desk.js, through exec): the visit's shell consent covers them, the room hears
+          // each one, and a photo or a recording is asked for every time -- a yes only, never silence.
+          const say = (t) => { if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus(t); };
+          const why = cmd.why != null ? ' ' + String(cmd.why).slice(0, 300) : '';
+          if (!grantShell) reply({ ok: false, why: 'this runs a command on the host, and this visit was not granted that -- ask: {"do":"access","shell":1,"why":"..."}', needs: 'shell' });
+          else if (cmd.do === 'fetch') {
+            say('Copying a file from this machine');
+            const st = await deskOp('stat', { path: String(cmd.path) });
+            if (!st.ok) reply(st);
+            else if (!st.exists) reply({ ok: false, why: 'there is nothing at ' + st.full });
+            else if (st.dir) reply({ ok: false, why: st.full + ' is a folder -- fetch copies one file' });
+            else {
+              const f = await readAll(String(cmd.path), FETCH_MAX);
+              if (!f.ok) reply(f);
+              else {
+                const out = saveLocal(cmd.out, f.buf);
+                roomNote('📄 I copied **' + leaf(f.full) + '** (' + humanBytes(f.buf.length) + ') from this machine.');
+                reply({ ok: true, from: f.full, file: out, size: f.buf.length });   // (not `bytes`: every answer's bytes is the wire's)
+              }
+            }
+          } else if (cmd.do === 'send') {
+            let data = null;
+            try { data = fs.readFileSync(String(cmd.file)); } catch (e) { reply({ ok: false, why: 'cannot read ' + cmd.file + ' here: ' + e.message }); }
+            const os = data ? await deskOs() : null;
+            const cap = os && os.ok ? SEND_MAX[os.os] || SEND_MAX.windows : SEND_MAX.windows;
+            if (data && data.length > cap) reply({ ok: false, why: leaf(cmd.file) + ' is ' + humanBytes(data.length) + ' -- send puts up to ' + humanBytes(cap) + ' on a ' + (os && os.os === 'linux' ? 'Linux' : 'Windows') + ' machine (' + (os && os.os === 'linux' ? '~88 KB' : '~4 KB') + ' a command)' });
+            else if (data) {
+              let to = String(cmd.to);
+              let st = os.ok ? await deskOp('stat', { path: to }) : os;
+              // a FOLDER as the destination: the file goes inside it, under its own name
+              if (st.ok && st.exists && st.dir) { to = st.full.replace(/[\\/]+$/, '') + (os.os === 'windows' ? '\\' : '/') + leaf(cmd.file); st = await deskOp('stat', { path: to }); }
+              let go = st.ok, replaced = false;
+              if (!st.ok) reply(st);
+              else if (st.exists && st.dir) { go = false; reply({ ok: false, why: st.full + ' is a folder' }); }
+              else if (st.exists && !cmd.overwrite) { go = false; reply({ ok: false, why: 'there is already a file at ' + st.full + ' -- nothing was written. overwrite:1 asks the room before replacing it, or send it under another name', exists: true }); }
+              else if (st.exists) {
+                const a = await askRoom('📄 **May I replace ' + st.full + '** on this machine with ' + leaf(cmd.file) + ' (' + humanBytes(data.length) + ')?' + why, { ms: Number(cmd.timeout) || 60000 });
+                if (a.verdict !== 'approved') { go = false; reply({ ok: false, why: 'the room did not say yes to replacing ' + st.full + ' -- nothing was written', verdict: a.verdict, replies: a.replies }); }
+                else replaced = true;
+              }
+              if (go) {
+                say('Putting ' + leaf(cmd.file) + ' on this machine');
+                const b64 = data.toString('base64'), stepN = Math.max(4, desk.writeChunk(os.os, to) || 4);
+                let r = { ok: true, size: 0 }, n = 0, lastPct = -1;
+                for (let i = 0; i === 0 || i < b64.length; i += stepN) {
+                  if (stopped) { r = { ok: false, why: stopped }; break; }
+                  r = await deskOp('write', { path: to, b64: b64.slice(i, i + stepN), append: i > 0, at: i > 0 ? (i / 4) * 3 : undefined });
+                  n++; trips++; wire += Math.min(stepN, b64.length - i);
+                  if (!r.ok) break;
+                  const pct = b64.length ? Math.floor(((i + stepN) / b64.length) * 10) * 10 : 100;
+                  if (pct !== lastPct && pct < 100 && b64.length > stepN * 4) { lastPct = pct; say('Putting ' + leaf(cmd.file) + ' on this machine — ' + pct + '%'); }
+                }
+                if (!r.ok) reply({ ok: false, why: 'stopped after ' + humanBytes(Math.min(data.length, Number(r.size) || 0)) + ' of ' + humanBytes(data.length) + ': ' + r.why + ' -- the part already written is at ' + (st.full || to), partial: true });
+                else if (Number(r.size) !== data.length) reply({ ok: false, why: 'the file on the machine is ' + humanBytes(Number(r.size) || 0) + ', not ' + humanBytes(data.length) + ' -- send it again', partial: true });
+                else {
+                  roomNote('📄 I put **' + leaf(cmd.file) + '** (' + humanBytes(data.length) + ') on this machine at `' + (r.full || st.full || to) + '`' + (replaced ? ', replacing the one that was there' : '') + '.');
+                  reply({ ok: true, to: r.full || st.full || to, size: data.length, commands: n, replaced });
+                }
+              }
+            }
+          } else {
+            // A WEBCAM PHOTO, or A FEW SECONDS OF WHAT THE MACHINE IS PLAYING (loopback -- never a microphone). The
+            // room is asked FIRST, every time, naming the device; the standing yes does not apply: silence is a no.
+            const cam = cmd.do === 'camera';
+            const secs = Math.max(1, Math.min(7, Math.round(Number(cmd.seconds) || 5)));
+            const dry = await deskOp(cmd.do, cam ? { device: cmd.device, dry: 1 } : { seconds: secs, dry: 1 });
+            if (!dry.ok) reply(dry);
+            else {
+              const dev = String(dry.device || (Array.isArray(dry.cameras) && dry.cameras[0]) || (cam ? 'the camera' : 'the speakers'));
+              const q = cam ? '📷 **May I take one photo with this machine\'s camera** (' + dev + ')?' + why + ' Only a yes allows it.'
+                            : '🔊 **May I record ' + secs + ' seconds of what this machine is playing** (' + dev + ' — its sound output, not the microphone)?' + why + ' Only a yes allows it.';
+              const a = await askRoom(q, { ms: Number(cmd.timeout) || 60000, standing: false });
+              if (a.verdict !== 'approved') reply({ ok: false, why: a.verdict === 'cancelled' ? 'the room said no' : 'nobody said yes -- a ' + (cam ? 'photo' : 'recording') + ' is never taken without one', verdict: a.verdict, replies: a.replies });
+              else {
+                say(cam ? 'Taking a photo with the camera' : 'Recording what this machine is playing');
+                const c = await deskOp(cmd.do, cam ? { device: cmd.device } : { seconds: secs }, 30000);
+                if (!c.ok) reply(c);
+                else {
+                  const f = await readAll(c.path, 50 * 1048576);
+                  await deskOp('rm', { path: c.path });
+                  if (!f.ok) reply(f);
+                  else {
+                    const out = saveLocal(cmd.out, f.buf);
+                    capture(out, cmd.keep);   // like a screenshot: it leaves with the visit unless kept
+                    roomNote(cam ? '📷 I took one photo with the camera (' + dev + ').' : '🔊 I recorded ' + (Number(c.seconds) || secs) + ' seconds of what this machine is playing.');
+                    reply(Object.assign({ ok: true, file: out, size: f.buf.length, device: dev, mime: c.mime }, cam ? {} : { seconds: c.seconds, peak: c.peak, note: c.note }));
+                  }
+                }
+              }
             }
           }
         } else if (cmd.do === 'exec') {                // RUN ONE COMMAND on the host (needs --shell)

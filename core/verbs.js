@@ -104,6 +104,11 @@ const V = {
   terminal:    { f: ['open', 'input', 'keys', 'signal', 'close', 'wait', 'until'], need: (c) => (c.open || c.input != null || nonEmpty(c.keys) || c.signal || c.close) ? '' : 'terminal needs something to do: input:"a line", keys:"raw keys", signal:1 (Ctrl+C), open:1 or close:1', what: 'the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent)' },
   access:      { f: ['shell', 'control', 'terminal'], need: (c) => (c.shell || c.control || c.terminal) ? '' : 'access needs what to ask for: shell:1 (run commands), terminal:1 (the Terminal panel) and/or control:1 (keyboard and mouse), and why', what: 'ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow' },
   exec:        { f: ['cmd', 'text'], need: (c) => nonEmpty(c.cmd != null ? c.cmd : c.text) ? '' : 'exec needs cmd: the command line to run', what: 'run one command on the host (needs --shell)' },
+  // ---- files and captures, through exec (core/desk.js) -- they need the shell consent; the room hears each one
+  fetch:       { f: ['path', 'out'], need: (c) => !nonEmpty(c.path) ? 'fetch needs path: the file on the machine' : !nonEmpty(c.out) ? 'fetch needs out: where to save it here' : '', what: 'copy a file FROM the machine to here, in chunks (needs shell; said in the room)' },
+  send:        { f: ['file', 'to', 'overwrite'], need: (c) => !nonEmpty(c.file) ? 'send needs file: the file here to put on the machine' : !nonEmpty(c.to) ? 'send needs to: the path (or folder) on the machine' : '', what: 'put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room' },
+  camera:      { f: ['out', 'device', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'camera needs out: the .jpg to save the photo to', what: 'one photo from the machine\'s webcam -- the room is asked first, every time, and only a yes allows it (needs shell)' },
+  audio:       { f: ['out', 'seconds', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'audio needs out: the .wav to save the recording to', what: 'up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell)' },
 };
 // inside a `plan`, a step may be a CHOICE or a LOOP instead of a verb
 const CONTROL_KEYS = ['if', 'then', 'else', 'repeat', 'until', 'steps', 'poll', 'fresh', 'quiet', 'intent', 'note'];
@@ -127,6 +132,10 @@ const FIELD_ALIAS = {
   'chat-img': { path: 'file', image: 'file', img: 'file' },
   exec:      { command: 'cmd', line: 'cmd' },
   scroll:    { notches: 'n', delta: 'n', amount: 'n' },
+  fetch:     { from: 'path', source: 'path', file: 'path', dest: 'out', save: 'out', to: 'out' },
+  send:      { from: 'file', source: 'file', path: 'to', dest: 'to' },
+  camera:    { file: 'out', path: 'out', to: 'out', camera: 'device' },
+  audio:     { file: 'out', path: 'out', to: 'out', secs: 'seconds', duration: 'seconds' },
 };
 
 // A key as people write it ("esc", "ctrl", "win", "a", "5", "f4") -> the code the hosts map. Unknown names pass

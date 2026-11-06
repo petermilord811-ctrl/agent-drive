@@ -279,6 +279,10 @@ function stepMs(c) {
     // check and then ask, so it gets both
     case 'mission': ms = (c.op === 'plan' && c.preview) || c.op === 'ask' || c.op === 'achieve' ? 2 * clamp(t || 60000, 2000, 300000) + 45000 : clamp(t || 2000, 0, 30000) + 45000; break;
     case 'budget': ms = clamp(t || 60000, 2000, 300000) + 15000; break;
+    // a photo or a recording asks the room first (60 s by default), then captures and reads it back
+    case 'camera': case 'audio': ms = clamp(t || 60000, 2000, 300000) + 90000; break;
+    // a file is one command per chunk: minutes for a big one (and a send may ask before replacing a file)
+    case 'fetch': case 'send': ms = 20 * 60000; break;
     case 'plan': ms = planMs(c.steps, 0); break;
   }
   if (c.expect) ms += 45000;
@@ -568,7 +572,7 @@ function told(v, res) {
 // when this ended the visit -- the client's exit.
 async function answerOf(v, cmd, a) {
   const more = [];
-  const pic = cmd.do === 'look' ? (a && a.ok && a.out) : (a && a.look && a.look.ok && a.look.out);
+  const pic = cmd.do === 'look' ? (a && a.ok && a.out) : cmd.do === 'camera' ? (a && a.ok && a.file) : (a && a.look && a.look.ok && a.look.out);
   if (pic) {
     const im = imageBlock(path.resolve(v.dir, String(pic)));
     more.push(im || textBlock({ picture: String(pic), why: 'the picture could not be read back' }));

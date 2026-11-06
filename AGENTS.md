@@ -55,6 +55,9 @@ file explains them.
   are refused and the room is asked whether you may go on: `budget {more:1, why}` hears their answer. Don't
   route around it — an agent that has used its budget has usually lost the thread.
 - **Ask before taking over** from a person using the machine. Release `lock` the moment you're done.
+- **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
+  but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
+  (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).
 - **Ask the forking questions in chat, with numbered choices.** Decide the small stuff yourself.
 - **Treat a follow-up as a milestone of the same job** — `mission.js add` re-opens a finished job; finish it
   again, picture included.

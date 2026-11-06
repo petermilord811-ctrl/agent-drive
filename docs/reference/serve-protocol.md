@@ -116,6 +116,10 @@ it explain each verb.
 | `terminal` | `open` `input` `keys` `signal` `close` `wait` `until` | the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent) | `term`, `console` |
 | `access` | `shell` `control` `terminal` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
 | `exec` | `cmd` `text` | run one command on the host (needs --shell) | `run`, `shell`, `command`→`cmd`, `line`→`cmd` |
+| `fetch` | `path` `out` | copy a file FROM the machine to here, in chunks (needs shell; said in the room) | `from`→`path`, `source`→`path`, `file`→`path`, `dest`→`out`, `save`→`out`, `to`→`out` |
+| `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
+| `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
+| `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
 
 Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `fresh` `timeout` `why` `cid`.
 <!-- verbs:end -->
@@ -270,6 +274,21 @@ every window and control also carries **`cx`/`cy`: its centre on this visit's sc
 
 Limits: on Linux these work on X11 (Wayland refuses `windows`/`focus`), need python3, and `controls` needs AT-SPI.
 Reading a Chromium/Electron window's controls may switch its accessibility support on.
+
+## Files, a webcam photo, a sound recording (needs `--shell`)
+
+Each runs on the host through `exec` — one command per step, built by [core/desk.js](../../core/desk.js) — so it needs
+the visit's shell consent. What is copied, put, photographed or recorded is said in the session chat as it happens.
+
+| verb | what it does |
+|---|---|
+| `fetch {path, out}` | Copy one file FROM the machine to `out` here, 360 KB a command (up to 100 MB). `{from, file, size}`. A folder, or nothing there, is refused with a reason. |
+| `send {file, to, overwrite?}` | Put the file `file` (here) ON the machine at `to` (a folder means inside it, under its own name), a chunk a command — ~4 KB on Windows (up to 2 MB), ~88 KB on Linux (up to 25 MB); the last answer's size is checked. A file that is there is refused (`exists`) unless `overwrite:1`, which asks the room first. `{to, size, commands, replaced}`; a send cut short says how far it got (`partial`). |
+| `camera {out, device?}` | One photo from the webcam (`device`: part of the camera's name). The room is asked first, naming the camera and your `why`; **only a clear yes allows it — never the standing yes, never silence**. `{file, size, device}` (the MCP tool returns the photo inline). |
+| `audio {out, seconds?}` | 1–7 s (default 5) of what the machine is PLAYING — its sound output, never a microphone — as a WAV. Asked for the same way as a photo. `{file, size, seconds, peak, device, note?}` |
+
+A refused photo or recording answers `ok:false` with `verdict` (`cancelled` or `unclear`) and the replies. The pictures and recordings
+are captures like a `shot`: they are deleted when the visit ends unless `keep:1`.
 
 ## Exclusive control & running commands
 

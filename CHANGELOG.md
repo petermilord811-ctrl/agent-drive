@@ -30,6 +30,11 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   machine, the skill that does it, the access to ask for and the command line — `node kit.js intake "…"`, and the
   MCP server's new `intake` tool. An operator's chat message that names a job carries its skill in the inbox
   (`inbox.latest.skill`). kit.js reads its skills catalog through the same module.
+- **Files, a webcam photo and a sound recording** (`fetch`, `send`, `camera`, `audio`; core/desk.js through `exec`, so
+  the shell consent): files in chunks both ways, binary-safe, every one said in the room; `send` never writes over a
+  file unless `overwrite:1`, which asks the room. A photo or up to 7 s of what the machine is playing (never a
+  microphone) is asked of the room every time — only a clear yes allows it, never the standing yes or silence. The
+  MCP `camera` tool returns the photo inline.
 
 ## 1.0.0 — 2026-11-06
 

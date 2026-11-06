@@ -54,6 +54,8 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
 - **Files to/from the host in serve mode.** The viewer AI-Agent panel can screenshot, read & deliver
   files, snap the webcam, record speaker audio. Expose the same as serve verbs
   (`deliver-file`, `capture-camera`, `record-audio`) so the serve agent isn't limited to the screen.
+  ✅ 2026-11-06: `fetch` / `send` / `camera` / `audio` (core/desk.js through exec, the shell consent): files in chunks
+  both ways, said in the room; a photo or a recording is asked of the room every time and only a yes allows it.
 - **Task macros / replay.** ✅ 2026-11-06: the serve records every successful command per milestone
   (`steps.jsonl`); `drive/replay.js save` makes a proven run a skill, `run` replays it, proving each milestone.
   Next: a live replay of a real job, and parameters other than secrets (a different file name, a date).

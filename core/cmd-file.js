@@ -37,6 +37,8 @@ const budgetOf = (c) => {
   // for the ROOM too (default 60 s) -- an achieve at a checkpoint may do both
   if (c.do === 'mission') return (c.op === 'plan' && c.preview) || c.op === 'ask' || c.op === 'achieve' ? 2 * Math.min(300000, base || 60000) + 15000 : Math.max(35000, base + 15000);
   if (c.do === 'budget') return Math.min(300000, base || 60000) + 15000;   // asking the room for more waits for them
+  if (c.do === 'camera' || c.do === 'audio') return Math.min(300000, base || 60000) + 90000;   // asked first, then captured
+  if (c.do === 'fetch' || c.do === 'send') return 20 * 60000;      // one command per chunk: a big file is minutes
   if (c.do === 'captcha') return (base || 600000) + 8000;          // waits for a PERSON to solve it (10 min default)
   if (c.do === 'access') return 200000;                            // a new Allow card: the person has ~2.5 min to press it
   if (c.do === 'exec') return Math.min(120000, base || 30000) + 15000;
