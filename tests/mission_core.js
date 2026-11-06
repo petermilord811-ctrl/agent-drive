@@ -328,5 +328,41 @@ const act = (A, M, cmd, okv) => { A.start(cmd); tick(300); A.end(cmd, { ok: okv 
   ok(N.humanSteps().length === 0 && mission.captchaIn(null).length === 0, 'J: a plan without one has nothing to hand over');
 }
 
+// ---- K: asking before going on -- a preview before the plan starts, a checkpoint after a milestone -------------
+{
+  const M = fresh();
+  M.plan({ goal: 'Tidy the downloads folder', done: 'only this week\'s files are left', milestones: [
+    { t: 'Sort the pictures', done: 'every picture is in Pictures' },
+    { t: 'Sort the papers', done: 'every PDF is in Documents', checkpoint: true },
+    { t: 'Empty the rest', done: 'the folder holds this week\'s files only' }] });
+  const pv = M.previewText();
+  ok(/^\*\*📋 Here is my plan — Tidy the downloads folder\*\*/.test(pv) && /1\. Sort the pictures — done when every picture is in Pictures/.test(pv) &&
+     /\*\*Shall I go ahead\?\*\* Say yes to start, or tell me what to change\.$/.test(pv), 'K: a preview is the plan, every milestone with its done-when, ending in the question');
+  ok(M.gate() === null && !M.brief().waiting, 'K: nothing waits until the serve holds the gate');
+  const g = M.hold('plan');
+  ok(g && g.kind === 'plan' && M.gate().kind === 'plan' && /the room's yes to the plan/.test(M.brief().waiting) && /WAITING for the room's yes to the plan/.test(M.text()),
+     'K: a held preview shows on every answer and in the plan text');
+  ok(M.release('yes') && M.gate() === null && !M.release(), 'K: the room\'s yes releases it, once');
+  ok(!M.isCheckpoint('Sort the pictures') && M.isCheckpoint('Sort the papers') && !M.isCheckpoint('nope'), 'K: a milestone marked checkpoint:true is one; the others are not');
+  const c = M.checkpointText('Sort the papers');
+  ok(/^✋ \*\*Checkpoint — Sort the papers is done\.\*\* Next: Sort the pictures — done when/.test(c) && /\*\*Shall I carry on\?\*\*$/.test(c), 'K: a checkpoint names what is done, what is next, and asks (' + c + ')');
+  M.hold('checkpoint', 'Sort the papers');
+  ok(/go on after “Sort the papers”/.test(M.brief().waiting), 'K: a held checkpoint says after which milestone');
+  const back = mission.create({ now });
+  ok(back.load(JSON.parse(JSON.stringify(M.toJSON()))).ok && back.gate() && back.gate().kind === 'checkpoint' && back.isCheckpoint('Sort the papers'),
+     'K: a question still unanswered survives a restart (mission.json), and so do the checkpoints');
+  const all = fresh();
+  all.plan({ goal: 'x', checkpoints: true, milestones: [{ t: 'a', done: 'a' }, { t: 'b', done: 'b' }] });
+  ok(all.isCheckpoint('a') && all.isCheckpoint('b'), 'K: checkpoints:true makes every milestone one');
+  const none = fresh();
+  none.plan({ goal: 'y', checkpoints: 'false', milestones: [{ t: 'a', done: 'a', checkpoint: '0' }] });
+  ok(!none.isCheckpoint('a'), 'K: "false" and "0" are not a yes');
+  M.drop('changed my mind');
+  ok(M.gate() === null, 'K: a dropped plan waits for nothing');
+  let threw = false;
+  try { const H = fresh(); H.hold(); H.hold('x', {}); H.release(); H.checkpointText(null); H.previewText(); H.isCheckpoint(undefined); H.load({ v: 1, goal: 'g', ms: [{ id: 'm1', t: 'a', done: 'a' }], gate: { kind: 'evil', m: '<x>' } }); H.gate(); } catch (e) { threw = e; }
+  ok(!threw, 'K: odd input never throws' + (threw ? ' (' + threw.message + ')' : ''));
+}
+
 console.log((fail ? 'FAILED ' : 'OK ') + pass + '/' + (pass + fail) + ' assertions');
 process.exit(fail ? 1 : 0);

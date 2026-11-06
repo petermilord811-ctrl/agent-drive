@@ -10,6 +10,14 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   is auto-typing", with its progress), exactly as a colleague's Type window raises it, and it comes down when the
   typing ends. A person who presses a key stops the run, as they would stop a colleague's
   (`stoppedAt.tookKeyboard`). `autotype.run` takes an `onStep` callback.
+- **Budgets** (`core/budget.js`): each task may take so many acting steps (a `plan` batch is one) and minutes —
+  100 and 30 by default, `--budget-steps` / `--budget-min` to change them, 0 for none. When the budget is spent,
+  acting commands are refused and the room is asked whether to go on; `budget {more:1, why}` hears their answer.
+  Time spent waiting on people does not count, and a new task starts again.
+- **Plan previews and checkpoints**: `mission plan … preview:1` asks the room before the job starts;
+  `checkpoints:1` (or `checkpoint:true` on a milestone) asks after each milestone. A no, or no answer, holds the
+  job — acting commands are refused until a yes; `mission ask` asks again and hears a yes already given.
+- The serve's own questions (a budget, a preview, a checkpoint) use `confirm`'s rules for what a reply means.
 
 ## 1.0.0 — 2026-11-06
 

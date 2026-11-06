@@ -3,8 +3,13 @@
 // @run  node drive/mission.js ./work plan '{"goal":"…","milestones":[{"t":"…","done":"what will be on the screen","steps":["…"]}]}'
 // mission.js <work-dir> <op> [...] — the job's BIG PLAN (core/mission.js, the serve's `mission` verb) as one-liners.
 //
-//   plan '<json>' | @plan.json     the goal and its milestones, each {t, done, steps?, check?, skill?} -- posted to
-//                                  the room, drawn on the panel, and the first milestone starts
+//   plan '<json>' | @plan.json [--preview] [--checkpoints]
+//                                  the goal and its milestones, each {t, done, steps?, check?, skill?, checkpoint?} --
+//                                  posted to the room, drawn on the panel, and the first milestone starts. --preview
+//                                  asks the room first and nothing acts until they say yes; --checkpoints asks after
+//                                  every milestone (checkpoint:true on one milestone asks after that one only)
+//   ask [--why "…"]                the plan is waiting for the room's yes (a preview, a checkpoint): ask again -- a
+//                                  yes they gave after the question counts
 //   step "<short step>"            begin a short step of the current milestone (one nobody planned is added)
 //   steps '["…","…"]' [--m <ref>]  rewrite a milestone's short steps
 //   achieve [<ref>] [--check '<json>'] [--file <crop.jpg>] [--note "<what it shows>"] [--timeout <ms>]
@@ -25,7 +30,7 @@
 // missing. Add --quiet to keep a change out of the session chat (tests only: the room should see the plan move).
 const fs = require('fs'), path = require('path');
 const { exchange } = require('../core/cmd-file.js');
-const OPS = ['plan', 'step', 'steps', 'achieve', 'add', 'change', 'split', 'skip', 'fail', 'finish', 'show', 'resume', 'drop'];
+const OPS = ['plan', 'step', 'steps', 'achieve', 'add', 'change', 'split', 'skip', 'fail', 'finish', 'show', 'resume', 'drop', 'ask'];
 const die = (m) => { console.error('mission.js: ' + m); process.exit(2); };
 const [dir, op, ...rest] = process.argv.slice(2);
 if (!dir || !OPS.includes(op)) die('usage: node drive/mission.js <work-dir> ' + OPS.join('|') + ' [...] — see the header of this file');
@@ -33,7 +38,7 @@ if (!dir || !OPS.includes(op)) die('usage: node drive/mission.js <work-dir> ' + 
 const flags = {}, pos = [];
 for (let i = 0; i < rest.length; i++) {
   const a = rest[i];
-  if (a === '--now' || a === '--quiet') { flags[a.slice(2)] = true; continue; }
+  if (a === '--now' || a === '--quiet' || a === '--preview' || a === '--checkpoints') { flags[a.slice(2)] = true; continue; }
   if (a.startsWith('--')) { if (i + 1 >= rest.length) die(a + ' needs a value'); flags[a.slice(2)] = rest[++i]; continue; }
   pos.push(a);
 }
@@ -61,7 +66,14 @@ const cmd = { do: 'mission', op };
 if (flags.why != null) cmd.why = flags.why;
 if (flags.quiet) cmd.quiet = 1;
 switch (op) {
-  case 'plan': if (!pos[0]) die('plan needs the plan: \'{"goal":"…","milestones":[…]}\' or @plan.json'); cmd.plan = json(pos[0], 'plan'); break;
+  case 'plan':
+    if (!pos[0]) die('plan needs the plan: \'{"goal":"…","milestones":[…]}\' or @plan.json');
+    cmd.plan = json(pos[0], 'plan');
+    if (flags.preview) cmd.preview = 1;
+    if (flags.checkpoints) cmd.checkpoints = 1;
+    if (flags.timeout) cmd.timeout = Number(flags.timeout);
+    break;
+  case 'ask': if (flags.timeout) cmd.timeout = Number(flags.timeout); break;
   case 'step': cmd.t = pos[0] != null ? pos[0] : ''; break;
   case 'steps': if (!pos[0]) die('steps needs the list: \'["…","…"]\''); cmd.steps = json(pos[0], 'steps'); if (flags.m) cmd.m = flags.m; break;
   case 'achieve':

@@ -71,7 +71,7 @@ const V = {
   expect:    { f: ['until'], need: (c) => (c.until || c.expect) ? '' : 'expect needs until:<predicate>', what: 'is the predicate true now?' },
   wait:      { f: ['until', 'poll'], need: (c) => (c.until || c.expect) ? '' : 'wait needs until:<predicate>', what: 'poll until true, or time out' },
   plan:      { f: ['steps'], need: (c) => Array.isArray(c.steps) ? '' : 'plan needs steps:[...]', what: 'many steps in one command; if/then/else and repeat/until; stops at the first that fails' },
-  mission:   { f: ['op', 'plan', 't', 'step', 'steps', 'm', 'milestone', 'before', 'after', 'now', 'to', 'done', 'check', 'into', 'file', 'say', 'w', 'h', 'skill', 'goal', 'milestones'], need: (c) => nonEmpty(c.op) ? '' : 'mission needs op: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop', what: 'the job\'s big plan (drive/mission.js)' },
+  mission:   { f: ['op', 'plan', 't', 'step', 'steps', 'm', 'milestone', 'before', 'after', 'now', 'to', 'done', 'check', 'into', 'file', 'say', 'w', 'h', 'skill', 'goal', 'milestones', 'preview', 'checkpoints', 'checkpoint'], need: (c) => nonEmpty(c.op) ? '' : 'mission needs op: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop, ask', what: 'the job\'s big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again' },
   // ---- talking ----
   chat:        { f: ['text', 'to'], need: (c) => nonEmpty(c.text) ? '' : 'chat needs text', what: 'say it in the session chat' },
   'chat-img':  { f: ['file', 'text', 'to', 'name', 'w', 'h'], need: (c) => nonEmpty(c.file) ? '' : 'chat-img needs file: a .jpg/.png to post', what: 'post a picture to the chat' },
@@ -86,6 +86,7 @@ const V = {
   warn:        { f: ['text'], what: 'a caution line on the panel' },
   confirm:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'confirm needs text: what you are about to do, said to everyone', what: 'ask before something hard to undo; a no always wins' },
   captcha:     { f: ['text'], what: 'a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one' },
+  budget:      { f: ['steps', 'minutes', 'more'], what: 'the task\'s budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room' },
   done:        { f: ['text', 'file', 'w', 'h'], what: 'sign off (with a picture) and hand the grant back' },
   // ---- ScreenMirror's own features ----
   'note-list': { f: [], what: 'the host\'s sticky notes' },

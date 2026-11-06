@@ -57,16 +57,16 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
 - **Task macros / replay.** ✅ 2026-11-06: the serve records every successful command per milestone
   (`steps.jsonl`); `drive/replay.js save` makes a proven run a skill, `run` replays it, proving each milestone.
   Next: a live replay of a real job, and parameters other than secrets (a different file name, a date).
-- **Preview / dry-run.** Before a multi-step `plan`, show the operator the steps (and, with 01, the
-  viewers) and act on confirm. Pairs with 05.
-- **Milestone checkpoints for long jobs.** Pause at natural milestones for a thumbs-up instead of
-  running 40 steps blind.
+- **Preview / dry-run.** ✅ 2026-11-06: `mission plan … preview:1` posts the plan to the room as a question and the
+  serve acts on nothing until they say yes; `mission ask` asks again (core/mission.js holds the gate).
+- **Milestone checkpoints for long jobs.** ✅ 2026-11-06: `checkpoints:1` (or `checkpoint:true` on a milestone) stops
+  after it and asks before going on; a no or no answer holds the job.
 - **Natural-language intake over chat.** "connect 10004 and read my sticky-note tasks" parsed into the
   connect + skill lookup automatically.
 - **Change log / undo hints.** Record what was changed (files moved, settings flipped) so a human can
   reverse it, and offer the reversal.
-- **Budgets.** A per-task cap on time/steps, so an agent that's lost stops and asks rather than
-  grinding.
+- **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting
+  commands are refused and the room is asked (`budget {more:1}`).
 - **Self-updating skills.** When a new task type is solved, write the skill folder
   automatically so the library grows without being asked.
 - **Scheduled / triggered runs.** A task that fires on a schedule or an event (pairs with the relay's

@@ -47,6 +47,10 @@ file explains them.
 - **Say a failure plainly** — a `⚠` or `✗` status line. Never pass a miss off as done.
 - **Ask before anything hard to undo** — restart, shut down, log off, delete, overwrite, stop a service,
   sign out: `confirm`, and go ahead only on `approved`. A stop always wins.
+- **Stop when the budget is spent.** Every task has one (`budget`: by default 100 acting steps or 30 minutes; a
+  `plan` batch is one step, and time spent waiting on people does not count). When it is spent, acting commands
+  are refused and the room is asked whether you may go on: `budget {more:1, why}` hears their answer. Don't
+  route around it — an agent that has used its budget has usually lost the thread.
 - **Ask before taking over** from a person using the machine. Release `lock` the moment you're done.
 - **Ask the forking questions in chat, with numbered choices.** Decide the small stuff yourself.
 - **Treat a follow-up as a milestone of the same job** — `mission.js add` re-opens a finished job; finish it
@@ -143,13 +147,20 @@ Each change is logged with its why and said in the room ("✎ Plan changed: …"
 back as a `hint`**: do not try the same way a third time — change the approach, replan, or ask. A run of failed
 actions, or a milestone that has taken dozens of actions, is hinted the same way.
 
+**Ask before a long job, and on the way.** `plan … --preview` posts the plan to the room as a question and acts on
+nothing until they say yes — use it for a job that changes things they care about, or that will take a while.
+`--checkpoints` (or `checkpoint:true` on one milestone) stops after each milestone and asks before going on. A
+no, or no answer, HOLDS the job: acting commands are refused (`waiting`), and you may still look, talk and change
+the plan. Change what they asked for, then `mission.js ask` — it hears a yes they gave after the question.
+
 **Finishing:** when every milestone is achieved, skipped or failed, `mission.js finish --file <crop.jpg>` — it
 refuses while one is still open, and names it. A request after the finish is `mission.js add`: a milestone of the
 SAME job, which re-opens it; then finish again.
 
 | `node drive/mission.js ./work …` | what it does |
 |---|---|
-| `plan '<json>'` · `plan @plan.json` | `{"goal","done"?,"milestones":[{"t","done","check"?,"steps"?,"skill"?}]}` — refused without a done-when per milestone |
+| `plan '<json>'` · `plan @plan.json` `[--preview] [--checkpoints]` | `{"goal","done"?,"milestones":[{"t","done","check"?,"steps"?,"skill"?,"checkpoint"?}]}` — refused without a done-when per milestone; `--preview` asks the room first, `--checkpoints` after every milestone |
+| `ask [--why "…"]` | the job is waiting for the room's yes (a preview, a checkpoint): ask again |
 | `step "<short step>"` · `steps '[…]' --m <ref>` | begin a short step (an unplanned one is added) · rewrite a milestone's steps |
 | `achieve [<ref>] [--check '<json>'] [--file <crop.jpg>] [--note "…"]` | prove it; the next milestone starts |
 | `add` · `change` · `split` · `skip` · `fail` … `--why "…"` | change the plan, as above |

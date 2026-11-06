@@ -86,7 +86,7 @@ it explain each verb.
 | `expect` | `until` | is the predicate true now? |  |
 | `wait` | `until` `poll` | poll until true, or time out |  |
 | `plan` | `steps` | many steps in one command; if/then/else and repeat/until; stops at the first that fails |  |
-| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` | the job's big plan (drive/mission.js) |  |
+| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` `preview` `checkpoints` `checkpoint` | the job's big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again |  |
 | `chat` | `text` `to` | say it in the session chat | `say`, `message`, `message`→`text`, `msg`→`text`, `body`→`text` |
 | `chat-img` | `file` `text` `to` `name` `w` `h` | post a picture to the chat | `path`→`file`, `image`→`file`, `img`→`file` |
 | `chat-wait` | `since` | wait for the next human reply |  |
@@ -100,6 +100,7 @@ it explain each verb.
 | `warn` | `text` | a caution line on the panel |  |
 | `confirm` | `text` | ask before something hard to undo; a no always wins | `message`→`text`, `msg`→`text`, `question`→`text` |
 | `captcha` | `text` | a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one | `recaptcha`, `hcaptcha` |
+| `budget` | `steps` `minutes` `more` | the task's budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room |  |
 | `done` | `text` `file` `w` `h` | sign off (with a picture) and hand the grant back |  |
 | `note-list` | — | the host's sticky notes |  |
 | `note-add` | `text` `x` `y` | leave a sticky note | `message`→`text` |
@@ -207,7 +208,8 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 
 | op | fields | what it does |
 |---|---|---|
-| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?}]}`, `why?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. |
+| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?, checkpoint?}]}`, `why?`, `preview?`, `checkpoints?`, `timeout?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. **`preview:1`** posts it as a question ("Shall I go ahead?") and waits `timeout` (default 60 s): the answer carries `preview {verdict, replies, auto}`, and anything but a yes HOLDS the job (`waiting:true`). **`checkpoints:1`** (or `checkpoint:true` on a milestone) asks after each milestone the same way. A new plan is a new task: its budget starts again. |
+| `ask` | `why?`, `timeout?` | The job is held (a preview, a checkpoint): ask the room again. A yes they gave after the last question counts; a new `why` re-posts the question with it. `{verdict, replies, waiting}`. |
 | `step` | `t` | Begin a short step of the current milestone (one nobody planned is added where the work is); `t:""` ends it. |
 | `steps` | `m?`, `steps:[…]`, `why?` | Rewrite a milestone's short steps. |
 | `achieve` | `m?`, `check?`, `file?`, `note?`, `timeout?` | Prove it: the milestone's `check` (or this `check`) must hold on a FRESH picture, polled up to `timeout` (default 2000 ms); with no check, `file` (a picture of it) is the proof and goes to the room with the ✓ line. Achieved → said in the room, the next milestone starts. Not → `ok:false` with what the check saw, and the miss is counted. |
@@ -221,7 +223,7 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 `m` is a milestone's number ("3"), its id ("m3"), `current`, `next`, or part of its name. `add`, `change`, `split`,
 `skip` and `fail` need a `why` — the plan never changes silently. **Every answer while a job is planned carries
 `mission`** (`{goal, done, of, at, when, step, acts, tries}` — the current milestone and what will prove it) and, once
-per threshold, a **`hint`**: a milestone that missed its check twice (change the approach, replan, or ask), three
+per threshold, a **`hint`**. **While the job is held** (`mission.waiting`), every acting command is refused with `waiting:true` and nothing is sent; looking, talking and changing the plan still work. The hints: a milestone that missed its check twice (change the approach, replan, or ask), three
 times (ask the operator), a run of three failed actions (look before acting again), or 40+ actions without being
 achieved. Inside a planned job `status {step}` / `{substep}` land as a short step of the current milestone, a
 `status {task}` naming another job drops the plan, and a bare `status {fin:1}` with milestones still open is answered
