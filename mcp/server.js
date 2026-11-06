@@ -252,7 +252,7 @@ const INSTRUCTIONS = [
   '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size. A request in plain words ("connect 10004 and do my sticky notes")? intake {text} reads it into connect\'s fields and finds the skill that does it.',
   '2. Every serve verb is a tool (a "-" in a verb is "_" here: chat_wait, note_add). look returns the picture inline with its scale: click what you see in ITS pixels with click {lx,ly}. Any acting verb takes look:{} to act and see in one call.',
   '3. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); remind and hint (do those first).',
-  '4. Any command may carry intent (its name on the watchers\' panel), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
+  '4. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '5. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply.',
   '6. disconnect only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
 ].join('\n');

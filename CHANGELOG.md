@@ -43,6 +43,9 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   text), apps started, a file `send` put there, and what the driver declares with `changed` — with how it is put
   back. The finish of a task tells the room; `changes` lists it; `undo {id}` puts one back after a yes, or because
   they asked ("undo c3"); one that deletes what was made is never taken on silence.
+- `why:"…"` on any command (or batch step) is the panel's thought — the reason, shown above the plan, at no
+  extra turn. A thought now ends with its step (a declared task, step or sub-step, a plan's move, a finish),
+  and a new one replaces the last one's `conf` and `next` too.
 
 ## 1.0.0 — 2026-11-06
 
