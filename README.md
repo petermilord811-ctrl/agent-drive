@@ -23,6 +23,8 @@ anyone can add — and every contributor's improvement reaches everyone through 
   room before it starts and **checkpointed** after each milestone; nothing acts until they say yes.
 - **The library grows itself** — a job finished with every milestone proven is saved as a **draft skill**, which a
   person reviews and promotes; a saved job can run **on a schedule** (`drive/schedule.js`).
+- **Everything it changed is on record** — moved, made, deleted, typed, started — said to the room at the finish,
+  and put back on request (`undo c3`).
 - **Files, a photo, a recording** — files copied from and onto the machine, said in the room; a webcam photo or a
   few seconds of its sound only when the room says yes, every time.
 - **Jobs in plain words** — `node kit.js intake "connect 10004 and do my sticky notes"` (and the MCP `intake` tool).

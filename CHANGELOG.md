@@ -35,6 +35,11 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   file unless `overwrite:1`, which asks the room. A photo or up to 7 s of what the machine is playing (never a
   microphone) is asked of the room every time — only a clear yes allows it, never the standing yes or silence. The
   MCP `camera` tool returns the photo inline.
+- **The change record and undo** (`core/undo.js`): what each command changed on the machine — files moved,
+  renamed, copied, made or deleted, services, registry values, processes, files written, typed text (never the
+  text), apps started, a file `send` put there, and what the driver declares with `changed` — with how it is put
+  back. The finish of a task tells the room; `changes` lists it; `undo {id}` puts one back after a yes, or because
+  they asked ("undo c3"); one that deletes what was made is never taken on silence.
 
 ## 1.0.0 — 2026-11-06
 

@@ -116,6 +116,9 @@ it explain each verb.
 | `terminal` | `open` `input` `keys` `signal` `close` `wait` `until` | the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent) | `term`, `console` |
 | `access` | `shell` `control` `terminal` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
 | `exec` | `cmd` `text` | run one command on the host (needs --shell) | `run`, `shell`, `command`→`cmd`, `line`→`cmd` |
+| `changes` | `all` | what this task changed on the machine (all:1 -- this visit), each with whether and how it can be put back |  |
+| `undo` | `id` `dry` | put one change back: a command after the room's yes (or because they asked: "undo c3"); a change put back by hand comes back as the how; dry:1 shows the command only | `change`→`id`, `ref`→`id`, `which`→`id` |
+| `changed` | `what` `undo` | record a change you made by clicking (a setting, a toggle) and how it is put back -- it joins the task's record | `text`→`what`, `change`→`what`, `revert`→`undo`, `back`→`undo` |
 | `fetch` | `path` `out` | copy a file FROM the machine to here, in chunks (needs shell; said in the room) | `from`→`path`, `source`→`path`, `file`→`path`, `dest`→`out`, `save`→`out`, `to`→`out` |
 | `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
 | `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
@@ -274,6 +277,24 @@ every window and control also carries **`cx`/`cy`: its centre on this visit's sc
 
 Limits: on Linux these work on X11 (Wayland refuses `windows`/`focus`), need python3, and `controls` needs AT-SPI.
 Reading a Chromium/Electron window's controls may switch its accessibility support on.
+
+## What the task changed, and putting it back
+
+Every step that changes the machine — `exec` and a `terminal` line (read by [core/undo.js](../../core/undo.js): files
+moved, renamed, copied, made or deleted; services; registry values; processes ended; files written), `keys` (only how
+many characters and into which window — never the text), `launch`, a file `send` put there, and what the driver
+declares with `changed` — goes into the visit's record (`<serve-dir>/changes.json`), each with how it is put back: a
+command, by hand, or not at all (and why). **The finish of a task tells the room** what it changed and which of it
+can be put back, and the finishing answer carries `changes {n, list}`.
+
+| verb | what it does |
+|---|---|
+| `changes {all?}` | This task's record (`all:1`: the visit's) — `{n, changes:[{id, what, reversible, how}], text}`. |
+| `undo {id, dry?}` | Put one back (`id`: `c3`, or `last`). A command undo needs `--shell` and the room's yes — unless they asked in so many words after the change ("undo c3", "undo all"): that is the yes. One that deletes what was made (a copy, a new file or folder — a folder only while empty) is never taken on silence. A change put back by hand answers `ok:false` with `byHand`: how. `dry:1` shows the command. |
+| `changed {what, undo?}` | Record a change made by clicking (a setting, a toggle) and how it is put back: words, or `{cmd, os}`. |
+
+Undo several newest first. Old values (a registry setting, a file's contents) are never read, so those changes say
+they cannot be put back from here.
 
 ## Files, a webcam photo, a sound recording (needs `--shell`)
 

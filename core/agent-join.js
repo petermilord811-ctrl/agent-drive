@@ -88,6 +88,8 @@
 //            access {shell,terminal,control,why}  ask for MORE access mid-visit: a new Allow card; nothing changes without it
 //   DESKTOP  windows . focus {title|id} . launch {app,args} . controls {title|id}  -- windows, apps and a window's
 //            controls by NAME, run on the host through exec (core/desk.js; needs --shell); answers carry cx/cy to click
+//   UNDO     changes {all} . undo {id|"last",dry} . changed {what,undo}  -- what the task changed on the machine (read
+//                                     from each command by core/undo.js), each with how it is put back; the finish says it
 //   FILES    fetch {path,out} . send {file,to,overwrite}  -- a file from / onto the machine, in chunks, said in the room
 //            camera {out,device} . audio {out,seconds}  -- one webcam photo / up to 7 s of what it is PLAYING: the
 //                                     room is asked every time and only a yes allows it (all four need --shell)
@@ -143,6 +145,7 @@ const mission = require('./mission.js');   // the job's big plan: milestones, pr
 const verbs = require('./verbs.js');       // what each command may say, checked before it runs; pure, tested
 const budget = require('./budget.js');     // a task's steps and minutes, then stop and ask; pure, tested
 const intake = require('./intake.js');     // a job asked for in plain words -> the skill that does it; tested
+const undo = require('./undo.js');         // what a command changed on the host, and how it is put back; pure, tested
 const lookv = require('../vision/look.js');   // a picture sized for reading, and the way back to screen pixels; pure, tested
 
 // ---- the command line ---------------------------------------------------------------------------
@@ -1100,7 +1103,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const BUD = budget.create({ steps: BUDGET_STEPS, minutes: BUDGET_MIN });
     BUD.start(TASK);
     let budgetAskedAt = 0;
-    const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; };
+    // THE CHANGE RECORD (core/undo.js): what this visit changed on the machine -- moved, renamed, made, deleted, a
+    // service flipped, text typed, an app started, a file put there -- each with how it is put back. The finish of a
+    // task says that task's changes to the room, `changes` lists them, and `undo` puts one back after the room's yes
+    // (or because they asked for it in so many words: "undo c3"). Kept in <serve-dir>/changes.json.
+    const changes = [];
+    const changesFile = path.join(dir, 'changes.json');
+    let changeTask = 0, changesSaid = false, lastWindow = '';
+    const taskChanges = () => changes.filter((e) => e.task === changeTask && !e.undone);
+    const saveChanges = () => { try { fs.writeFileSync(changesFile, JSON.stringify(changes, null, 1)); } catch (_) {} };
+    const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; changeTask++; };
     const missionFile = path.join(dir, 'mission.json');
     // EVERY SUCCESSFUL COMMAND, AS SENT, for drive/replay.js -- one JSON line each with the milestone that was
     // current, so a proven job can run again with no driver turns. Only what DOES something on the machine or
@@ -1233,7 +1245,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         // without "shall I sign off?" (the plan goes on), and it owes no picture of its own -- the milestone it
         // served is proven when it is achieved.
         const midJob = !missionFinishing && MS.active();
-        const line = midJob ? report.slice(0, 2000) : (report + '\n\nAnything else, or shall I sign off?').slice(0, 2000);
+        // ...AND WHAT IT CHANGED ON THE MACHINE, with which of it can be put back (core/undo.js): said once, at the end
+        // of the task, so the person hears it while they can still ask
+        const tc = midJob ? [] : taskChanges();
+        if (tc.length) changesSaid = true;
+        const changed = tc.length ? '\n\n↩ ' + undo.summary(tc, 3) : '';
+        const line = midJob ? report.slice(0, 2000) : (report.slice(0, 1400) + changed.slice(0, 500) + '\n\nAnything else, or shall I sign off?').slice(0, 2000);
         const m = { type: 'chat', text: line };
         // `file`: the result picture rides IN the report -- one message, the proof above the question
         finImg = opts.file ? imgFromFile(opts.file) : null;
@@ -1566,6 +1583,37 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const roomNote = (text) => { try { ws.send({ type: 'chat', text }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} };
     const leaf = (p) => String(p || '').split(/[\\/]/).pop() || String(p || '');
     const saveLocal = (out, buf) => { const f = path.resolve(String(out)); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); return f; };
+
+    // INTO THE CHANGE RECORD (core/undo.js reads what a command changed; this keeps it). A file `send` put there is
+    // recorded as the file it made -- read through the same module, so its undo is that module's careful delete
+    // (a literal path, never a folder with things in it); one it REPLACED cannot be put back: the old one was not kept.
+    const psq = (s) => "'" + String(s).replace(/['‘’‚‛]/g, (c) => c + c) + "'";
+    const shq = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+    async function noteChange(cmd, r) {
+      try {
+        if (!cmd || !r || r.ok !== true || typeof cmd.do !== 'string') return;
+        if ((cmd.do === 'focus' || cmd.do === 'launch') && r.window && r.window.title) lastWindow = String(r.window.title).slice(0, 80);
+        if (!['exec', 'terminal', 'keys', 'launch', 'send'].includes(cmd.do)) return;
+        let os = deskOsName;
+        if (!os && grantShell && (cmd.do === 'exec' || cmd.do === 'terminal' || cmd.do === 'send')) { const o = await deskOs(); if (o.ok) os = o.os; }
+        let c = cmd;
+        const to = cmd.do === 'send' ? String(r.to || '') : '';
+        if (cmd.do === 'send') {
+          if (!to) return;
+          c = r.replaced ? { do: 'changed', what: 'replaced ' + to + ' with ' + leaf(cmd.file), undo: 'the file it replaced was not kept — restore it from a backup or File History, if there is one' }
+            : os === 'linux' ? { do: 'exec', cmd: 'cp -- ' + shq('/tmp/agent-drive-sent') + ' ' + shq(to) }
+            : { do: 'exec', cmd: 'powershell -NoProfile -Command "New-Item -ItemType File -Path ' + psq(to) + '"' };
+        }
+        const got = undo.record(c, { ok: true }, { os: os || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined });
+        const list = Array.isArray(got) ? got : got ? [got] : [];
+        for (const e of list) {
+          if (cmd.do === 'send') { e.verb = 'send'; if (!r.replaced) { e.what = 'put ' + leaf(cmd.file) + ' on this machine at ' + to; e.md = 'put **' + leaf(cmd.file) + '** on this machine at `' + to + '`'; } }
+          e.task = changeTask;
+          changes.push(e);
+        }
+        if (list.length) saveChanges();
+      } catch (_) {}
+    }
 
     // LOOK: a fresh picture of (a region of) the screen, shrunk so its long edge is <= max, written to `out`,
     // with the scale back. It is remembered, so the next click can be given in its pixels (lx/ly).
@@ -2338,6 +2386,49 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               reply(res);
             }
           }
+        } else if (cmd.do === 'changed') {             // the driver says what it changed by clicking (a setting, a toggle)
+          const e = undo.record({ do: 'changed', what: cmd.what, undo: cmd.undo }, { ok: true }, { os: deskOsName || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined });
+          const list = Array.isArray(e) ? e : e ? [e] : [];
+          for (const x of list) { x.task = changeTask; changes.push(x); }
+          if (list.length) { saveChanges(); reply({ ok: true, id: list[0].id, what: list[0].what, reversible: list[0].reversible }); }
+          else reply({ ok: false, why: 'changed needs what: the change, in a few words (and undo: how it is put back)' });
+        } else if (cmd.do === 'changes') {             // what this task (all:1 -- this visit) changed on the machine
+          const list = cmd.all ? changes.slice() : changes.filter((x) => x.task === changeTask);
+          reply({ ok: true, n: list.length, changes: list.map((x) => ({ id: x.id, what: x.what, reversible: x.reversible, how: x.undo ? x.undo.kind : null, undone: x.undone || undefined })),
+                  text: undo.forChat(list.filter((x) => !x.undone)) || 'nothing changed' });
+        } else if (cmd.do === 'undo') {                // put one change back -- after the room's yes, or because they asked
+          // `id`: c3, or "last" (the newest that can be put back). A change put back by HAND (typed text, a setting) comes
+          // back as the how, for the driver to do. A command undo needs the shell consent and the room's yes -- unless
+          // they asked for it in so many words after the change ("undo c3", "undo all"): that IS their yes. A risky undo
+          // (it deletes what was made) is never taken on silence. dry:1 shows the command and runs nothing.
+          const ref = String(cmd.id == null ? '' : cmd.id).trim().toLowerCase();
+          const e = ref === 'last' ? [...changes].reverse().find((x) => !x.undone && x.undo && x.undo.kind === 'exec') : changes.find((x) => x.id === ref);
+          if (!e) reply({ ok: false, why: 'no change ' + JSON.stringify(ref) + ' in this visit\'s record -- {"do":"changes"} lists them' });
+          else if (e.undone) reply({ ok: false, why: e.id + ' was put back already (' + e.undone + ')' });
+          else {
+            const inv = undo.inverse(e);
+            if (!inv.ok) reply({ ok: false, why: e.id + ' (' + e.what + ') is not put back by a command: ' + (e.undo && e.undo.kind === 'hint' ? e.undo.text : inv.why), byHand: e.undo && e.undo.kind === 'hint' ? e.undo.text : undefined });
+            else if (!grantShell) reply({ ok: false, why: 'putting it back runs a command on the host, and this visit was not granted that -- ask: {"do":"access","shell":1,"why":"..."}', needs: 'shell' });
+            else if (cmd.dry) reply({ ok: true, dry: true, id: e.id, what: e.what, cmd: inv.cmd, risky: inv.risky, note: inv.note });
+            else {
+              const since = Date.parse(e.at) || 0;
+              const asked = readInbox().some((m) => (Number(m.ts) || 0) >= since && new RegExp('\\bundo\\s+(?:' + e.id + '\\b|all\\b|everything\\b)', 'i').test(String(m.text || '')));
+              let a = null;
+              if (!asked) a = await askRoom('↩ **May I put this back?** ' + e.id + ': ' + e.md + (inv.risky && inv.note ? ' — it ' + inv.note : '') + (cmd.why ? ' ' + String(cmd.why).slice(0, 200) : ''), { ms: Number(cmd.timeout) || 60000, standing: !inv.risky });
+              if (!asked && a.verdict !== 'approved') reply({ ok: false, why: 'the room did not say yes -- nothing was put back', verdict: a.verdict, replies: a.replies });
+              else {
+                if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus('Putting back ' + e.id + ': ' + e.what.slice(0, 60));
+                const x = await runExec(inv.cmd, 60000);
+                if (x.transport) reply({ ok: false, why: x.why });
+                else if (!x.ok) reply({ ok: false, why: 'it could not be put back: ' + (String(x.output || '').trim().split(/\r?\n/).slice(-3).join(' ').slice(0, 300) || 'the command failed (' + x.code + ')'), code: x.code });
+                else {
+                  e.undone = new Date().toISOString(); saveChanges();
+                  roomNote('↩ Put back **' + e.id + '**: ' + e.md + '.');
+                  reply({ ok: true, id: e.id, undone: e.what, asked: asked || undefined });
+                }
+              }
+            }
+          }
         } else if (cmd.do === 'fetch' || cmd.do === 'send' || cmd.do === 'camera' || cmd.do === 'audio') {
           // FILES AND CAPTURES (core/desk.js, through exec): the visit's shell consent covers them, the room hears
           // each one, and a photo or a recording is asked for every time -- a yes only, never silence.
@@ -2794,6 +2885,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const lk = await doLook(Object.assign({ settle: 300 }, cmd.look));
         out = Object.assign({}, out, { look: lk });
       }
+      // ...AND WHAT IT CHANGED goes in the visit's record, with how to put it back (core/undo.js) -- every step,
+      // a plan's included: a move inside a plan is a move
+      await noteChange(cmd, out);
       return out;
     }
 
@@ -3075,6 +3169,13 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const h = MS.hint();
         if (h && !r.hint) r.hint = h;
         if (atRec) saveMission();
+      }
+      // ...AND, ONCE, WHAT THE FINISHED TASK CHANGED (the finish said it to the room): what the driver may be asked to undo
+      if (changesSaid && r && typeof r === 'object') {
+        changesSaid = false;
+        const tc = taskChanges();
+        if (tc.length) r.changes = { n: tc.length, list: tc.slice(0, 12).map((x) => x.id + ' ' + x.what + (x.undo && x.undo.kind === 'exec' ? '' : x.reversible ? ' (by hand)' : ' (cannot be put back)')),
+                                     hint: 'the room was told what changed; if they ask, {"do":"undo","id":"c1"} puts one back' };
       }
       // ...AND SO DOES A BUDGET NEARLY SPENT, once per task (core/budget.js): time to wrap up, or to ask now
       if (r && typeof r === 'object') {

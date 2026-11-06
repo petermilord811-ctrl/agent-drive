@@ -104,6 +104,10 @@ const V = {
   terminal:    { f: ['open', 'input', 'keys', 'signal', 'close', 'wait', 'until'], need: (c) => (c.open || c.input != null || nonEmpty(c.keys) || c.signal || c.close) ? '' : 'terminal needs something to do: input:"a line", keys:"raw keys", signal:1 (Ctrl+C), open:1 or close:1', what: 'the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent)' },
   access:      { f: ['shell', 'control', 'terminal'], need: (c) => (c.shell || c.control || c.terminal) ? '' : 'access needs what to ask for: shell:1 (run commands), terminal:1 (the Terminal panel) and/or control:1 (keyboard and mouse), and why', what: 'ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow' },
   exec:        { f: ['cmd', 'text'], need: (c) => nonEmpty(c.cmd != null ? c.cmd : c.text) ? '' : 'exec needs cmd: the command line to run', what: 'run one command on the host (needs --shell)' },
+  // ---- what the visit changed, and putting it back (core/undo.js)
+  changes:     { f: ['all'], what: 'what this task changed on the machine (all:1 -- this visit), each with whether and how it can be put back' },
+  undo:        { f: ['id', 'dry'], need: (c) => nonEmpty(c.id) ? '' : 'undo needs id: a change from `changes` (c3), or "last"', what: 'put one change back: a command after the room\'s yes (or because they asked: "undo c3"); a change put back by hand comes back as the how; dry:1 shows the command only' },
+  changed:     { f: ['what', 'undo'], need: (c) => nonEmpty(c.what) ? '' : 'changed needs what: the change you made, in a few words', what: 'record a change you made by clicking (a setting, a toggle) and how it is put back -- it joins the task\'s record' },
   // ---- files and captures, through exec (core/desk.js) -- they need the shell consent; the room hears each one
   fetch:       { f: ['path', 'out'], need: (c) => !nonEmpty(c.path) ? 'fetch needs path: the file on the machine' : !nonEmpty(c.out) ? 'fetch needs out: where to save it here' : '', what: 'copy a file FROM the machine to here, in chunks (needs shell; said in the room)' },
   send:        { f: ['file', 'to', 'overwrite'], need: (c) => !nonEmpty(c.file) ? 'send needs file: the file here to put on the machine' : !nonEmpty(c.to) ? 'send needs to: the path (or folder) on the machine' : '', what: 'put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room' },
@@ -132,6 +136,8 @@ const FIELD_ALIAS = {
   'chat-img': { path: 'file', image: 'file', img: 'file' },
   exec:      { command: 'cmd', line: 'cmd' },
   scroll:    { notches: 'n', delta: 'n', amount: 'n' },
+  undo:      { change: 'id', ref: 'id', which: 'id' },
+  changed:   { text: 'what', change: 'what', revert: 'undo', back: 'undo' },
   fetch:     { from: 'path', source: 'path', file: 'path', dest: 'out', save: 'out', to: 'out' },
   send:      { from: 'file', source: 'file', path: 'to', dest: 'to' },
   camera:    { file: 'out', path: 'out', to: 'out', camera: 'device' },

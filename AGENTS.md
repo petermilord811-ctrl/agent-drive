@@ -55,6 +55,11 @@ file explains them.
   are refused and the room is asked whether you may go on: `budget {more:1, why}` hears their answer. Don't
   route around it — an agent that has used its budget has usually lost the thread.
 - **Ask before taking over** from a person using the machine. Release `lock` the moment you're done.
+- **Say what you changed, and put it back when asked.** The serve records what each command changed on the
+  machine (core/undo.js) and tells the room at the finish. Record what you change by CLICKING yourself —
+  `changed {what, undo}` ("turned on Dark mode", "Settings > Colors > Light"). When they ask ("undo c3", "put it
+  back"), `undo {id}` does it — their words are the yes; otherwise it asks — and a change put back by hand comes
+  back as the how. `changes` lists them.
 - **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
   but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
   (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).
