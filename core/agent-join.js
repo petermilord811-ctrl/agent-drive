@@ -1261,7 +1261,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       else if (o.type === 'term-error') { term.error = String(o.message || ''); }
       else if (o.type === 'term-busy') { term.busy = !!Number(o.busy); }
     };
-    const attachTaps = (w) => { w.on(onChat); w.on(onNote); w.on(onTerm); };
+    // A PERSON TOOK THE KEYBOARD: while the agent types, the watchers see "Claude (agent) is auto-typing" (typeAs);
+    // one who presses a key then sends `atstop` -- exactly as they would to a colleague's auto-typer -- and the run
+    // gives way at its next key.
+    let atStopAt = 0;
+    const onAtStop = (o) => { if (o && o.type === 'spot' && o.k === 'atstop') atStopAt = Date.now(); };
+    const attachTaps = (w) => { w.on(onChat); w.on(onNote); w.on(onTerm); w.on(onAtStop); };
     attachTaps(ws);
     // The size, for 5.5 KB rather than for the whole screen: `hold` keeps the identity of a picture the
     // host is holding and throws the bytes away. Nothing here needed the pixels, and it used to pay for
@@ -1398,17 +1403,44 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
 
     // ---- TYPING: like a person unless a command (or --type-instant) says otherwise -- keys, and open's address ----
+    // ...AND THE WATCHERS ARE TOLD, as the viewer's own Type window tells them: `spot {k:'at', tot, done}` every two
+    // seconds while a run lasts -- their page shows a card "<name> is auto-typing" with its progress, and the relay
+    // stamps the name, so it reads "Claude (agent)" -- and `{k:'at', off:1}` when it ends, however it ends. Typing
+    // that took a person's time used to happen with nothing on their screen but the letters. A run gives way the
+    // same way the Type window's does: a person who presses a key sends `atstop` (onAtStop) and it stops.
+    const AT_CAST_MS = 2000;
+    const castTyping = (tot, done, off) => { try { ws.send(off ? { type: 'spot', k: 'at', off: 1 } : { type: 'spot', k: 'at', tot, done }); } catch (_) {} };
     const typeAs = async (text, c, dflt) => {
       const off = c.human === false || c.human === 0 || c.human === '0' || c.human === 'false';
       const human = c.human == null || c.human === '' ? TYPE_HUMAN : !off;
       const speed = ['slow', 'normal', 'fast'].includes(c.speed) ? c.speed : dflt;
-      if (!human && !c.speed) { await typeText(text); return { ok: true, typed: text.length, human: false }; }
+      const since = Date.now();
+      if (!human && !c.speed) {
+        // instant: a card only for a block long enough to be watched (a short word would only flash one)
+        const long = text.length >= 40;
+        if (long) castTyping(text.length, 0);
+        try { await typeText(text); } finally { if (long) castTyping(0, 0, true); }
+        return { ok: true, typed: text.length, human: false };
+      }
       const at = require('./autotype.js');
       const plan = at.atPlan(text, { human, speed });
-      const since = Date.now();
-      const r = await at.run(plan, (m) => ws.send(m), { stop: () => !!stopped || !!(interrupt && (Number(interrupt.ts) || 0) >= since) });
-      return r.ok ? { ok: true, typed: text.length, ms: Date.now() - since, human, speed }
-                  : { ok: false, why: stopped ? stopped : 'the operator spoke -- stopped after ' + r.at + ' of ' + r.of + ' keys', stoppedAt: { at: r.at, of: r.of, interrupted: !stopped } };
+      let done = 0, lastCast = Date.now(), r;
+      castTyping(plan.total, 0);
+      try {
+        r = await at.run(plan, (m) => ws.send(m), {
+          stop: () => !!stopped || !!(interrupt && (Number(interrupt.ts) || 0) >= since) || atStopAt >= since,
+          onStep: (i, s) => {
+            done = Math.min(plan.total, Math.max(done, Number(s.src) || 0));
+            if (Date.now() - lastCast >= AT_CAST_MS) { lastCast = Date.now(); castTyping(plan.total, done); }
+          },
+        });
+      } finally { castTyping(0, 0, true); }
+      if (r.ok) return { ok: true, typed: text.length, ms: Date.now() - since, human, speed };
+      const took = atStopAt >= since;
+      const why = stopped ? stopped
+                : took ? 'a person took the keyboard (a viewer pressed a key) -- stopped after ' + done + ' of ' + plan.total + ' characters'
+                : 'the operator spoke -- stopped after ' + r.at + ' of ' + r.of + ' keys';
+      return { ok: false, why, stoppedAt: { at: r.at, of: r.of, chars: done, interrupted: !stopped, tookKeyboard: took || undefined } };
     };
 
     // ---- the host's own shell, for windows / focus / launch / controls (core/desk.js) ----------------------------

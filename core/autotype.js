@@ -752,11 +752,14 @@ function atStepParts(step, oldWin) {
 // `hold` while the next step's delay already runs -- keys roll over as a hand's do, and a run's length is the sum
 // of the delays, as the plan says. A key is never pressed twice without a release between (the same character
 // again releases the first), and a chord (a Shift with its key) goes whole. `stop()` is asked before every step;
-// a stopped run releases what it holds. send(message) puts one {type:'key',...} on the wire.
+// a stopped run releases what it holds. send(message) puts one {type:'key',...} on the wire. `onStep(i, step)`
+// hears each step once it has gone out -- step.src is the characters of the text reached so far, which is what
+// the watchers' "is auto-typing" card counts.
 async function run(plan, send, opts) {
   const o = opts || {};
   const sleep = o.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
   const stop = typeof o.stop === 'function' ? o.stop : () => false;
+  const onStep = typeof o.onStep === 'function' ? o.onStep : null;
   const held = new Map();   // key identity -> { up, timer, done }
   const idOf = (m) => (m.code || '') + '|' + (m.text == null ? '' : m.text);
   const release = (id) => { const h = held.get(id); if (!h) return; held.delete(id); clearTimeout(h.timer); for (const m of h.up) send(m); h.done(); };
@@ -766,15 +769,19 @@ async function run(plan, send, opts) {
     for (; i < steps.length; i++) {
       if (stop()) return { ok: false, stopped: true, at: i, of: steps.length };
       const s = steps[i];
-      if (s.d > 0) await sleep(s.d);
-      if (s.t === 'wait') continue;
-      const p = atStepParts(s, false);
-      if (!p.down.length) continue;
-      const id = idOf(p.down[p.down.length - 1]);
-      if (held.has(id)) release(id);
-      if (p.chord || !(s.hold > 0)) { for (const m of p.down.concat(p.up)) send(m); continue; }
-      for (const m of p.down) send(m);
-      await new Promise((resolve) => { held.set(id, { up: p.up, done: () => {}, timer: setTimeout(() => release(id), s.hold) }); resolve(); });
+      try {
+        if (s.d > 0) await sleep(s.d);
+        if (s.t === 'wait') continue;
+        const p = atStepParts(s, false);
+        if (!p.down.length) continue;
+        const id = idOf(p.down[p.down.length - 1]);
+        if (held.has(id)) release(id);
+        if (p.chord || !(s.hold > 0)) { for (const m of p.down.concat(p.up)) send(m); continue; }
+        for (const m of p.down) send(m);
+        await new Promise((resolve) => { held.set(id, { up: p.up, done: () => {}, timer: setTimeout(() => release(id), s.hold) }); resolve(); });
+      } finally {
+        if (onStep) { try { onStep(i, s); } catch (_) {} }
+      }
     }
     return { ok: true, steps: steps.length, ms: atPlanMs(plan) };
   } finally {
