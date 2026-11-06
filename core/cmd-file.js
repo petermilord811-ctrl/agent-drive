@@ -33,7 +33,10 @@ const budgetOf = (c) => {
   if (c.do === 'chat-wait') return (base || 120000) + 8000;
   if (c.do === 'wait')      return (base || 30000) + 8000;
   if (c.do === 'plan' || c.do === 'strokes' || c.do === 'stroke') return Math.max(130000, base + 8000);
-  if (c.do === 'mission') return Math.max(35000, base + 15000);   // an `achieve` polls its check for up to `timeout`
+  // an `achieve` polls its check for up to `timeout`; a plan with a preview, an achieve at a checkpoint and `ask` wait
+  // for the ROOM too (default 60 s) -- an achieve at a checkpoint may do both
+  if (c.do === 'mission') return (c.op === 'plan' && c.preview) || c.op === 'ask' || c.op === 'achieve' ? 2 * Math.min(300000, base || 60000) + 15000 : Math.max(35000, base + 15000);
+  if (c.do === 'budget') return Math.min(300000, base || 60000) + 15000;   // asking the room for more waits for them
   if (c.do === 'captcha') return (base || 600000) + 8000;          // waits for a PERSON to solve it (10 min default)
   if (c.do === 'access') return 200000;                            // a new Allow card: the person has ~2.5 min to press it
   if (c.do === 'exec') return Math.min(120000, base || 30000) + 15000;
