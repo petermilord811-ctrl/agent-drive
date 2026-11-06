@@ -22,6 +22,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   not a replay — is saved as a draft skill in `skills/_drafts/<name>/` (gitignored), and the `finish` answer says
   so with the typed text it stores. `node drive/replay.js promote <name> --yes` puts a reviewed draft in the
   library; `--no-drafts` turns drafting off. A replay marks its plan `replay:1`.
+- **Scheduled runs** (`drive/schedule.js`, [docs/reference/schedules.md](docs/reference/schedules.md)): a saved recipe
+  or a command line runs at a time of day (on chosen days), every N minutes, hours, days or weeks, or once — by a
+  runner you start (`node drive/schedule.js run`). Every visit still needs Allow unless the owner pre-authorised
+  the agent; a run nobody lets in is recorded and never retried in a loop; missed fires are skipped, not caught up.
 
 ## 1.0.0 — 2026-11-06
 

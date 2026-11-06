@@ -70,5 +70,7 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
 - **Self-updating skills.** ✅ 2026-11-06: a planned job that finishes proven, that no skill did and that was not a
   replay, is drafted into `skills/_drafts/<name>/` (gitignored); `node drive/replay.js promote <name> --yes` adds a
   reviewed draft to the library -- a recipe stores typed text, so a person reads it first.
-- **Scheduled / triggered runs.** A task that fires on a schedule or an event (pairs with the relay's
+- **Scheduled / triggered runs.** ✅ 2026-11-06 (scheduled): `drive/schedule.js` runs a saved recipe or a command line
+  at a time, every N, or once ([schedules](../reference/schedules.md)); each visit still needs Allow. Triggers: not yet.
+  The original note: A task that fires on a schedule or an event (pairs with the relay's
   health/alert signals).

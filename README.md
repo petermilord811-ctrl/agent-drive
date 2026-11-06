@@ -22,7 +22,7 @@ anyone can add — and every contributor's improvement reaches everyone through 
 - **Long jobs stop and ask** — every task has a **budget** of steps and minutes; a plan can be **previewed** to the
   room before it starts and **checkpointed** after each milestone; nothing acts until they say yes.
 - **The library grows itself** — a job finished with every milestone proven is saved as a **draft skill**, which a
-  person reviews and promotes.
+  person reviews and promotes; a saved job can run **on a schedule** (`drive/schedule.js`).
 - **Every command is checked before it runs** against one verb table (`node kit.js verbs`); the docs' table is
   generated from it.
 - **An MCP server** exposes it all as tools, pictures inline: `claude mcp add agent-drive -- node mcp/server.js`.
