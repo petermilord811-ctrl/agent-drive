@@ -1110,7 +1110,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const changes = [];
     const changesFile = path.join(dir, 'changes.json');
     let changeTask = 0, changesSaid = false, lastWindow = '';
-    const taskChanges = () => changes.filter((e) => e.task === changeTask && !e.undone);
+    // what the finish says: the machine's state -- files, services, settings, what the driver declared. Typed text and
+    // apps started stay in the record (`changes`) but not in the summary: typing was usually the job itself.
+    const taskChanges = () => changes.filter((e) => e.task === changeTask && !e.undone && e.kind !== 'typed' && e.kind !== 'launched');
     const saveChanges = () => { try { fs.writeFileSync(changesFile, JSON.stringify(changes, null, 1)); } catch (_) {} };
     const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; changeTask++; };
     const missionFile = path.join(dir, 'mission.json');
@@ -1594,8 +1596,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (!cmd || !r || r.ok !== true || typeof cmd.do !== 'string') return;
         if ((cmd.do === 'focus' || cmd.do === 'launch') && r.window && r.window.title) lastWindow = String(r.window.title).slice(0, 80);
         if (!['exec', 'terminal', 'keys', 'launch', 'send'].includes(cmd.do)) return;
-        let os = deskOsName;
-        if (!os && grantShell && (cmd.do === 'exec' || cmd.do === 'terminal' || cmd.do === 'send')) { const o = await deskOs(); if (o.ok) os = o.os; }
+        // the host's system when a desk verb already asked it; otherwise the record reads it from the command itself --
+        // never an extra command on the host just to keep the record (a send has asked it already)
+        const os = deskOsName;
         let c = cmd;
         const to = cmd.do === 'send' ? String(r.to || '') : '';
         if (cmd.do === 'send') {

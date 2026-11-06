@@ -284,8 +284,9 @@ Every step that changes the machine — `exec` and a `terminal` line (read by [c
 moved, renamed, copied, made or deleted; services; registry values; processes ended; files written), `keys` (only how
 many characters and into which window — never the text), `launch`, a file `send` put there, and what the driver
 declares with `changed` — goes into the visit's record (`<serve-dir>/changes.json`), each with how it is put back: a
-command, by hand, or not at all (and why). **The finish of a task tells the room** what it changed and which of it
-can be put back, and the finishing answer carries `changes {n, list}`.
+command, by hand, or not at all (and why). **The finish of a task tells the room** what it changed on the machine —
+files, services, settings, what was declared; typed text and apps started stay in the record but not in that line,
+as typing is usually the job itself — and which of it can be put back; the finishing answer carries `changes {n, list}`.
 
 | verb | what it does |
 |---|---|
