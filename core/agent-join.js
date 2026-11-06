@@ -139,6 +139,7 @@ const consent = require('./consent.js');   // what a reply to `confirm` means: y
 const mission = require('./mission.js');   // the job's big plan: milestones, proof, replanning out loud; pure, tested
 const verbs = require('./verbs.js');       // what each command may say, checked before it runs; pure, tested
 const budget = require('./budget.js');     // a task's steps and minutes, then stop and ask; pure, tested
+const intake = require('./intake.js');     // a job asked for in plain words -> the skill that does it; tested
 const lookv = require('../vision/look.js');   // a picture sized for reading, and the way back to screen pixels; pure, tested
 
 // ---- the command line ---------------------------------------------------------------------------
@@ -987,6 +988,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (r && !r.mine && !r.system && r.text) out.push({ id: r.id || '', name: r.name || '', text: String(r.text), ts: r.ts || 0, dm: !!r.to }); }
       return out.slice(-20);
     };
+    // the kit's skills, read once per visit for skillAsked (a new skill mid-visit is seen by the next visit)
+    let skillList = null;
+    const skillAsked = (text) => {
+      try {
+        if (!skillList) skillList = intake.skills();
+        const p = intake.parse(String(text || ''), skillList);
+        return p && p.skill ? { slug: p.skill.slug, name: p.skill.name, run: p.skill.run || undefined, readme: 'skills/' + p.skill.slug + '/README.md' } : null;
+      } catch (_) { return null; }
+    };
     const onChat = (o) => {
       if (!o || o.type !== 'chat') return;
       const rec = { ts: Number(o.ts) || Date.now(), id: String(o.id || ''), from: String(o.from || ''), name: String(o.name || ''),
@@ -995,6 +1005,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (!rec.mine && !rec.system && rec.text) {
         if (rec.id) unreadIds.push(rec.id);
         lastOp = { id: rec.id, name: rec.name, text: rec.text, ts: rec.ts, dm: !!rec.to };
+        // A NEW JOB IN PLAIN WORDS ("now do my sticky notes")? The skill that already does it rides the inbox, so the
+        // driver reads it before working the job out from nothing (core/intake.js; a "yes" or a "thanks" names none)
+        const sk = skillAsked(rec.text);
+        if (sk) lastOp.skill = sk;
         interrupt = lastOp;   // a running plan / command loop breaks so the driver can read + answer this
       }
       // The agent's OWN lines are logged where they are sent (with what they were: a finish report, a picture, a

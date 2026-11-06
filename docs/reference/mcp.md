@@ -61,6 +61,7 @@ unless someone presses Allow on it. The code goes out as an MCP progress notific
 | `look {rect?, max?, settle?, out?}` | Returns `[text: the answer, image: the PNG]`. `out` is optional. Click what you see in **its** pixels with `click {lx, ly}`. |
 | any acting verb with `look:{}` | Acts, then returns the picture of the result in the same answer. |
 | `disconnect {text?}` | With `text`, signs off in the room (`done`); without it, leaves quietly (`quit`). Waits for the client process to exit. |
+| `intake {text}` | A job asked for in plain words ("connect 10004 and do my sticky notes") read by `core/intake.js`: `{host, skill, others, task, needs, why}` and, when it found a machine and a task, `connect` — the fields to call `connect` with (the least access the words justify). Connects to nothing; answered at once, outside the visit's queue. |
 
 - **Timing.** One visit runs at a time, and the serve takes one command at a time, so calls queue. Verbs that wait
   for a person or for the screen (`chat_wait`, `captcha`, `confirm`, `access`, `wait`, `plan`) are given their own

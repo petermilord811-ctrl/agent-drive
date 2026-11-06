@@ -61,8 +61,9 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
   serve acts on nothing until they say yes; `mission ask` asks again (core/mission.js holds the gate).
 - **Milestone checkpoints for long jobs.** ✅ 2026-11-06: `checkpoints:1` (or `checkpoint:true` on a milestone) stops
   after it and asks before going on; a no or no answer holds the job.
-- **Natural-language intake over chat.** "connect 10004 and read my sticky-note tasks" parsed into the
-  connect + skill lookup automatically.
+- **Natural-language intake over chat.** ✅ 2026-11-06: `core/intake.js` reads "connect 10004 and read my sticky-note
+  tasks" into the machine, the skill, the access and the command line (`node kit.js intake`, the MCP `intake` tool), and
+  an operator's message that names a job brings that skill with it in the inbox (`inbox.latest.skill`).
 - **Change log / undo hints.** Record what was changed (files moved, settings flipped) so a human can
   reverse it, and offer the reversal.
 - **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting

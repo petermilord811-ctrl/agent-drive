@@ -219,18 +219,37 @@ const DISCONNECT_TOOL = {
     'quietly (quit). Waits for the client to exit. Only once the operator is finished -- it hangs up on them.',
   inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'a sign-off for the room' } }, additionalProperties: false },
 };
-const TOOLS = [CONNECT_TOOL, DISCONNECT_TOOL];
+// A JOB ASKED FOR IN PLAIN WORDS (core/intake.js): "connect 10004 and do my sticky notes" -> the machine, the skill, the
+// access to ask for, and connect's own fields. Reads nothing but the kit's skills; connects to nothing.
+const INTAKE_TOOL = {
+  name: 'intake',
+  description: 'Read a job asked for in plain words ("connect 10004 and do my sticky notes") into what connect needs: the machine, ' +
+    'the task, the access to ask for -- and the skill that already does it, with its run line. Nothing is connected: call connect ' +
+    'with the `connect` fields when they are right, and read the skill before working the job out yourself.',
+  inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'the request, as the person wrote it' } }, required: ['text'], additionalProperties: false },
+};
+const intake = require(path.join(KIT, 'core', 'intake.js'));
+function intakeCall(args) {
+  const text = typeof args.text === 'string' ? args.text : '';
+  if (!text.trim()) return errResult('intake needs text: the request, as the person wrote it');
+  const r = intake.parse(text, intake.skills());
+  const out = Object.assign({}, r);
+  if (r.host && r.task) out.connect = { host: r.host, task: r.task, control: !!r.needs.control, shell: !!r.needs.shell };
+  if (r.needs.terminal) out.terminal = 'the job needs the Terminal panel: after connect, ask for it with access {terminal:true}';
+  return { content: [textBlock(out)] };
+}
+const TOOLS = [CONNECT_TOOL, DISCONNECT_TOOL, INTAKE_TOOL];
 const TOOL_VERB = new Map();   // tool name -> verb
 for (const verb of verbs.VERBS) {
   let name = String(verb).replace(/-/g, '_');
-  if (name === 'connect' || name === 'disconnect' || TOOL_VERB.has(name)) name = 'do_' + name;
+  if (name === 'connect' || name === 'disconnect' || name === 'intake' || TOOL_VERB.has(name)) name = 'do_' + name;
   TOOL_VERB.set(name, verb);
   TOOLS.push(verbTool(verb, name));
 }
 
 const INSTRUCTIONS = [
   'agent-drive drives a machine through ScreenMirror for the person who invited you. Each visit needs a person at the machine to press Allow.',
-  '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size.',
+  '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size. A request in plain words ("connect 10004 and do my sticky notes")? intake {text} reads it into connect\'s fields and finds the skill that does it.',
   '2. Every serve verb is a tool (a "-" in a verb is "_" here: chat_wait, note_add). look returns the picture inline with its scale: click what you see in ITS pixels with click {lx,ly}. Any acting verb takes look:{} to act and see in one call.',
   '3. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); remind and hint (do those first).',
   '4. Any command may carry intent (its name on the watchers\' panel), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
@@ -615,8 +634,10 @@ async function toolsCall(id, params) {
   const args = params.arguments == null ? {} : params.arguments;
   const meta = params._meta || {};
   const ctx = { id, progressToken: meta.progressToken, cancelled: false, progressN: 0 };
-  if (name !== 'connect' && name !== 'disconnect' && !TOOL_VERB.has(name)) return rpcError(id, -32602, 'Unknown tool: ' + name);
+  if (name !== 'connect' && name !== 'disconnect' && name !== 'intake' && !TOOL_VERB.has(name)) return rpcError(id, -32602, 'Unknown tool: ' + name);
   if (!args || typeof args !== 'object' || Array.isArray(args)) return reply(id, errResult('arguments is an object of the tool\'s fields'));
+  // reading a request touches no visit: it is answered at once, outside the queue of a visit's commands
+  if (name === 'intake') { try { return reply(id, intakeCall(args)); } catch (e) { return reply(id, errResult('intake failed: ' + ((e && e.message) || e))); } }
   calls.set(id, ctx);
   try {
     const r = await serial(async () => {

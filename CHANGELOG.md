@@ -26,6 +26,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   or a command line runs at a time of day (on chosen days), every N minutes, hours, days or weeks, or once — by a
   runner you start (`node drive/schedule.js run`). Every visit still needs Allow unless the owner pre-authorised
   the agent; a run nobody lets in is recorded and never retried in a loop; missed fires are skipped, not caught up.
+- **Jobs asked for in plain words** (`core/intake.js`): "connect 10004 and do my sticky notes" is read into the
+  machine, the skill that does it, the access to ask for and the command line — `node kit.js intake "…"`, and the
+  MCP server's new `intake` tool. An operator's chat message that names a job carries its skill in the inbox
+  (`inbox.latest.skill`). kit.js reads its skills catalog through the same module.
 
 ## 1.0.0 — 2026-11-06
 

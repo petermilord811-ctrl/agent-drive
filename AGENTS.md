@@ -44,6 +44,9 @@ file explains them.
 - **Replan out loud** — when the screen or the operator says the plan no longer fits: add, change, split, skip
   or fail, each with its why. The room sees the plan move, and the reason.
 - **Act on `remind` and `hint`.** When an answer in `done.json` carries either, do that before anything else.
+- **A new job in the chat may already be a skill.** When the operator's message names one, `inbox.latest.skill` says
+  which: read its README before working the job out yourself. A request in plain words before any visit —
+  "connect 10004 and do my sticky notes" — is read by `node kit.js intake "<it>"` (or the MCP `intake` tool).
 - **Say a failure plainly** — a `⚠` or `✗` status line. Never pass a miss off as done.
 - **Ask before anything hard to undo** — restart, shut down, log off, delete, overwrite, stop a service,
   sign out: `confirm`, and go ahead only on `approved`. A stop always wins.
