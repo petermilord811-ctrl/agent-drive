@@ -210,7 +210,10 @@ function needSession() {
 }
 
 function capture(name) {
-  const out = path.join(dir, name);
+  // Absolute out: the serve's cwd is often the visit folder itself. A relative
+  // `work/mcp-…/board_raw.png` then becomes visit/work/mcp-…/board_raw.png (ENOENT).
+  // Live miss 34123 MCP 2026-11-07 — relative `./work/mcp-*` broke fast.js/play.
+  const out = path.resolve(dir, name);
   const r = act({ do: 'shot', out });
   if (!r || !r.ok) throw new Error('the screenshot failed: ' + ((r && r.why) || 'no answer'));
   return eyes.decode(fs.readFileSync(out));   // a shot answers "bytes":0 even when the file is fine

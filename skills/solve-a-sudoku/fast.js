@@ -9,7 +9,7 @@ const fs = require('fs'), path = require('path'), { spawnSync } = require('child
 const { exchange } = require('../../core/cmd-file.js');
 const eyes = require('../../core/agent-eyes.js');
 
-const dir = process.argv[2] || './work';
+const dir = path.resolve(process.argv[2] || './work');
 const diff = (process.argv[3] || 'master').toLowerCase();
 const root = path.join(__dirname, '..', '..');
 const t0 = Date.now();
@@ -27,7 +27,7 @@ needSession();
 act({ do: 'status', task: 'Solve sudoku fast', step: 'Open or play' });
 
 // Cheap look: is sudoku.com already up?
-const lookOut = path.join(dir, 'fast_look.png');
+const lookOut = path.resolve(dir, 'fast_look.png');
 act({ do: 'look', out: lookOut, max: 900 });
 let opened = false;
 try {
@@ -69,9 +69,9 @@ if (play.status) {
 
 // Proof crop for chat — no long chat-wait here.
 act({ do: 'status', step: 'Proof' });
-const proofRaw = path.join(dir, 'fast_proof_raw.png');
+const proofRaw = path.resolve(dir, 'fast_proof_raw.png');
 act({ do: 'shot', out: proofRaw, quiet: 1 });
-const proofJpg = path.join(dir, 'solved-proof.jpg');
+const proofJpg = path.resolve(dir, 'solved-proof.jpg');
 spawnSync('python', ['-I', path.join(root, 'vision', 'crop.py'), proofRaw, proofJpg, '350,80,950,720', '0.45'], { encoding: 'utf8' });
 const total = (Date.now() - t0) / 1000;
 const say = '**✓ Sudoku solved (fast path)** in **' + total.toFixed(1) + ' s** (pre ' + openS.toFixed(1) + ' · play ' + playS.toFixed(1) + ')\n- Target: play ≤15 s, total ≤120 s';

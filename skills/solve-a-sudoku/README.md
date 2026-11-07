@@ -16,11 +16,22 @@ node skills/solve-a-sudoku/fast.js ./work master
 
 # Board already on screen / win screen (core routine only):
 node skills/solve-a-sudoku/sudoku.js ./work play master
+
+# MCP visit: connect answers {dir: work/mcp-…}. Pass that path (absolute is safest). If the
+# screen is not sudoku.com yet, open a NEW tab first, then play — do not invent a hand solve:
+#   open {url:"https://sudoku.com", tab:true}
+#   node skills/solve-a-sudoku/sudoku.js "<ABS_DIR>" play master
+#   shot → crop → chat-img  (play already status-fin; a second fin will not attach the picture)
 ```
 
 **Do not** hand-read 81 cells from a screenshot when `play`/`fast` can run. That was 35–65 s every board
 before glyphs; on 34123 it turned 18 s Chrome solves into 5–15 minute visits. Ceremony (mission
 `chat-wait` before `finish`, per-cell `drive.js` clicks) costs more than the solver.
+
+**MCP `out` path (34123, 2026-11-07):** the serve’s cwd is the visit folder. A relative shot
+`out` of `work/mcp-…/board_raw.png` doubled into `visit/work/mcp-…/board_raw.png` (ENOENT) and
+`fast.js` failed before play. `capture` / `fast.js` now `path.resolve` every out. Still prefer
+the absolute `dir` from connect.
 
 **Speed rules learned live (34123, 2026-11-06/07):**
 1. **Locate** with box-sep **pitch ≈55.3** when `findGrid` is wrong (Firefox banners → origin ≈500,342).

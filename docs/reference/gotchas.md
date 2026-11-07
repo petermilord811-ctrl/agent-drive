@@ -160,6 +160,10 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   visit after that: **16.6 s**, 0 mistakes. `play` now settles a few holds and re-captures before read.
 - **Proof after `play`:** `play` already `status fin:1`. A second `fin:1` will not attach a picture —
   `shot` → crop → `chat-img` (or let `fast.js` do it).
+- **MCP visit dir (34123, 2026-11-07):** connect puts the session in `work/mcp-*`. Relative shot
+  `out` paths that include that folder double under the serve’s visit cwd → ENOENT. Pass the
+  absolute `dir` from connect; `sudoku.js`/`fast.js` now resolve outs. Open sudoku in a **new**
+  tab if the board is not on screen, then `play` — proven **17.2 s** Easy board that visit.
 - **New Game on the Excellent / score panel** is a wide **white** button (~screen y **834** on 34123),
   not baseline `643+dy`. `play` scans for that white row. Difficulty menu still uses `DIFF[d]+dy`.
 - **Ads / crash:** “Play Ad”, “Loading game”, tab crash (“Restore This Tab”) — wait or F5; don’t
