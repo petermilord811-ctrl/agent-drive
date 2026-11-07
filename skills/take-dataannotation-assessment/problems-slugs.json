@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "updated": "2026-11-07",
+  "bankDir": "..",
+  "note": "bankDir is relative to agent-drive/ → workspace root problems-{slug}.md. Legacy filenames preserved (program, datascience, mechnical).",
+  "byAssessmentId": {
+    "generalist": "generalist",
+    "coding": "program",
+    "data-ml": "datascience",
+    "cybersecurity": "cybersecurity",
+    "finance": "finance",
+    "accounting": "accounting",
+    "economics": "economics",
+    "legal": "legal",
+    "medical": "medical",
+    "healthcare-ops": "healthcare-ops",
+    "engineering-mechanical": "mechnical",
+    "engineering-civil": "civil",
+    "engineering-electrical": "electrical",
+    "stem": "stem",
+    "languages": "languages",
+    "design": "design",
+    "project-based": "projects"
+  },
+  "stemByRoleHint": {
+    "Chemist": "chemistry",
+    "Physicist": "physics",
+    "Mathematician": "math",
+    "Biologist": "biology",
+    "Experimental Biologist": "biology",
+    "Drug Discovery Scientist": "chemistry",
+    "Computational Biologist": "biology"
+  },
+  "filename": "problems-{slug}.md",
+  "captureFilename": "problems-{slug}.capture.md"
+}

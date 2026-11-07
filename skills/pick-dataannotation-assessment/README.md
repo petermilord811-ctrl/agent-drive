@@ -40,8 +40,9 @@ Output JSON: `pick.role`, `pick.assessment`, `pick.category`, `alternatives[]`.
 2. Run `pick-assessment.js`; `chat` the pick + top alternatives; proceed unless operator vetoes.
 3. On Browse roles: use search box (“Search roles by title…”) with the **exact role title**.
 4. Open that card; confirm category matches `pick.category`.
-5. Start / continue into the assessment. **Stop** at the assessment UI — step 4 is not configured yet.
-6. Crop proof → achieve → ask operator before taking the real assessment.
+5. Start / continue into the assessment UI.
+6. Crop proof → achieve → hand off to [`take-dataannotation-assessment`](../take-dataannotation-assessment/README.md)
+   (capture/re-catch `problems-{slug}.md`, then answer).
 
 ## Matching rules
 

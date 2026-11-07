@@ -1,20 +1,19 @@
 ---
 name: DataAnnotation assessment workflow
-when: full DataAnnotation.tech worker path — create account → setup profile → pick assessment role → (later) take assessment; also when operator says DA workflow, full assessment, onboard, or browse roles after signup
-tags: browser, forms, dataannotation, assessment, onboarding, profile, resume, firefox, mission
+when: full DataAnnotation.tech worker path — create account → setup profile → pick assessment role → take assessment (capture problems-{type}.md, re-catch/diff, answer); also when operator says DA workflow, full assessment, onboard, or browse roles after signup
+tags: browser, forms, dataannotation, assessment, onboarding, profile, resume, problems, firefox, mission
 run: node skills/dataannotation-assessment-workflow/pick-assessment.js --resume path/to/resume.txt
 ---
 # skill: DataAnnotation assessment workflow
 
-Orchestrates the **four big platform steps** on DataAnnotation.tech. Steps 1–3 are configured
-here; step 4 (real assessment) is a stub until the operator expands it.
+Orchestrates the **four big platform steps** on DataAnnotation.tech.
 
 | Big step | Screen cue | Skill / action |
 |----------|------------|----------------|
 | **1. Create account** | `worker_signup` | [`create-dataannotation-account`](../create-dataannotation-account/README.md) |
 | **2. Setup profile** | `workers/learn-about-you` — Welcome → Availability | [`setup-dataannotation-profile`](../setup-dataannotation-profile/README.md) |
 | **3. Choose assessment** | `workers/projects` — “Browse roles” / Assessment step 2 | [`pick-dataannotation-assessment`](../pick-dataannotation-assessment/README.md) |
-| **4. Real assessment** | role assessment UI | *later — do not invent* |
+| **4. Real assessment** | role assessment / work mode | [`take-dataannotation-assessment`](../take-dataannotation-assessment/README.md) |
 
 ## Inputs the operator must give
 
@@ -35,7 +34,7 @@ Before starting (session chat or flags):
     { "t": "1 Create account", "done": "confirm_email or signed-in onboarding" },
     { "t": "2 Setup profile", "done": "Availability done; left learn-about-you / ready for projects" },
     { "t": "3 Pick assessment", "done": "Chosen role card opened / assessment started for best match" },
-    { "t": "4 Real assessment", "done": "deferred until operator expands this step" }
+    { "t": "4 Real assessment", "done": "problems-{slug}.md current; assessment submitted" }
   ]
 }
 ```
@@ -88,11 +87,15 @@ URL: `https://app.dataannotation.tech/workers/projects` (Browse roles).
 
 Details: `skills/pick-dataannotation-assessment/README.md`.
 
-## Step 4 — Real assessment
+## Step 4 — Real assessment (summary)
 
-Reserved. When the operator says to configure it, add
-`skills/take-dataannotation-assessment/` and link it here. Until then: stop after role selection
-and ask.
+1. **Capture** Bio → Requirements (pay/time; **skip No-LLMs text**) → Instructions → all
+   questions (usually 10+) into `../problems-{slug}.md` (workspace root).
+2. If that file **already exists**: capture again to `.capture.md`, run
+   `compare-problems.js`, **update** the bank when changed, then answer.
+3. **Answer** the live assessment yourself (do not skip items); submit; prove with a look.
+
+Details + template + slug map: `skills/take-dataannotation-assessment/README.md`.
 
 ## Pitfalls
 
@@ -101,9 +104,10 @@ and ask.
 - Resume must live on the **remote** host Documents before the upload picker can see it
   (`files` or `send` / shell copy — request access if needed).
 - Role pick must use `assessments.json` + resume scoring, not a gut click on the first card.
+- Never skip problem capture / re-catch on step 4; never paste No-LLMs boilerplate into the bank.
 
 ## Evidence
 
 Configured 2026-11-07 from operator workflow spec + Welcome / Browse roles screenshots
-(`learn-about-you`, `workers/projects`). Step 1 proven earlier on host 34123; steps 2–3 pending
-first live pass.
+(`learn-about-you`, `workers/projects`). Step 4 skeleton from Physician/Medical bio + requirements
++ instructions example. Step 1 proven on host 34123; steps 2–4 live pass pending.
