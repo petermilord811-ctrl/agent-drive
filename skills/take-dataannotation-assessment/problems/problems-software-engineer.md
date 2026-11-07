@@ -39,19 +39,19 @@ The newest models can vibe-code a whole feature in minutes. Your job is checking
 ## Requirements
 
 - **Pay:** Up to $150+/hour
-- **Location:** Remote
-- **Commitment:** Flexible hours
-- **Type:** Independent contractor
-- **Payouts:** Weekly
-- **Typical completion:** _pending (assessment intro)_
-- **Task window:** _pending (assessment intro)_
+- **Location / hours:** Remote, no minimum
+- **Typical completion:** People who pass usually spend **1 hour or more**. Take the time you need.
+- **Task window:** Save your answers and come back — **several days** to finish.
+- **Attempts:** **One attempt** for this assessment (additional assessments possible if you pass).
+- **Grading note:** They read your reasoning, not just answers.
+<!-- Skip No-LLMs / anti-AI boilerplate on the intro card. -->
 
 ## Instructions
 
-_pending — click Continue into the assessment_
+_Role overview captured. Assessment intro (Start assessment) reached 2026-11-07 via corrected Continue click. Full welcome/instructions + Questions still pending — do not Start without operator OK (one attempt)._
 
 ## Questions
 
-_pending — capture after entering work mode (usually 10+ steps)_
+_pending — only after operator approves entering work mode_
 
 <!-- role: Software Engineer | assessmentId: coding | category: Coding -->
