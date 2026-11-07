@@ -2,7 +2,7 @@
 name: Create a DataAnnotation account
 when: sign up a DataAnnotation.tech worker account from a CV/name — open worker_signup, fill First/Last/Email, password, Terms, hand reCAPTCHA to the operator, Create an account
 tags: browser, forms, dataannotation, signup, captcha, firefox, mission
-run: node skills/create-dataannotation-account/create-dataannotation-account.js ./work --first F --last L --email E --password P
+run: node skills/create-dataannotation-account/fast-pre-captcha.js ./work --first F --last L --email E --password P
 ---
 # skill: create a DataAnnotation worker account
 
@@ -14,12 +14,20 @@ when the operator refused the captcha.
 ## Agent workflow (use this)
 
 ```bash
-# Live visit already serving ./work:
+# Full create (includes captcha handoff):
 node skills/create-dataannotation-account/create-dataannotation-account.js ./work \
+  --first Patrick --last Mathias --email 'you@example.com' --password '…'
+
+# Timing drill / stop before captcha (MCP practice — target <60 s from open):
+node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
   --first Patrick --last Mathias --email 'you@example.com' --password '…'
 
 # Or env: DA_FIRST DA_LAST DA_EMAIL DA_PASSWORD
 ```
+
+**MCP fast path (34123, proven):** after `Continue with Email`, First name is focused → `keys human:0` +
+`Tab` for Last/Email → Enter → Escape (Firefox pw popup) → password + Tab + confirm → Terms
+`(lx:530,ly:481)` → **stop**. Do not call `captcha`. Landing CTA ≈ `(640,400)` on a 1280 look.
 
 **Do not** invent email/password — take them from the operator (session chat or flags). **Do not** click
 reCAPTCHA yourself — `captcha` then **look again**.
