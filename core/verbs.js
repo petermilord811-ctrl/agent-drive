@@ -82,7 +82,7 @@ const V = {
   ping:        { f: [], what: 'is the session alive?' },
   reconnect:   { f: [], what: 'drop the socket and dial again' },
   status:      { f: ['text', 'steps', 'at', 'tree', 'fin', 'task', 'step', 'substep', 'say', 'file', 'w', 'h', 'thought', 'next', 'conf', 'warn', 'stat', 'sub', 'subAt'], what: 'the progress panel: task/step/substep, a tree, a finish' },
-  think:       { f: ['thought', 'text', 'conf', 'next'], what: 'the panel\'s thought line' },
+  think:       { f: ['thought', 'text', 'conf', 'next'], what: 'the panel\'s thought: your reasoning, shown above the plan (conf "low" marks it unsure); `why` on any command does the same at no extra turn' },
   warn:        { f: ['text'], what: 'a caution line on the panel' },
   confirm:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'confirm needs text: what you are about to do, said to everyone', what: 'ask before something hard to undo; a no always wins' },
   captcha:     { f: ['text'], what: 'a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one' },

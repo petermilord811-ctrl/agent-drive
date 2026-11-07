@@ -1065,6 +1065,24 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // `steps` replaces the plan; `at` moves the current step. Any of them may come on its own.
     // (`over` is local only, never sent: the tool tree or flat plan in charge has FINISHED -- see retire)
     let lastDrive = { text: '', steps: null, at: null, thought: null, next: null, stat: null, sub: null, subAt: null, conf: null, warn: null, tree: null, fin: 0, say: null, over: 0 };
+    // THE THOUGHT ON THE PANEL: the agent's reason (`thought`, with its `conf` and `next` -- one unit). It comes
+    // from `think`, from a status that carries one, or -- at no extra turn -- from `why` on any command (see the
+    // command loop). It ENDS WITH ITS STEP: a declared task, step or sub-step, a flat plan's move, a mission's
+    // next milestone, a finish. Before, only a newer thought replaced it and every frame re-sent it, so the panel
+    // could show the last task's reasoning under the next one. A thought given by the very command that moves
+    // the step (status {step, why}, a mission change with its why) is the new one, and stays.
+    let cmdSeq = 0, thoughtSeq = -1, driveSends = 0, batchQuiet = false;
+    const dropThought = () => {
+      if (thoughtSeq === cmdSeq || (lastDrive.thought == null && lastDrive.next == null && lastDrive.conf == null)) return false;
+      lastDrive.thought = null; lastDrive.next = null; lastDrive.conf = null;
+      return true;
+    };
+    const setWhy = (text) => {
+      const t = String(text == null ? '' : text).trim();
+      if (!t) return false;
+      lastDrive.thought = t.slice(0, 400); lastDrive.conf = null; lastDrive.next = null; thoughtSeq = cmdSeq;
+      return true;
+    };
     // The client's own "…shall I sign off?" is the last thing the agent asked the room (set at the fin edge,
     // cleared by anything it says or does after). The panel's green (`fin`) outlives it -- a chat-wait for the
     // answer to a NEW question keeps the panel green -- so the sign-off gate in onChat keys on this instead.
@@ -1181,7 +1199,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       }
       if (m.tree) treeOut = true;
       if (lastDrive.fin) m.fin = 1;   // display-only "this task finished" (panel goes green) -- NOT a hang-up
-      atLastSend = Date.now();
+      atLastSend = Date.now(); driveSends++;
       try { ws.send(m); } catch (_) {}
     };
     // A typed word is one command per character, so the tree changes faster than anyone can read: send at
@@ -1222,7 +1240,13 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (Array.isArray(opts.steps)) lastDrive.steps = opts.steps.length ? opts.steps.slice(0, 20).map((s) => String(s == null ? '' : s).slice(0, 100)) : null;
       else if (opts.steps === null) lastDrive.steps = null;
       if (opts.at != null) lastDrive.at = Math.max(0, Number(opts.at) || 0);
-      if (opts.thought !== undefined) lastDrive.thought = opts.thought ? String(opts.thought).slice(0, 400) : null;
+      // a new thought brings its own confidence and next step, or none: the last one's belonged to the last thought
+      if (opts.thought !== undefined) {
+        lastDrive.thought = opts.thought ? String(opts.thought).slice(0, 400) : null;
+        if (opts.conf === undefined) lastDrive.conf = null;
+        if (opts.next === undefined) lastDrive.next = null;
+        thoughtSeq = cmdSeq;
+      }
       if (opts.next !== undefined) lastDrive.next = opts.next ? String(opts.next).slice(0, 120) : null;
       if (opts.stat !== undefined) lastDrive.stat = opts.stat ? String(opts.stat).replace(/[^xru!~?.]/g, '').slice(0, 20) : null;
       if (opts.sub !== undefined) lastDrive.sub = Array.isArray(opts.sub) ? opts.sub.slice(0, 8).map((s) => String(s == null ? '' : s).slice(0, 60)) : null;
@@ -1755,6 +1779,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         ran++;
         // a batch's live leaf in the action tree follows the sub-step it is on ("step 5/14: clicking (6,7)")
         if (top && atAuto() && atx(() => AT.tick(i, list.length, st), false)) atSend();
+        // ...and a sub-step's `why` is the panel's thought while it runs, as on a command of its own (a status reads
+        // its own, a think has its own words, and a quiet batch or step leaves the panel be)
+        if (!batchQuiet && !st.quiet && st.do !== 'status' && st.do !== 'think' && typeof st.why === 'string' && setWhy(st.why)) atSend();
         // LIVE PROGRESS on a long plan (the fill is the most-watched step, and it used to sit on one
         // frozen line). Throttled so it costs ~1 frame per 8 sub-steps; only on a big batch -- and never
         // while a TREE is active: the tree owns the line (the same rule as every other auto-phrase), and a
@@ -1815,6 +1842,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (d && d.task) atx(() => AT.retask(d.task));
       atx(() => AT.setPlan(MS.skeleton()));
       if (relabel) atx(() => AT.relabel(relabel.mid, relabel.t));
+      // another milestone or short step is current: the reasoning given for the one before ends (dropThought)
+      if (d && (typeof d.step === 'string' || d.step === null || typeof d.substep === 'string')) dropThought();
       if (d && (typeof d.step === 'string' || d.step === null)) atx(() => AT.mark({ step: d.step, mid: d.mid }, true, false));
       if (d && typeof d.substep === 'string') atx(() => AT.mark({ substep: d.substep }, true, false));
       if (d && (d.step || d.substep) && lastDrive.fin) lastDrive.fin = 0;
@@ -2313,9 +2342,18 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // line (it showed under the plan's current step, and in the chat report at its finish)
           if (wasAuto && (ownTree || ownPlan) && cmd.text == null) lastDrive.text = '';
           // (a status sent from INSIDE a batch is the batch's business: the batch keeps its row)
-          if (atx(() => AT.mark(cmd, autoNow, depth > 0), false) && declares && !cmd.fin) lastDrive.fin = 0;   // declaring more work lifts the green
+          const treeMoved = atx(() => AT.mark(cmd, autoNow, depth > 0), false);
+          if (treeMoved && declares && !cmd.fin) lastDrive.fin = 0;   // declaring more work lifts the green
           // a finish with no words of its own reports as the TASK, not as whatever its last action was
           if (autoNow && cmd.fin && !(typeof cmd.text === 'string' && cmd.text.trim())) { const tl = atx(() => AT.taskLabel(), ''); if (tl) lastDrive.text = tl; }
+          // THE STEP MOVED, SO ITS REASONING ENDS (see dropThought): a task, step or sub-step that really changed
+          // (re-declaring the current one is not a move), a finish, another flat plan, or a move along one
+          const norm = (a) => a.slice(0, 20).map((s) => String(s == null ? '' : s).slice(0, 100)).join('\u0001');
+          const planMoved = ownPlan && (!planOn() || norm(cmd.steps) !== norm(lastDrive.steps));
+          const atMoved = cmd.at != null && Math.max(0, Number(cmd.at) || 0) !== lastDrive.at;
+          if ((treeMoved && declares) || cmd.fin || planMoved || atMoved) dropThought();
+          // ...and a `why` on the status is its thought, as on any other command
+          if (cmd.thought === undefined && typeof cmd.why === 'string' && cmd.why.trim()) cmd = Object.assign({}, cmd, { thought: cmd.why.trim() });
           driveStatus(cmd.text, cmd);
           // A tool's tree or a flat plan just TOOK the panel: end the action tree's burst cleanly, so nothing
           // stale is live (or merged into) when it comes back. One just LEFT it: keep it as a done "Ran: …" step.
@@ -2335,7 +2373,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           if (planHint) out.hint = planHint;
           reply(out);
         } else if (cmd.do === 'think') {               // the agent's current reasoning -> the panel's thought block
-          driveStatus(null, { thought: (cmd.thought != null ? cmd.thought : cmd.text), conf: cmd.conf, next: cmd.next });
+          // a new thought replaces the last one whole (its conf and next too); {next} or {conf} alone updates just that
+          driveStatus(null, { thought: (cmd.thought != null ? cmd.thought : cmd.text != null ? cmd.text : cmd.why), conf: cmd.conf, next: cmd.next });
           reply({ ok: true });
         } else if (cmd.do === 'warn') {                // a caution line for the watchers
           driveStatus(null, { warn: cmd.text });
@@ -3004,7 +3043,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           else {
             if (vp.fixed.length) noteFixed(vp.fixed);
             depth++;
-            const res = await runSteps(Array.isArray(vp.steps) ? vp.steps : [], depth === 1);
+            const quiet0 = batchQuiet; batchQuiet = quiet0 || !!cmd.quiet;   // a quiet batch's steps say no reasons either
+            let res;
+            try { res = await runSteps(Array.isArray(vp.steps) ? vp.steps : [], depth === 1); } finally { batchQuiet = quiet0; }
             depth--;
             reply({ ok: !res.bad, ran: res.ran, of: res.of, stoppedAt: res.bad,
                     steps: cmd.quiet ? undefined : res.done });
@@ -3227,6 +3268,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           continue;
         }
       }
+      cmdSeq++;                                      // a new command: a thought set from here on is its own (dropThought)
       // Tell the watchers what this step is, before doing it. An explicit `intent` beats the default
       // phrase; `status` sets it with no action (handled in step). Only top-level commands narrate --
       // a plan shows its own one line ("Working through N steps"), not a burst from every sub-step.
@@ -3254,6 +3296,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           retire();
           if (wasFin) newTask('');
         }
+        // THE REASON, AT NO EXTRA TURN. `why` rides on any command (core/verbs.js COMMON) and becomes the panel's
+        // thought. A separate `think` costs the driver a whole turn, and real runs never sent one: the watchers
+        // saw every action and never the reason for any of them. Not on a quiet command (quiet leaves the panel
+        // be), not on talk after a finish (that task's reasoning is over); a `think` reads its own words.
+        const sends0 = driveSends;
+        const whySet = cmd.do !== 'think' && !cmd.quiet && !(lastDrive.fin && talk) && typeof cmd.why === 'string' && setWhy(cmd.why);
         if (atAuto()) {
           // THE ACTION TREE: the command goes INTO the tree -- merged with the run it continues ("typed 11
           // characters", "pressed 16 keys: ↓←↓←…"), described, with itself as the live leaf -- and the line
@@ -3272,6 +3320,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           const ph = explicit || (suppressed ? '' : drivePhrase(cmd));
           if (ph) driveStatus(ph);
         }
+        // ...and the reason goes out now, even when the command narrates nothing of its own
+        if (whySet && driveSends === sends0 && !atSendTimer) atSend();
       }
       // a command still RUNNING is never a pause (a 60 s chat-wait is work, not the driver going quiet)
       if (atIdleTimer) { clearTimeout(atIdleTimer); atIdleTimer = 0; }
@@ -3280,6 +3330,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       // grant is live -- a frame still waiting on the throttle used to be cancelled at the clean-up.
       if (cmd.do === 'done' || cmd.do === 'quit') {
         if (atAuto()) atx(() => { AT.mark({ fin: 1 }, true); lastDrive.text = AT.line(); });
+        dropThought();                                 // the visit's reasoning ends with it
         if (atSendTimer) { clearTimeout(atSendTimer); atSendTimer = 0; }
         try { sendDrive(); } catch (_) {}
       }

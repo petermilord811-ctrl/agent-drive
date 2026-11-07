@@ -59,6 +59,9 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   temp, up to 16 MB), a registry value, a startup type, a mode or owner, an ACL — is kept or read first, so `undo` puts
   those back too, refusing when the thing changed again since; the copies go when the visit ends. A change a later
   one made moot is marked `gone` and is not offered back.
+- `why:"…"` on any command (or batch step) is the panel's thought — the reason, shown above the plan, at no
+  extra turn. A thought now ends with its step (a declared task, step or sub-step, a plan's move, a finish),
+  and a new one replaces the last one's `conf` and `next` too.
 
 ## 1.0.0 — 2026-11-06
 

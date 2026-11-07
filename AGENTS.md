@@ -19,6 +19,8 @@ file explains them.
    (A one-step task: `chat {text:"▶ **Starting:** <task>"}` + `status {task:"<task>"}`.)
 3. **Work milestone by milestone:** `mission.js step "<short step>"` BEFORE the step's first action, and give
    every batch an `intent:"…"` — an unnamed batch reads "Ran a batch of N steps", which tells a watcher nothing.
+   Where a watcher could not guess the reason for a command, add `why:"…"` to it: the panel shows it as your
+   thinking, at no extra turn.
 4. **Between steps:** read `chat.json`. When they write, answer IN SESSION CHAT — `seen`, `typing`, `chat`.
 5. **Achieve with proof:** when the done-when holds, `mission.js achieve` — its check must hold on a fresh
    picture, or `--file` gives a cropped picture of it. The next milestone starts by itself. Check by the app's
@@ -409,6 +411,21 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
     then — a `status {text}` or an `intent` reaches screen readers but no row — so put a live line in the
     tree itself (a leaf under the `doing` row) and re-send it; tag a raw command `quiet:1` to keep it out of
     any panel. Declaring a step (`status {step}`) takes the panel back to the action tree.
+  - **Show WHY, not only what: `why:"…"` on the command.** The tree shows every action; it cannot show the
+    reason for one, and a watcher who sees a click they did not expect cannot tell a plan from a mistake. Any
+    command (or batch step) may carry a one-clause reason, and the panel shows it ABOVE the tree as your current
+    thinking — in the same call, so it costs no turn (a separate `think` costs a whole one, and went unsent).
+    Give one where the reason is not obvious from the screen: a choice between options, a retry, a workaround,
+    anything that looks wrong from outside — not on every keystroke:
+
+    ```
+    click {lx:412, ly:96, intent:"Browse this PC", why:"the recent list still shows the report's old name"}
+    ```
+
+    A thought lasts until the next one, or until a task, step or sub-step is declared, a flat plan moves, or the
+    task finishes — the panel never shows the last step's reasoning under the next. `think {thought, conf, next}`
+    says more when it matters: `conf:"low"` marks it **unsure** on the panel (an invitation to steer), and `next`
+    shows what you will do after it.
 - **A follow-up is a step, not a new panel.** When they ask for something after a task finished — a task
   or a question — re-send the SAME tree with a new step for it (`doing`), or change the step a Steer
   ("Please change: …") is about; do it; then finish again (`fin:1`, a line that answers it). Only "New
