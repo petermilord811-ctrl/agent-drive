@@ -22,6 +22,7 @@
     "test": "node tests/run.js",
     "check": "node kit.js check",
     "kit": "node kit.js",
-    "mcp": "node mcp/server.js"
+    "mcp": "node mcp/server.js",
+    "install-cursor-plugin": "node scripts/install-cursor-plugin.js"
   }
 }

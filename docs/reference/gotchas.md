@@ -206,3 +206,8 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   handoff only if they refuse agent solve or the challenge is stuck.
 - **Agent host on Windows PowerShell mangles `$…` inside remote `exec` strings.** Put the remote bash in a
   local file and send it as base64 (`echo … | base64 -d | bash`), or avoid shell variables in one-liners.
+
+## Cursor plugin logo (ScreenMirror mark)
+- **Local plugin `logo` must be a relative path** (`assets/logo.png`). A `data:` URI or `https://` URL is dropped for `~/.cursor/plugins/local` installs � Customize shows the cube instead of ScreenMirror.
+- **Fix / other machines:** `node scripts/install-cursor-plugin.js` then Reload Window. `--check` verifies the logo path and MCP server path.
+- The MCP row may still show Cursor's plug glyph for local plugins; that is separate from the plugin header icon.

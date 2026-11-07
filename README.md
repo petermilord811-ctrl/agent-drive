@@ -57,6 +57,16 @@ node drive/drive.js ./work '{"do":"click","lx":490,"ly":305}'       # act, in th
 ```
 
 Or give an MCP client the whole kit as tools — see [docs/reference/mcp.md](docs/reference/mcp.md).
+
+**Cursor (ScreenMirror plugin icon on this machine and any other):** after `.env` is set,
+
+```bash
+node scripts/install-cursor-plugin.js   # then Developer: Reload Window
+```
+
+Always use that script (or keep `logo` as the relative path `assets/logo.png`). A `data:` / `https://` logo on a
+local plugin is ignored and shows the cube again.
+
 An agent should start at **[AGENTS.md](AGENTS.md)**: the loop, the rules, where everything is.
 
 ## The map

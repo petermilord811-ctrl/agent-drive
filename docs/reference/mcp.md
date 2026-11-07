@@ -33,19 +33,26 @@ Its icon is ScreenMirror's mark: the server sends `mcp/icon-32.png` and `mcp/ico
 server icons shows it instead of its generic one; not every client draws them yet, and one that kept the server's
 first answer shows it once the server is restarted.
 
-### Cursor (plugin — branded icon in Customize and chat)
+### Cursor (plugin — ScreenMirror mark)
 
-Cursor's MCP list / chat icons come from the **plugin logo**, not from `serverInfo.icons`. This repo is a Cursor
-plugin (`.cursor-plugin/plugin.json`, root `mcp.json`, `assets/logo.png`).
+Cursor draws the **plugin** icon from the plugin logo, not from `serverInfo.icons`.
 
-1. Uninstall any local copy of **screenmirror-agent-drive** (Customize → plugin → Uninstall).
-2. Install from GitHub so the logo is an `https://raw.githubusercontent.com/…` URL (a `~/.cursor/plugins/local`
-   copy only gets a `file://` logo; Cursor can show that on the plugin header but not on the MCP row / chat).
-   - **Marketplace:** [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish) with
-     `https://github.com/petermilord811-ctrl/agent-drive`, then Install from Customize.
-   - **Team marketplace:** Dashboard → Plugins & MCPs → Import from Repo → same URL.
-3. Configure plugin variables **SM_JOIN_KEY** and **SM_RELAY** (Customize → plugin → Configure).
-4. Reload the window. The plugin header and the **agent-drive** MCP card should both show ScreenMirror's mark.
+**On every machine (local, private — no Marketplace publish):**
+
+```bash
+cp .env.example .env   # once: set SM_JOIN_KEY and SM_RELAY
+node scripts/install-cursor-plugin.js
+# then: Developer: Reload Window
+node scripts/install-cursor-plugin.js --check
+```
+
+That installs `~/.cursor/plugins/local/screenmirror-agent-drive` with `logo: "assets/logo.png"`. **Do not** put a
+`data:` URI or `https://…` URL in the local plugin's `logo` field — Cursor drops those for local plugins and you
+get the generic cube. A relative path under the plugin folder is the only reliable local logo.
+
+The **MCP row / chat** plug glyph is a separate Cursor limit for local plugins (`file://` logos are not fetched for
+MCP icons). The **plugin** header still shows ScreenMirror. Team marketplace install (not public Marketplace) is
+what makes the MCP row use the same mark; see the install script's comments and plan notes if you need that later.
 
 ## What it needs
 
