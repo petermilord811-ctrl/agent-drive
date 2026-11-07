@@ -186,8 +186,11 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **Roles UI clicks (34123, 2026-11-07):** never guess `lx/ly`. SE `Continue` guessed ~`y=375`
   missed; real mid **`834,312`** (~60px low) — serve still `ok`. Use
   `locate-click.py continue` on the current look (`CLICK.md`). `find` often fails on Continue and
-  can hit the **search box** title — click the **card body** below search. Bio loop: no Start
-  assessment (one attempt). Sidebar overview pay wins over grid pay when they differ.
+  can hit the **search box** title — click the **card body** below search.
+- **Problem bank fetch (operator 2026-11-07):** **verbatim** text only (no summaries — they poison
+  re-catch diffs). Save **both** bio pages (overview + post-Continue intro; skip only No-LLMs line).
+  After Start assessment, loop **all** steps; for answer-dependent UI, press each radio/checkbox and
+  save each case; scroll clipped content / attach images; **never Submit** while fetching.
 - **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:

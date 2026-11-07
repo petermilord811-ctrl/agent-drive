@@ -43,15 +43,15 @@ Full path = **4 big steps**. Orchestrator:
 ## Step 4 — take assessment / problem bank
 
 1. Bank only under `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md`
-   (never workspace-root `DA assessments/problems-*.md`). **103** stubs via `init-problems-db.js`.
-2. **Clicks:** never guess. Fresh `look` → `locate-click.py continue` (or `find` + click card **body**,
-   not search-box text). Live miss: Continue guessed `y≈375`, real mid **`834,312`** (~60px low);
-   serve still said `ok`. See `CLICK.md`.
-3. **Bio loop:** overview Bio + sidebar pay only — **do not** press Start assessment (one attempt).
-   Overview pay beats grid pay when they disagree (Generalist grid `$50` vs overview `$20`).
-4. Full capture: Bio → Requirements (skip No-LLMs) → Instructions → all questions; re-catch +
-   `compare-problems.js --slug …` on repeats.
-5. Answer only after bank is current; submit and prove with a look.
+   (**103** roles). Never workspace-root `DA assessments/problems-*.md`.
+2. **Verbatim only** — never summarize/paraphrase (breaks re-catch diffs). Scroll panes; attach
+   images under `problems/assets/{slug}/` if needed.
+3. **Two bio pages:** (1) role overview, (2) after Continue — What it takes / What happens next;
+   omit only the **No LLMs** line. Then **Start assessment** to fetch questions.
+4. Loop **all** sidebar steps; for radios/checkboxes that change the UI, select **each** option and
+   save a `### Case: …` block. **Never Submit** while fetching.
+5. **Clicks:** `locate-click.py` / card body — see `CLICK.md` (Continue miss was ~60px low).
+6. Re-catch: `.capture.md` + `compare-problems.js`. Answer/Submit only when truly taking the test.
 
 ## After every visit
 

@@ -1,6 +1,7 @@
 # Software Engineer — Coding Assessment
 
-- **Captured:** 2026-11-07 (bio/requirements from role card; questions pending)
+- **Captured:** 2026-11-07
+- **captureStatus:** incomplete — MUST re-capture verbatim (this draft was summarized / missing Bio page 2 + questions)
 - **Role:** Software Engineer
 - **Category:** Coding
 - **Slug:** `software-engineer`

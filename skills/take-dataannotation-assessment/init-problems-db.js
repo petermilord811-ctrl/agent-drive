@@ -79,7 +79,12 @@ for (const meta of roles) {
   const file = path.join(bankDir, fileName);
   if (fs.existsSync(file)) {
     const body = fs.readFileSync(file, 'utf8');
-    const status = /PENDING-CAPTURE|_Not captured yet/i.test(body) ? 'stub' : 'captured';
+    let status = 'captured';
+    if (/PENDING-CAPTURE|_Not captured yet/i.test(body)) status = 'stub';
+    else if (/captureStatus:\s*incomplete|MUST re-capture|bio-only|_pending — bio loop/i.test(body))
+      status = 'incomplete';
+    else if (!/^## Bio \(assessment intro\)/m.test(body) || !/^## Question /m.test(body))
+      status = 'incomplete';
     indexRows.push({
       slug: meta.slug,
       file: fileName,

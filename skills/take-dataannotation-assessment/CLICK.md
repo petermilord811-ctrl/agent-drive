@@ -29,13 +29,18 @@ python -I skills/take-dataannotation-assessment/locate-click.py <look.png> role 
 | SE card (via `find` “Software”) | serve `at` | opened role overview |
 | Generalist / Data Scientist | click **card body** ~look `(400,420–450)`, not `find` on the name | opened overview |
 
-## Also learned (bio loop)
+## Also learned (bio / fetch)
 
-- After typing a role into Search, `find "<Role>"` often matches the **search field**, not the card.
-- Grid pay can disagree with overview sidebar (Generalist: grid `$50` vs overview **`$20`**) — trust overview.
-- **Start assessment = one attempt** — bio loop never presses it.
+- After typing a role into Search, `find "<Role>"` often matches the **search field**, not the card —
+  click the **card body** below.
+- Grid pay can disagree with overview sidebar (Generalist: grid `$50` vs overview **`$20`**) — trust
+  overview **verbatim**.
+- **Two bios:** page 1 = role overview; page 2 = after Continue (What it takes / What happens next).
+  Both must be saved **verbatim** (omit only the No-LLMs line on page 2).
+- **Start assessment** is required to fetch questions; **never Submit** during fetch. Selecting
+  different radios/checkboxes can change the page — capture each case. Scroll clipped code columns.
 
 ## Bank
 
 Captures go to `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md` only
-(**103** roles = Browse **All 103**).
+(**103** roles = Browse **All 103**). Verbatim only — see skill README.

@@ -1,6 +1,7 @@
 # Data Scientist — Data & ML Assessment
 
-- **Captured:** 2026-11-07 (bio/requirements from role overview; questions pending)
+- **Captured:** 2026-11-07
+- **captureStatus:** incomplete — MUST re-capture verbatim (summarized / Bio-1-only; missing Bio 2 + questions)
 - **Role:** Data Scientist
 - **Category:** Data & ML
 - **Slug:** `data-scientist`

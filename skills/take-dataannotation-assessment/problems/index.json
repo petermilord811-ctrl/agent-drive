@@ -7,7 +7,7 @@
     {
       "slug": "generalist",
       "file": "problems-generalist.md",
-      "status": "captured",
+      "status": "incomplete",
       "role": "Generalist",
       "assessmentId": "generalist",
       "assessment": "Generalist Assessment",
@@ -16,7 +16,7 @@
     {
       "slug": "software-engineer",
       "file": "problems-software-engineer.md",
-      "status": "captured",
+      "status": "incomplete",
       "role": "Software Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
@@ -61,7 +61,7 @@
     {
       "slug": "data-scientist",
       "file": "problems-data-scientist.md",
-      "status": "captured",
+      "status": "incomplete",
       "role": "Data Scientist",
       "assessmentId": "data-ml",
       "assessment": "Data & ML Assessment",
@@ -934,19 +934,22 @@
   ],
   "byFamily": {
     "generalist": {
-      "captured": 1,
+      "captured": 0,
       "stub": 0,
-      "n": 1
+      "n": 1,
+      "incomplete": null
     },
     "coding": {
-      "captured": 1,
+      "captured": 0,
       "stub": 4,
-      "n": 5
+      "n": 5,
+      "incomplete": null
     },
     "data-ml": {
-      "captured": 1,
+      "captured": 0,
       "stub": 1,
-      "n": 2
+      "n": 2,
+      "incomplete": null
     },
     "cybersecurity": {
       "captured": 0,

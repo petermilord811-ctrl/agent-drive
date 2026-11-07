@@ -1,6 +1,7 @@
 # Generalist — Generalist Assessment
 
-- **Captured:** 2026-11-07 (bio/requirements from role overview; questions pending)
+- **Captured:** 2026-11-07
+- **captureStatus:** incomplete — MUST re-capture verbatim (summarized / Bio-1-only; missing Bio 2 + questions)
 - **Role:** Generalist
 - **Category:** General
 - **Slug:** `generalist`

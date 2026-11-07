@@ -1,64 +1,118 @@
 # {Role} — {Assessment type} assessment
 
 - **Captured:** YYYY-MM-DD
+- **captureStatus:** stub | bio-only | full
 - **Role:** {Role}
 - **Category:** {Category}
 - **Slug:** `{slug}`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI (verbatim — do not summarize)
 
 ## Bio
 
+<!-- PAGE 1: role overview — exact text from the page -->
+
 **Role:** {Role}  
 **Category:** {Category}  
-**Hiring cue:** {e.g. 63 hired recently}
+**Hiring cue:** {exact hiring line}
 
 ### Overview
 
-{Overview paragraph(s) from the role card.}
+{Exact Overview paragraphs.}
 
 ### What you’ll actually do
 
-- …
-- …
-- …
+{Exact bullets.}
 
 ### What we look for
 
-- …
-- …
-- …
+{Exact bullets.}
 
 ### Common backgrounds
 
-- …
-- …
+{Exact tags / list.}
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** {e.g. Up to $125+/hr}
-- **Typical completion:** {e.g. People who pass usually spend 1 hour 30 minutes or more. Take the time you need.}
-- **Task window:** {e.g. available for 120 hours after entering work mode}
+{Exact pay / location / commitment / type / payouts lines.}
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
+
+<!-- PAGE 2: after Continue, before Start assessment — exact text; OMIT only the No-LLMs bullet -->
+
+**Title:** {exact}  
+**Track line:** {e.g. Programming Projects assessment}
+
+### Pay / hours strip
+
+{Exact left/right strip text.}
+
+### What it takes
+
+{Exact bullets except any No-LLMs / anti-AI line.}
+
+### What happens next
+
+{Exact bullets.}
 
 ## Instructions
 
-{Welcome and onboarding instructions, timing, break/cache guidance — without No-LLMs paragraphs.}
+<!-- First step(s) inside the assessment after Start — verbatim welcome / section intros -->
 
-## Professional experience
-
-{If the assessment has a dedicated experience step, copy prompts and fields here. Otherwise omit this section.}
+{Exact text.}
 
 ## Questions
 
-## Question 1
+<!-- Loop every sidebar step. Scroll content pane fully. For answer-dependent UI, one Case subsection per option. Never Submit while capturing. -->
 
-{Full prompt, choices, model responses as shown.}
+## Question 1: {exact title}
 
-## Question 1a
+**Section:** {e.g. SECTION 1 OF 4 | Part 1: …}  
+**Step:** {e.g. Step 2 of 11}
 
-{Follow-up / explanation prompt.}
+{Exact stem / user request / scenario.}
 
-## Question 2
+### Solutions / responses (as shown)
+
+#### Solution A
+
+{Exact code or text — scroll until complete.}
+
+#### Solution B
+
+{…}
+
+#### Solution C
+
+{…}
+
+### Choices
+
+{Exact radio/checkbox labels.}
+
+### Case: {choice label selected}
+
+<!-- Only when selecting this option changes visible content -->
+
+{Exact follow-up UI text / new fields.}
+
+### Assets
+
+- optional: `assets/{slug}/q1-full.png`
+
+## Question 2: …
 
 …
+
+## Tell us about yourself
+
+### Professional Experience
+
+{Exact prompts and options.}
+
+### Programming Languages
+
+{…}
+
+### (Optional) Any other comments?
+
+{…}
