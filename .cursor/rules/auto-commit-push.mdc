@@ -5,10 +5,13 @@ alwaysApply: true
 
 # Auto-commit and push
 
-After any skill/docs/AGENTS/gotchas fix or the post-sign-off **check → analyze → learn** pass:
+After any skill/docs/AGENTS/gotchas fix or the post-sign-off **check → analyze → learn → skill** gate:
 
-1. Stage the relevant files (not `.env`, `*.local.json`, or throwaway `work/` clutter).
-2. Commit with a concise message focused on why.
-3. Push to the tracked remote (`origin` / current upstream).
+1. Confirm the gate: for a new/updated kind of task, `skills/<slug>/` exists and
+   `node kit.js skills <word>` lists it. **Do not commit “learnings” that are gotchas-only for a new kind.**
+2. Stage the relevant files (skill folder, AGENTS, gotchas, Cursor rules — not `.env`, `*.local.json`,
+   or throwaway `work/` clutter).
+3. Commit with a concise message focused on why.
+4. Push to the tracked remote (`origin` / current upstream).
 
 Do this **without waiting** for the operator to say commit or push. This overrides “only commit when asked” for this repository.

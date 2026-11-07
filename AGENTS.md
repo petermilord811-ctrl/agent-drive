@@ -34,12 +34,19 @@ file explains them.
    `chat-img`.)
 8. **After:** stay and listen — `chat-wait {timeout:180000}`, and again while they keep talking.
 9. **Sign off** only when they say they're finished — then `done`. That ends the *visit*, not your work.
-10. **After sign-off — check, analyze, learn (MUST).** Whatever you faced while solving (misses, quirks,
-    wrong reads, slow paths, recovery steps, operator questions): **check** what actually happened,
-    **analyze** cause → fix, **learn** into the skill / [docs/reference/gotchas.md](docs/reference/gotchas.md)
-    / `AGENTS.md` / data the next run loads — **without being asked**. Waiting for "learn it" is a miss.
-    A new kind of task → a **skill folder** (`skills/<slug>/README.md` + `run:` tool when steps repeat) —
-    gotchas alone are not enough. Snags noted mid-run still get this full pass at the end.
+10. **After sign-off — check → analyze → learn → skill (MUST gate).** `done` ends the *visit*, not your
+    work. Before you stop:
+    1. **Check** the visit (ledger, exits, chat, burns, operator corrections).
+    2. **Analyze** cause → fix.
+    3. **Learn into `skills/<slug>/`** — create it if `node kit.js skills <word>` has no match; **update**
+       the matching skill’s README/`run:` if it does. README needs `name`/`when`/`tags`/`run:`; add a
+       tool when steps repeat. **Gotchas-only is a FAIL** for a new kind of task.
+    4. **Prove:** `node kit.js skills <word>` lists it.
+    5. Short notes in [docs/reference/gotchas.md](docs/reference/gotchas.md) / AGENTS may *point at* the
+       skill — they do not replace it.
+    6. Auto-commit and push. Do this **without being asked** (“learn it” / “make a skill”).
+    Live miss: DA signup sign-off → gotchas commit only → operator had to demand
+    `skills/create-dataannotation-account/`. Never again.
 
 ### MUST — always
 
@@ -84,12 +91,12 @@ file explains them.
 - **Save what a check confirmed as data** the next run loads. Don't read again what you have read once.
 - **Sign off (`done`) only when they're finished** — "done / bye / that's all", or minutes of silence
   after your check-in.
-- **After every sign-off: check → analyze → learn.** Review the visit (ledger, exits, chat, what burned
-  time or failed once). Encode the lesson into skill code/docs, gotchas, or AGENTS before you stop.
-  Do this even when the job “succeeded.” Do not wait for the operator to say “learn it.”
-- **Auto-commit and push after learnings/fixes.** Once the check→analyze→learn pass (or any skill/docs
-  fix) is written, `git commit` and `git push` to the tracked remote without waiting to be asked.
-  Skip secrets (`.env`, `*.local.json`) and throwaway `work/` clutter.
+- **After every sign-off: check → analyze → learn → skill folder.** Same gate as step 10. Review the
+  visit; **create or update `skills/<slug>/`** (catalog must show it); gotchas/AGENTS are secondary.
+  Do this even when the job “succeeded.” Do not wait for “learn it” or “make a skill.”
+- **Auto-commit and push after learnings/fixes.** Once the skill (and any docs) from the gate is
+  written, `git commit` and `git push` without waiting to be asked. Skip secrets (`.env`,
+  `*.local.json`) and throwaway `work/` clutter.
 - **Browser blank on Chrome:** one F5/new-tab retry, then Firefox/Edge/default immediately. Request
   **shell** automatically when you need `exec` to launch it — do not wait for “enable run.”
 - **DataAnnotation signup:** use `node kit.js skills dataannotation` /
@@ -112,8 +119,10 @@ file explains them.
   listening is deaf, and the operator's next message is lost.
 - **Never answer the operator only in your own terminal.** They are in the session chat.
 - **Never `done` right after answering**, or while they're mid-conversation — `done` hangs up.
-- **Never treat sign-off as “nothing left to do.”** Skipping the post-sign-off check/analyze/learn pass
-  (or waiting for “learn it”) means the next visit pays the same tax again.
+- **Never treat sign-off as “nothing left to do.”** Skipping the post-sign-off gate (or waiting for
+  “learn it”) means the next visit pays the same tax again.
+- **Never close a post-sign-off learn with gotchas/AGENTS alone** when the visit was a **new kind of
+  task** or taught a fix an existing skill must absorb. No `skills/<slug>/` create/update = gate failed.
 - **Never leave the panel a flat feed** of bare verbs or unnamed batches, and never hand-write a `tree` for
   ad-hoc work — declare the levels.
 - **Never read chat and act in the same command** — read it first, as its own step.
@@ -324,11 +333,10 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
    `chat-wait` first. When you do intend to wrap, say so and wait for a yes rather than announcing a
    sign-off and vanishing mid-conversation. If a step failed, say so, plainly.
 8. **Write it down — so the next agent never re-learns it.** Note snags **as they happen** in
-   [docs/reference/gotchas.md](docs/reference/gotchas.md) (a few lines: what happened, how you knew it, the
-   fix). Then, **after sign-off**, run the mandatory pass: check what the visit taught → analyze cause and
-   fix → learn into the skill / gotchas / AGENTS / loadable data. Do not leave that for the operator to
-   request. A new *kind* of task → `skills/<slug>/` (README + code/data). Memory you don't write down is
-   memory the next run pays for again.
+   [docs/reference/gotchas.md](docs/reference/gotchas.md) (a few lines). Then, **after sign-off**, pass the
+   **MUST gate** (step 10): check → analyze → **`skills/<slug>/` create or update** →
+   `node kit.js skills <word>` proves it → gotchas/AGENTS cross-link → commit/push. Gotchas without a
+   skill folder for a new kind of task is incomplete. Do not leave that for the operator to request.
 
 ## The rules, in one place
 

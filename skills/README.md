@@ -33,6 +33,10 @@ A docs-only skill (just a README) is fine — most start that way, and the code 
 have been typed by hand twice. A skill's code may use the kit's tools (`../../core/`, `../../drive/`,
 `../../vision/`) and keeps everything else of its own inside its folder.
 
+**After every visit sign-off:** if the job was a new kind of task (or taught a fix), create/update a
+folder here **before** you stop — gotchas.md is not a substitute. Prove with `node kit.js skills <word>`,
+then commit/push. See AGENTS step 10 and `.cursor/rules/post-signoff-learn-skill.mdc`.
+
 ## Add a skill (one self-contained folder)
 
 1. Make `skills/<slug>/README.md`. Pick a **short, descriptive, unique** slug (`fill-a-form`,

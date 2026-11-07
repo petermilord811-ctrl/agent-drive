@@ -118,10 +118,11 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   shot-and-check between steps. Two verified one-liners: prime sum below 10000 = 5736396; 8-queens count = 92.
 
 ## Process — after every visit (operator, 2026-11-07)
-- **After sign-off: check → analyze → learn is MUST**, not optional and not “when asked.” Whatever you
-  faced while solving (wrong fills, ads, misreads, slow paths) gets a short review and is written into
-  the skill / this file / AGENTS before you stop. Waiting for “learn it” has been a repeated miss.
-  Then **auto-commit and push** those learnings (no wait for “commit/push”).
+- **After sign-off MUST gate: check → analyze → learn into `skills/<slug>/` → prove with
+  `node kit.js skills <word>` → commit/push.** Not optional, not “when asked.” **This file alone is not
+  enough** for a new kind of task — create/update the skill folder first, then add a short pointer here.
+  Live miss (34123 DA signup): sign-off → gotchas-only commit → operator had to demand
+  `skills/create-dataannotation-account/`. Cursor rule: `.cursor/rules/post-signoff-learn-skill.mdc`.
 - **Chrome blank / blocked page:** F5 or new tab **once**. If still blank, **instantly** switch to
   Firefox / Edge / the OS default browser (`firefox '<url>' &` via shell on Ubuntu). Do not keep
   clicking a blank Chrome render. (Operator, 34123, 2026-11-07 — DataAnnotation.)

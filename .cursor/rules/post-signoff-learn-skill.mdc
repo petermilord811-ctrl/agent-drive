@@ -1,0 +1,30 @@
+---
+description: After every visit sign-off, learning MUST produce or update a skills/ folder — gotchas alone fail the gate
+alwaysApply: true
+---
+
+# Post-sign-off → skill (MUST gate)
+
+When the operator signs off / you call `done` / the visit ends — **your work is not finished**.
+
+## Gate (all required before you stop)
+
+1. **Check** — what failed, offset, burned budget, operator corrections (ledger + chat).
+2. **Analyze** — cause → concrete fix.
+3. **Learn into a skill (required):**
+   - **New kind of task** (no matching `node kit.js skills <word>`): create `skills/<slug>/` with
+     README frontmatter (`name` / `when` / `tags` / `run:`), steps, pitfalls, and a runnable tool when
+     steps repeat. Run `node kit.js new <slug>` if useful, then fill it in.
+   - **Existing skill matched the job:** update that skill’s README and/or `run:` script with the fix —
+     do not only append gotchas.
+4. **Prove the catalog** — `node kit.js skills <word>` must list the skill with the right `when` / `run:`.
+5. **Gotchas / AGENTS** — short cross-links only; they are **not** a substitute for step 3.
+6. **Auto-commit and push** the skill (+ docs) without waiting to be asked.
+
+## Fail the gate if
+
+- You only edited `docs/reference/gotchas.md` or AGENTS prose for a new kind of task.
+- You said “remembered” / “documented” but `skills/<slug>/` was not created or updated.
+- You waited for the operator to say “learn it” or “make a skill.”
+
+Live miss (34123 DataAnnotation, 2026-11-07): sign-off → gotchas commit only → operator had to demand the skill. Do not repeat.
