@@ -89,13 +89,13 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
 
 ## Step 4 — Real assessment (summary)
 
-1. **Capture** Bio → Requirements (pay/time; **skip No-LLMs text**) → Instructions → all
-   questions into `skills/take-dataannotation-assessment/problems/problems-{slug}.md`
-   (agent-drive bank only — not workspace-root `DA assessments/problems-*.md`).
-2. If already captured: re-catch → `.capture.md` → `compare-problems.js --slug …` → update if needed.
-3. **Answer** the live assessment; submit; prove with a look.
+1. **Verbatim** capture into `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md`
+   (103 roles): Bio page 1 + Bio page 2 (skip only No-LLMs) + after Start assessment every step,
+   including answer-variant cases and scrolled content. **Never Submit** while fetching.
+2. Re-catch → `.capture.md` → `compare-problems.js --slug …` → update if the **exact** text drifted.
+3. **Answer**/Submit only when taking the assessment for real (separate from fetch).
 
-Details: `skills/take-dataannotation-assessment/` (`init-problems-db.js`, `problems/README.md`).
+Details: `skills/take-dataannotation-assessment/README.md`.
 
 ## Pitfalls
 
