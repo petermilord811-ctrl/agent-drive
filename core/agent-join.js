@@ -69,6 +69,9 @@
 //                                     deferral or hesitation wins any time, only a short clear yes approves
 //                                     (core/consent.js); --auto-confirm: only a window NOBODY answered is a yes
 //            captcha {text,timeout}   a CAPTCHA is for a person: ask the operator in chat to solve it, and wait
+//            budget {steps,minutes,more,why}  the task's budget of acting steps and minutes (core/budget.js):
+//                                     when it is spent acting commands are refused and the room is asked; a
+//                                     lower limit is taken, a higher one or more:1 is asked of the room
 //            done {text,file}         sign off (with a picture) and hand the grant back
 //   NOTES    note-list                the host's sticky notes -> {notes:[{id,text,name,resolved,...}]}
 //            note-add {text,x,y}       leave a sticky note (x,y are 0..1; default top-left)
@@ -85,6 +88,11 @@
 //            access {shell,terminal,control,why}  ask for MORE access mid-visit: a new Allow card; nothing changes without it
 //   DESKTOP  windows . focus {title|id} . launch {app,args} . controls {title|id}  -- windows, apps and a window's
 //            controls by NAME, run on the host through exec (core/desk.js; needs --shell); answers carry cx/cy to click
+//   UNDO     changes {all} . undo {id|"last",dry} . changed {what,undo}  -- what the task changed on the machine (read
+//                                     from each command by core/undo.js), each with how it is put back; the finish says it
+//   FILES    fetch {path,out} . send {file,to,overwrite}  -- a file from / onto the machine, in chunks, said in the room
+//            camera {out,device} . audio {out,seconds}  -- one webcam photo / up to 7 s of what it is PLAYING: the
+//                                     room is asked every time and only a yes allows it (all four need --shell)
 //                   incoming chat is logged to <serve-dir>/chat.json, notes mirrored to notes.json
 //   THE ACTION TREE: with no tool's tree or flat plan in charge, every command lands in a nested tree the
 //   watchers' panel renders -- task > step > sub-step > action group > the live action -- with runs MERGED
@@ -135,6 +143,9 @@ const relayAddr = require('./relay-addr.js');   // a relay's last IP, dialled wh
 const consent = require('./consent.js');   // what a reply to `confirm` means: yes / no / unclear; pure, offline, tested
 const mission = require('./mission.js');   // the job's big plan: milestones, proof, replanning out loud; pure, tested
 const verbs = require('./verbs.js');       // what each command may say, checked before it runs; pure, tested
+const budget = require('./budget.js');     // a task's steps and minutes, then stop and ask; pure, tested
+const intake = require('./intake.js');     // a job asked for in plain words -> the skill that does it; tested
+const undo = require('./undo.js');         // what a command changed on the host, and how it is put back; pure, tested
 const lookv = require('../vision/look.js');   // a picture sized for reading, and the way back to screen pixels; pure, tested
 
 // ---- the command line ---------------------------------------------------------------------------
@@ -196,7 +207,13 @@ const WANT_SHELL = has('shell');
 // A TERMINAL IS A FOURTH ASK (--terminal), named on the card in its own words: the Terminal panel's shell, shared
 // with everyone watching -- never implied by --shell (one command, one result) or by the keyboard and mouse.
 const WANT_TERM = has('terminal');
+// THE CAMERA, WHAT IT PLAYS, ITS FILES (--camera / --audio / --files): three more asks, each its own line on the card. The
+// RELAY does the capture or the copy itself (agent-take / agent-put) and says so in the machine's chat -- so a visit with
+// none of the shell can still take a photo, and the room always hears it. A photo or a recording is still asked of the
+// room each time (camera / audio verbs).
+const WANT_CAMERA = has('camera'), WANT_AUDIO = has('audio'), WANT_FILES = has('files');
 let grantControl = WANT_CONTROL, grantShell = WANT_SHELL, grantTerm = WANT_TERM;
+let grantCamera = WANT_CAMERA, grantAudio = WANT_AUDIO, grantFiles = WANT_FILES;
 const OPEN_URL = String(flag('open', '') || '');
 const CLICK = String(flag('click', '') || '');
 const SCROLL = String(flag('scroll', '') || '');   // "notches[@x,y]" -- negative scrolls the page DOWN
@@ -218,6 +235,8 @@ const KEEP_CAPTURES = has('keep-captures') || /^(1|true|yes|on)$/i.test(String(p
 // --type-instant / SM_TYPE_HUMAN=0: type at machine speed unless a command says human:1 (the default is LIKE A PERSON)
 const TYPE_HUMAN = !(has('type-instant') || /^(0|false|no|off)$/i.test(String(process.env.SM_TYPE_HUMAN || '').trim()));
 const NO_IDLE = has('no-idle') || /^(0|false|no|off)$/i.test(String(process.env.SM_AGENT_IDLE || '').trim());
+// --no-drafts / SM_SKILL_DRAFTS=0: a planned job that finishes proven is NOT saved as a draft skill (drive/replay.js)
+const NO_DRAFTS = has('no-drafts') || /^(0|false|no|off)$/i.test(String(process.env.SM_SKILL_DRAFTS || '').trim());
 const ANNOUNCE = String(flag('announce', '') || '');
 // (the guard that these need --control lives below, with the other validations: `die` is a const and
 // this line used to sit above it, so the one invocation error it exists to report crashed in the
@@ -232,6 +251,12 @@ const QUIET = has('quiet');
 // standing consent that etiquette.md and plan 05 describe, made mechanical. It never touches the door:
 // a person still pressed Allow to grant control/shell in the first place.
 const AUTO_CONFIRM = has('auto-confirm') || /^(1|true|yes|on)$/i.test(String(process.env.SM_AUTO_CONFIRM || '').trim());
+// A TASK'S BUDGET (core/budget.js): this many acting steps and minutes, then the agent stops and asks the room
+// whether to go on. --budget-steps / SM_BUDGET_STEPS and --budget-min / SM_BUDGET_MIN; 0 turns one off. The
+// defaults are a lost agent's half hour -- at the measured 46 s a decision, 30 minutes is about forty of them.
+const budgetNum = (f, env, dflt) => { const v = flag(f, '') !== '' ? flag(f, '') : (process.env[env] || '').trim(); const n = Number(v); return v !== '' && Number.isFinite(n) && n >= 0 ? n : dflt; };
+const BUDGET_STEPS = budgetNum('budget-steps', 'SM_BUDGET_STEPS', 100);
+const BUDGET_MIN = budgetNum('budget-min', 'SM_BUDGET_MIN', 30);
 let KEY = process.env.SM_JOIN_KEY || '';
 if (flag('key', '')) {
   KEY = flag('key', '');
@@ -611,7 +636,7 @@ const NAK_WHY = {
   denied: 'somebody refused it',
 };
 async function dialAndJoin(relays, onCode, reconnecting, want) {
-  const asks = want || { control: grantControl, shell: grantShell, term: grantTerm };
+  const asks = want || { control: grantControl, shell: grantShell, term: grantTerm, camera: grantCamera, audio: grantAudio, files: grantFiles };
   let lastWhy = 'could not reach any relay';
   let lastCode = 1;   // the header's exit codes: 1 a transport failure, 2 the relay / nobody let us in, 3 a person said no
   // A mutable QUEUE, not a fixed list: a relay that doesn't have the host can POINT US at its federation
@@ -627,8 +652,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     say('[.] connecting to ' + relay + (reconnecting ? ' (reconnect)' : ''));
     const w = await openRelay(relay).catch((e) => { lastWhy = e.message; say('[x] ' + e.message); return null; });
     if (!w) continue;
-    say('[.] asking to join machine ' + HOST + ' as "' + AGENT + '"');
-    w.send({ type: 'join-begin', key: KEY, host: HOST, agent: AGENT, task: TASK, control: !!asks.control, shell: !!asks.shell, term: !!asks.term });
+    say('[.] asking to join machine ' + HOST + ' (agent tag "' + AGENT + '"; the relay names the visit)');
+    w.send({ type: 'join-begin', key: KEY, host: HOST, agent: AGENT, task: TASK, control: !!asks.control, shell: !!asks.shell, term: !!asks.term,
+             camera: !!asks.camera || undefined, audio: !!asks.audio || undefined, files: !!asks.files || undefined });
     // The code, then the wait. The code is printed because it is what a person compares against the
     // card on their screen -- an agent that does not show it is asking them to approve on faith.
     const first = await w.waitFor((m) => m.type === 'join-code' || m.type === 'join-nak', 20000);
@@ -961,8 +987,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
     if (!KEEP_CAPTURES) {
       try { for (const f of JSON.parse(fs.readFileSync(capFile, 'utf8'))) if (typeof f === 'string') captures.add(f); } catch (_) {}
-      if (captures.size) { const n = clearCaptures(); if (n) say('[.] removed ' + n + ' picture(s) an earlier visit left in ' + dir); }
-      process.on('exit', () => { const n = clearCaptures(); if (n) { try { console.error('[.] removed the ' + n + ' picture(s) this visit took (--keep-captures keeps them)'); } catch (_) {} } });
+      if (captures.size) { const n = clearCaptures(); if (n) say('[.] removed ' + n + ' capture(s) (pictures, photos, recordings) an earlier visit left in ' + dir); }
+      process.on('exit', () => { const n = clearCaptures(); if (n) { try { console.error('[.] removed the ' + n + ' capture(s) this visit took -- pictures, photos, recordings (--keep-captures keeps them)'); } catch (_) {} } });
     }
     // The cost ledger (actions, bytes, round trips). Defined HERE -- before sendDrive's first call (the
     // opening drive-status) -- so sendDrive's live metrics and the loop's per-step record share it.
@@ -975,6 +1001,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (r && !r.mine && !r.system && r.text) out.push({ id: r.id || '', name: r.name || '', text: String(r.text), ts: r.ts || 0, dm: !!r.to }); }
       return out.slice(-20);
     };
+    // the kit's skills, read once per visit for skillAsked (a new skill mid-visit is seen by the next visit)
+    let skillList = null;
+    const skillAsked = (text) => {
+      try {
+        if (!skillList) skillList = intake.skills();
+        const p = intake.parse(String(text || ''), skillList);
+        return p && p.skill ? { slug: p.skill.slug, name: p.skill.name, run: p.skill.run || undefined, readme: 'skills/' + p.skill.slug + '/README.md' } : null;
+      } catch (_) { return null; }
+    };
     const onChat = (o) => {
       if (!o || o.type !== 'chat') return;
       const rec = { ts: Number(o.ts) || Date.now(), id: String(o.id || ''), from: String(o.from || ''), name: String(o.name || ''),
@@ -983,6 +1018,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (!rec.mine && !rec.system && rec.text) {
         if (rec.id) unreadIds.push(rec.id);
         lastOp = { id: rec.id, name: rec.name, text: rec.text, ts: rec.ts, dm: !!rec.to };
+        // A NEW JOB IN PLAIN WORDS ("now do my sticky notes")? The skill that already does it rides the inbox, so the
+        // driver reads it before working the job out from nothing (core/intake.js; a "yes" or a "thanks" names none)
+        const sk = skillAsked(rec.text);
+        if (sk) lastOp.skill = sk;
         interrupt = lastOp;   // a running plan / command loop breaks so the driver can read + answer this
       }
       // The agent's OWN lines are logged where they are sent (with what they were: a finish report, a picture, a
@@ -1065,6 +1104,30 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // anything counts as achieved, and every change said out loud. The panel draws it (the action tree in plan
     // mode), the room hears it, mission.json keeps it, and every answer carries where the job stands.
     const MS = mission.create();
+    // THE TASK'S BUDGET (core/budget.js): acting steps and minutes, then stop and ask. A new task starts it again --
+    // a mission's plan, a status naming another task, new work after a finish. `budgetAskedAt`: when the room was
+    // last asked to let a spent budget go on, so `budget {more:1}` hears an answer they already gave.
+    const BUD = budget.create({ steps: BUDGET_STEPS, minutes: BUDGET_MIN });
+    BUD.start(TASK);
+    let budgetAskedAt = 0;
+    // THE CHANGE RECORD (core/undo.js): what this visit changed on the machine -- moved, renamed, made, deleted, a
+    // service flipped, text typed, an app started, a file put there -- each with how it is put back. The finish of a
+    // task says that task's changes to the room, `changes` lists them, and `undo` puts one back after the room's yes
+    // (or because they asked for it in so many words: "undo c3"). Kept in <serve-dir>/changes.json.
+    const changes = [];
+    const changesFile = path.join(dir, 'changes.json');
+    let changeTask = 0, changesSaid = false, lastWindow = '';
+    // CAPTURE BEFORE CHANGE (core/undo.js prepare): what an exec is about to overwrite, delete or re-set is copied or read
+    // first -- into this visit's own folder in the host's temp -- so it can be put back; the copies go when the visit ends.
+    const VISIT_ID = 'v' + Date.now().toString(36) + process.pid.toString(36);
+    const capturedFor = new WeakMap();   // a step's answer -> {captured, syn?}: what was read around it
+    // a change a LATER one made moot (a folder made, then deleted with everything in it) is not offered back
+    const gone = () => { try { return new Set(undo.supersede(changes.filter((e) => !e.undone)).map((s) => s.id)); } catch (_) { return new Set(); } };
+    // what the finish says: the machine's state -- files, services, settings, what the driver declared. Typed text and
+    // apps started stay in the record (`changes`) but not in the summary: typing was usually the job itself.
+    const taskChanges = () => { const g = gone(); return changes.filter((e) => e.task === changeTask && !e.undone && !g.has(e.id) && e.kind !== 'typed' && e.kind !== 'launched'); };
+    const saveChanges = () => { try { fs.writeFileSync(changesFile, JSON.stringify(changes, null, 1)); } catch (_) {} };
+    const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; changeTask++; };
     const missionFile = path.join(dir, 'mission.json');
     // EVERY SUCCESSFUL COMMAND, AS SENT, for drive/replay.js -- one JSON line each with the milestone that was
     // current, so a proven job can run again with no driver turns. Only what DOES something on the machine or
@@ -1089,6 +1152,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       try { fs.appendFileSync(stepsFile, JSON.stringify({ at: new Date().toISOString(), m, cmd: redact(cmd, r) }) + '\n'); } catch (_) {}
     };
     let missionFinishing = false;   // the job's own finish (not a tool's, mid-job) is going out
+    let missionReplay = false;      // the job under way is a replay of a saved skill (drive/replay.js): never re-drafted
     const saveMission = () => { try { const j = MS.toJSON(); if (j) fs.writeFileSync(missionFile, JSON.stringify(j, null, 1)); } catch (_) {} };
     // sendDrive attaches the whole picture: the line + the plan + the optional thought/next/per-step
     // status + FREE client-side metrics (elapsed base `since`, and `m` = actions/KB/round-trips from the
@@ -1196,7 +1260,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         // without "shall I sign off?" (the plan goes on), and it owes no picture of its own -- the milestone it
         // served is proven when it is achieved.
         const midJob = !missionFinishing && MS.active();
-        const line = midJob ? report.slice(0, 2000) : (report + '\n\nAnything else, or shall I sign off?').slice(0, 2000);
+        // ...AND WHAT IT CHANGED ON THE MACHINE, with which of it can be put back (core/undo.js): said once, at the end
+        // of the task, so the person hears it while they can still ask
+        const tc = midJob ? [] : taskChanges();
+        if (tc.length) changesSaid = true;
+        const changed = tc.length ? '\n\n↩ ' + undo.summary(tc, 3) : '';
+        const line = midJob ? report.slice(0, 2000) : (report.slice(0, 1400) + changed.slice(0, 500) + '\n\nAnything else, or shall I sign off?').slice(0, 2000);
         const m = { type: 'chat', text: line };
         // `file`: the result picture rides IN the report -- one message, the proof above the question
         finImg = opts.file ? imgFromFile(opts.file) : null;
@@ -1261,7 +1330,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       else if (o.type === 'term-error') { term.error = String(o.message || ''); }
       else if (o.type === 'term-busy') { term.busy = !!Number(o.busy); }
     };
-    const attachTaps = (w) => { w.on(onChat); w.on(onNote); w.on(onTerm); };
+    // A PERSON TOOK THE KEYBOARD: while the agent types, the watchers see "SM Agent is auto-typing" (typeAs);
+    // one who presses a key then sends `atstop` -- exactly as they would to a colleague's auto-typer -- and the run
+    // gives way at its next key.
+    let atStopAt = 0;
+    const onAtStop = (o) => { if (o && o.type === 'spot' && o.k === 'atstop') atStopAt = Date.now(); };
+    const attachTaps = (w) => { w.on(onChat); w.on(onNote); w.on(onTerm); w.on(onAtStop); };
     attachTaps(ws);
     // The size, for 5.5 KB rather than for the whole screen: `hold` keeps the identity of a picture the
     // host is holding and throws the bytes away. Nothing here needed the pixels, and it used to pay for
@@ -1313,7 +1387,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // panel appears at once rather than only on the first acting step. --no-announce drops the hello.
     if (!NO_ANNOUNCE) {
       // A greeting laid out like everything else the agent says: who and why, then how to work with it.
-      const intro = (ANNOUNCE || ('👋 **Hi — I’m an AI agent, here to ' + (TASK || 'help on this machine') + '.**\n' +
+      const intro = (ANNOUNCE || ('👋 **Hi — I’m SM Agent, an AI agent here to ' + (TASK || 'help on this machine') + '.**\n' +
                                   '- You’ll see each step on the **progress panel**.\n' +
                                   '- Write here any time — I’ll stop and answer.')).slice(0, 2000);
       try { ws.send({ type: 'chat', text: intro }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: intro, mine: true, sent: true }) + '\n'); } catch (_) {}
@@ -1398,17 +1472,44 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
 
     // ---- TYPING: like a person unless a command (or --type-instant) says otherwise -- keys, and open's address ----
+    // ...AND THE WATCHERS ARE TOLD, as the viewer's own Type window tells them: `spot {k:'at', tot, done}` every two
+    // seconds while a run lasts -- their page shows a card "<name> is auto-typing" with its progress, and the relay
+    // stamps the name, so it reads "SM Agent" -- and `{k:'at', off:1}` when it ends, however it ends. Typing
+    // that took a person's time used to happen with nothing on their screen but the letters. A run gives way the
+    // same way the Type window's does: a person who presses a key sends `atstop` (onAtStop) and it stops.
+    const AT_CAST_MS = 2000;
+    const castTyping = (tot, done, off) => { try { ws.send(off ? { type: 'spot', k: 'at', off: 1 } : { type: 'spot', k: 'at', tot, done }); } catch (_) {} };
     const typeAs = async (text, c, dflt) => {
       const off = c.human === false || c.human === 0 || c.human === '0' || c.human === 'false';
       const human = c.human == null || c.human === '' ? TYPE_HUMAN : !off;
       const speed = ['slow', 'normal', 'fast'].includes(c.speed) ? c.speed : dflt;
-      if (!human && !c.speed) { await typeText(text); return { ok: true, typed: text.length, human: false }; }
+      const since = Date.now();
+      if (!human && !c.speed) {
+        // instant: a card only for a block long enough to be watched (a short word would only flash one)
+        const long = text.length >= 40;
+        if (long) castTyping(text.length, 0);
+        try { await typeText(text); } finally { if (long) castTyping(0, 0, true); }
+        return { ok: true, typed: text.length, human: false };
+      }
       const at = require('./autotype.js');
       const plan = at.atPlan(text, { human, speed });
-      const since = Date.now();
-      const r = await at.run(plan, (m) => ws.send(m), { stop: () => !!stopped || !!(interrupt && (Number(interrupt.ts) || 0) >= since) });
-      return r.ok ? { ok: true, typed: text.length, ms: Date.now() - since, human, speed }
-                  : { ok: false, why: stopped ? stopped : 'the operator spoke -- stopped after ' + r.at + ' of ' + r.of + ' keys', stoppedAt: { at: r.at, of: r.of, interrupted: !stopped } };
+      let done = 0, lastCast = Date.now(), r;
+      castTyping(plan.total, 0);
+      try {
+        r = await at.run(plan, (m) => ws.send(m), {
+          stop: () => !!stopped || !!(interrupt && (Number(interrupt.ts) || 0) >= since) || atStopAt >= since,
+          onStep: (i, s) => {
+            done = Math.min(plan.total, Math.max(done, Number(s.src) || 0));
+            if (Date.now() - lastCast >= AT_CAST_MS) { lastCast = Date.now(); castTyping(plan.total, done); }
+          },
+        });
+      } finally { castTyping(0, 0, true); }
+      if (r.ok) return { ok: true, typed: text.length, ms: Date.now() - since, human, speed };
+      const took = atStopAt >= since;
+      const why = stopped ? stopped
+                : took ? 'a person took the keyboard (a viewer pressed a key) -- stopped after ' + done + ' of ' + plan.total + ' characters'
+                : 'the operator spoke -- stopped after ' + r.at + ' of ' + r.of + ' keys';
+      return { ok: false, why, stoppedAt: { at: r.at, of: r.of, chars: done, interrupted: !stopped, tookKeyboard: took || undefined } };
     };
 
     // ---- the host's own shell, for windows / focus / launch / controls (core/desk.js) ----------------------------
@@ -1462,6 +1563,124 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (p.window && typeof p.window === 'object') place(p.window);
       p.screen = { origin: deskOrigin, w: SW, h: SH };
     };
+
+    // ---- FILES, A WEBCAM PHOTO, A SOUND RECORDING: core/desk.js's stat / read / write / rm / camera / audio, each ONE
+    // command on the host through exec (the visit's shell consent). What is copied, put, photographed or recorded is
+    // said in the room as it happens; a photo and a recording each need the room's yes FIRST, every time.
+    const deskOp = async (op, args, ms) => {
+      const os = await deskOs();
+      if (!os.ok) return os;
+      const b = desk.build(op, args || {}, os.os);
+      if (!b.ok) return { ok: false, why: b.why };
+      const x = await runExec(b.cmd, ms || 30000);
+      if (x.transport) return { ok: false, why: x.why };
+      return desk.parse(op, x.output) || { ok: false, why: 'no answer from the host' };
+    };
+    // a send is one command per chunk: ~4.4 KB a command on Windows (cmd.exe's line), ~88 KB on Linux -- so a few MB
+    // to a Windows machine is already minutes. A fetch reads up to 360 KB a command.
+    const FETCH_MAX = 100 * 1048576, SEND_MAX = { windows: 2 * 1048576, linux: 25 * 1048576 };
+    // a whole file from the host, chunk by chunk (read: at most 360 KB a command)
+    const readAll = async (p, max) => {
+      const parts = []; let off = 0, total = 0, full = '';
+      for (;;) {
+        if (stopped) return { ok: false, why: stopped };
+        const r = await deskOp('read', { path: p, off }, 30000);
+        if (!r.ok) return r;
+        full = r.full || full; total = Number(r.total) || 0;
+        if (total > max) return { ok: false, why: full + ' is ' + humanBytes(total) + ' -- more than the ' + humanBytes(max) + ' a fetch copies' };
+        const buf = Buffer.from(String(r.b64 || ''), 'base64');
+        parts.push(buf); off += buf.length; wire += buf.length; trips++;
+        if (!buf.length || off >= total) break;
+      }
+      return { ok: true, buf: Buffer.concat(parts), total, full };
+    };
+    const humanBytes = (n) => (n < 1024 ? n + ' bytes' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+    // THE RELAY'S OWN TAKE AND PUT -- the camera / audio / files consents (--camera, --audio, --files, or access): the RELAY
+    // captures or copies on the host, posts the line in the machine's chat itself, and hands the bytes over in parts with a
+    // sha256 (agent-took), or takes them in parts, each answered (agent-put-done). Without the consent the relay refuses it.
+    const RELAY_PUT_MAX = 4 * 1048576, RELAY_PART = 192 * 1024;
+    const relayTake = async (kind, o, ms) => {
+      const rid = ++reqSeq;
+      try { ws.send(Object.assign({ type: 'agent-take', reqId: rid, kind }, o || {})); } catch (e) { return { ok: false, why: e.message }; }
+      const parts = []; let meta = null, got = 0;
+      const deadline = Date.now() + (ms || 120000);
+      for (;;) {
+        const m = await raceStop(ws.waitFor((x) => x.type === 'agent-took' && x.reqId === rid, Math.max(1, deadline - Date.now())));
+        if (!m) return { ok: false, why: stopped || 'the relay did not answer in time' };
+        if (!m.ok) return { ok: false, why: String(m.error || 'the relay refused it'), needs: m.needs || undefined, busy: m.busy ? 1 : undefined };
+        meta = meta || m;
+        const i = Math.max(0, Number(m.part) || 0), b = Buffer.from(String(m.b64 || ''), 'base64');
+        if (!parts[i]) got++;
+        parts[i] = b; wire += b.length; trips++;
+        const of = Math.max(1, Number(m.of) || 1);
+        if (got >= of) {
+          const buf = Buffer.concat(parts.slice(0, of));
+          if (meta.sha256 && crypto.createHash('sha256').update(buf).digest('hex') !== String(meta.sha256)) return { ok: false, why: 'what arrived does not match what the relay read (sha256)' };
+          return { ok: true, buf, mime: meta.mime, name: meta.name, seconds: meta.seconds };
+        }
+      }
+    };
+    const relayPut = async (p, buf, overwrite) => {
+      const rid = ++reqSeq, of = Math.max(1, Math.ceil(buf.length / RELAY_PART));
+      let last = null;
+      for (let i = 0; i < of; i++) {
+        if (stopped) { try { ws.send({ type: 'agent-put', reqId: rid, cancel: 1 }); } catch (_) {} return { ok: false, why: stopped }; }
+        const part = buf.slice(i * RELAY_PART, (i + 1) * RELAY_PART);
+        const msg = { type: 'agent-put', reqId: rid, part: i, of, b64: part.toString('base64') };
+        if (i === 0) { msg.path = p; if (overwrite) msg.overwrite = 1; }
+        try { ws.send(msg); } catch (e) { return { ok: false, why: e.message }; }
+        wire += part.length; trips++;
+        const m = await raceStop(ws.waitFor((x) => x.type === 'agent-put-done' && x.reqId === rid, 60000));
+        if (!m) return { ok: false, why: stopped || 'the relay did not answer in time' };
+        if (!m.ok) return { ok: false, why: String(m.error || 'the relay refused it'), exists: !!m.exists, full: m.full, needs: m.needs || undefined };
+        last = m;
+      }
+      return { ok: true, size: Number(last.size) || buf.length, full: last.full || p, replaced: !!last.replaced, sha256: last.sha256 };
+    };
+    const roomNote = (text) => { try { ws.send({ type: 'chat', text }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} };
+    const leaf = (p) => String(p || '').split(/[\\/]/).pop() || String(p || '');
+    const saveLocal = (out, buf) => { const f = path.resolve(String(out)); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); return f; };
+
+    // INTO THE CHANGE RECORD (core/undo.js reads what a command changed; this keeps it). A file `send` put there is
+    // recorded as the file it made -- read through the same module, so its undo is that module's careful delete
+    // (a literal path, never a folder with things in it); one it REPLACED cannot be put back: the old one was not kept.
+    const psq = (s) => "'" + String(s).replace(/['‘’‚‛]/g, (c) => c + c) + "'";
+    const shq = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+    // a file `send` put at `to`, as a command core/undo.js reads as making (or, with force, replacing) that file
+    const sentAs = (to, os, force) => os === 'linux' ? { do: 'exec', cmd: 'cp -- ' + shq('/tmp/agent-drive-sent') + ' ' + shq(to) }
+      : { do: 'exec', cmd: 'powershell -NoProfile -Command "New-Item -ItemType File ' + (force ? '-Force ' : '') + '-Path ' + psq(to) + '"' };
+    async function noteChange(cmd, r) {
+      try {
+        if (!cmd || !r || r.ok !== true || typeof cmd.do !== 'string') return;
+        if ((cmd.do === 'focus' || cmd.do === 'launch') && r.window && r.window.title) lastWindow = String(r.window.title).slice(0, 80);
+        if (!['exec', 'terminal', 'keys', 'launch', 'send'].includes(cmd.do)) return;
+        // the host's system when a desk verb already asked it; otherwise the record reads it from the command itself --
+        // never an extra command on the host just to keep the record (a send has asked it already)
+        const os = deskOsName;
+        let c = cmd;
+        const to = cmd.do === 'send' ? String(r.to || '') : '';
+        const cap = capturedFor.get(r) || null;
+        if (cmd.do === 'send') {
+          if (!to) return;
+          // a replaced file whose old copy was kept (send's own capture) goes back like an overwrite; one not kept cannot
+          c = cap && cap.syn ? cap.syn
+            : r.replaced ? { do: 'changed', what: 'replaced ' + to + ' with ' + leaf(cmd.file), undo: 'the file it replaced was not kept — restore it from a backup or File History, if there is one' }
+            : sentAs(to, os);
+        }
+        const got = undo.record(c, { ok: true }, { os: os || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined, captured: cap ? cap.captured : undefined, visit: VISIT_ID });
+        const list = Array.isArray(got) ? got : got ? [got] : [];
+        for (const e of list) {
+          if (cmd.do === 'send') {
+            e.verb = 'send';
+            if (!r.replaced) { e.what = 'put ' + leaf(cmd.file) + ' on this machine at ' + to; e.md = 'put **' + leaf(cmd.file) + '** on this machine at `' + to + '`'; }
+            else if (cap && cap.syn) { e.what = 'replaced ' + to + ' with ' + leaf(cmd.file); e.md = 'replaced `' + to + '` with **' + leaf(cmd.file) + '**'; }
+          }
+          e.task = changeTask;
+          changes.push(e);
+        }
+        if (list.length) saveChanges();
+      } catch (_) {}
+    }
 
     // LOOK: a fresh picture of (a region of) the screen, shrunk so its long edge is <= max, written to `out`,
     // with the scale back. It is remembered, so the next click can be given in its pixels (lx/ly).
@@ -1635,6 +1854,52 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         await sleep(400);
       }
     }
+    // ASK THE ROOM, AND HEAR WHAT IT SAYS -- `confirm`'s window, for the serve's own questions too: a spent budget,
+    // a plan before it starts, a checkpoint, a webcam photo. The question goes to everyone; WHAT A REPLY MEANS is
+    // core/consent.js -- a negation, deferral or hesitation anywhere is a no ("not sure", "go back first", "let me
+    // think"), a yes is only a short reply of nothing but yes-words, anything else is unclear.
+    //   ms       the window (2 s .. 5 min; 20 s by default)
+    //   grace    how long a yes still waits for a late cancel; `confirm` keeps listening to the end of its window
+    //   since    an EARLIER asking of the same question: what the room said after it counts too (the agent may come
+    //            back to a question the room already answered)
+    //   standing false refuses the standing yes: a webcam photo is never taken on silence
+    // A cancel wins at any point. Time spent here is time waiting on people, not the task's (core/budget.js).
+    async function askRoom(text, o) {
+      const opts = o || {};
+      if (text) { ws.send({ type: 'chat', text }); try { fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} }
+      const standing = AUTO_CONFIRM && opts.standing !== false;
+      if (opts.status !== false) driveStatus(standing ? 'Proceeding unless you say stop…' : 'Waiting for your OK…');
+      const ms = Math.max(2000, Math.min(300000, Number(opts.ms) || 20000));
+      const grace = opts.grace === Infinity ? Infinity : Math.max(0, Number(opts.grace) || 1500);
+      const t0 = Date.now(), deadline = t0 + ms, replies = [];
+      const since0 = Math.min(t0, Number(opts.since) || t0);
+      let verdict = 'unclear', yesAt = 0;
+      const hear = (m) => {
+        replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
+        const said = consent.confirmReply(String(m.text || ''));
+        if (said === 'no') verdict = 'cancelled';                                   // a cancel wins immediately
+        else if (said === 'yes' && verdict !== 'cancelled') { verdict = 'approved'; if (!yesAt) yesAt = Date.now(); }   // ...a yes waits out the grace
+      };
+      // what the room already said since the question was first asked (the chat log has it)
+      if (since0 < t0) for (const m of readInbox()) { if ((Number(m.ts) || 0) >= since0 && verdict !== 'cancelled') hear(m); }
+      while (verdict !== 'cancelled' && !stopped) {
+        const end = verdict === 'approved' && grace !== Infinity ? Math.min(deadline, (yesAt || Date.now()) + grace) : deadline;
+        if (Date.now() >= end) break;
+        const m = await raceStop(ws.waitFor((x) => x.type === 'chat' && !x.system && String(x.name || '') !== selfName && (Number(x.ts) || 0) >= t0, Math.max(1, end - Date.now())));
+        if (!m) break;
+        hear(m);
+      }
+      // Standing yes: ONLY a window that NO ONE answered (and no revoke) means go ahead. A reply it could not read
+      // as a yes is a person who said something -- never filled in as approval (it used to be).
+      let auto = false;
+      if (standing && verdict === 'unclear' && !replies.length && !stopped) { verdict = 'approved'; auto = true; }
+      // The replies ride back in the answer, so the driver has read them -- as `chat-wait` does, the interrupt they
+      // raised is spent. Left set, the very "yes" that approved a restart cut the plan doing it at its first step.
+      // A message from before the question still stands.
+      if (replies.length && interrupt && (Number(interrupt.ts) || 0) >= since0) interrupt = null;
+      BUD.rest(Date.now() - t0);
+      return { verdict, replies, auto };
+    }
     async function missionOp(cmd) {
       const op = String(cmd.op || ''), why = cmd.why != null ? String(cmd.why) : '', quiet = !!cmd.quiet;
       const refused = (r) => reply(Object.assign({ ok: false, why: r.why }, r.open ? { open: r.open } : {}, r.needProof ? { needProof: true } : {}, { mission: MS.brief() }));
@@ -1649,8 +1914,46 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const note = human.length ? { human: { note: mission.CAPTCHA_NOTE, at: human.slice(0, 6).map((h) => h.where + ': ' + h.text) } } : {};
         reply(Object.assign({ ok: true }, extra || {}, note, { mission: MS.brief() }));
       };
-      const milestoneOf = (c) => ({ t: c.t != null ? c.t : c.milestone, done: c.done, check: c.check, steps: c.steps, skill: c.skill });
-      if (op === 'plan') return applied(MS.plan(cmd.plan && typeof cmd.plan === 'object' ? cmd.plan : cmd, why));
+      const milestoneOf = (c) => ({ t: c.t != null ? c.t : c.milestone, done: c.done, check: c.check, steps: c.steps, skill: c.skill, checkpoint: c.checkpoint });
+      if (op === 'plan') {
+        let spec = cmd.plan && typeof cmd.plan === 'object' ? cmd.plan : cmd;
+        if (spec !== cmd && cmd.checkpoints != null && spec.checkpoints == null) spec = Object.assign({}, spec, { checkpoints: cmd.checkpoints });
+        const r = MS.plan(spec, why);
+        if (r.ok) { newTask(MS.goal); missionReplay = !!cmd.replay; }   // a planned job is a task of its own: its budget starts here
+        const preview = !!(cmd.preview || (spec && spec.preview)) && cmd.preview !== 0 && cmd.preview !== '0';
+        if (!r.ok || !preview) return applied(r);
+        // A PREVIEW: the plan goes to the room as a question, and nothing acts until they say yes (core/mission.js
+        // holds the gate; the loop below refuses acting commands while it stands). Their no or silence keeps it held.
+        MS.hold('plan');
+        saveMission();
+        missionShow(r.declare, r.relabel);
+        const a = await askRoom(MS.previewText(), { ms: Number(cmd.timeout) || 60000 });
+        if (a.verdict === 'approved') MS.release(a.auto ? 'nobody objected (standing yes)' : 'before it started');
+        else MS.heard();   // asking again listens to what comes after this answer
+        saveMission();
+        const out = { ok: true, preview: { verdict: a.verdict, replies: a.replies, auto: a.auto }, mission: MS.brief() };
+        if (a.verdict !== 'approved') {
+          out.waiting = true;
+          out.hint = a.verdict === 'cancelled' ? 'the room did not agree to the plan: read what they said, change the plan (mission change / add / plan, with a why), then mission {"op":"ask"}'
+                                               : 'no yes to the plan yet: nothing acts until there is one -- wait for the room (chat-wait), then mission {"op":"ask"}';
+        }
+        return reply(out);
+      }
+      if (op === 'ask') {
+        // THE ROOM'S YES, ASKED AGAIN (or heard: a yes they gave after the question counts). A new `why` says the
+        // question again with it; without one, a question asked in the last ten minutes is not asked twice.
+        const g = MS.gate();
+        if (!g) return reply({ ok: true, waiting: false, mission: MS.brief() });
+        const recent = Date.now() - g.since < 10 * 60000;
+        const text = recent && !why ? '' : (g.kind === 'plan' ? MS.previewText() : MS.checkpointText(g.m)) + (why ? '\n' + why.slice(0, 300) : '');
+        const a = await askRoom(text, { ms: Number(cmd.timeout) || 60000, since: g.since });
+        if (a.verdict === 'approved') MS.release(a.auto ? 'nobody objected (standing yes)' : 'asked again');
+        else MS.heard();
+        saveMission();
+        const out = { ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto, waiting: a.verdict !== 'approved', mission: MS.brief() };
+        if (a.verdict === 'cancelled') out.hint = 'the room said no: change the plan as they asked (with a why), or drop it';
+        return reply(out);
+      }
       if (op === 'step') { const r = MS.step(cmd.t != null ? cmd.t : cmd.step); return applied(r, { added: !!r.added }); }
       if (op === 'steps') return applied(MS.setSteps(cmd.m, cmd.steps, why));
       if (op === 'add') { const r = MS.add(milestoneOf(cmd), { before: cmd.before, after: cmd.after, now: !!cmd.now }, why); return applied(r, { added: r.m, reopened: !!r.reopened }); }
@@ -1682,6 +1985,23 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const out = { ok: true, achieved: target.t, next: r.next, mission: MS.brief() };
         if (r.allDone) out.hint = 'every milestone is closed — finish the job: mission finish, with file: a cropped picture of the result';
         if (im && !im.ok) { out.img = false; out.imgWhy = im.why; }
+        // A CHECKPOINT (checkpoints:true on the plan, or checkpoint:true on this milestone): stop here and ask the
+        // room before going on to the next one -- a long job does not run forty steps blind
+        if (r.next && !r.allDone && MS.isCheckpoint(target.id)) {
+          MS.hold('checkpoint', target.id);
+          saveMission();
+          const c = await askRoom(MS.checkpointText(target.id), { ms: Number(cmd.timeout) || 60000 });
+          if (c.verdict === 'approved') MS.release(c.auto ? 'nobody objected (standing yes)' : 'at the checkpoint');
+          else MS.heard();
+          saveMission();
+          out.checkpoint = { verdict: c.verdict, replies: c.replies, auto: c.auto };
+          out.mission = MS.brief();
+          if (c.verdict !== 'approved') {
+            out.waiting = true;
+            out.hint = c.verdict === 'cancelled' ? 'the room said not to go on: read what they said -- change the plan, or stop and ask what they want'
+                                                 : 'no yes to go on yet: nothing acts until there is one -- wait for the room (chat-wait), then mission {"op":"ask"}';
+          }
+        }
         return reply(out);
       }
       if (op === 'finish') {
@@ -1697,6 +2017,19 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const out = { ok: true, finished: true, report: r.report, mission: MS.brief() };
         if (cmd.file) { out.img = !!(finImg && finImg.ok); if (!out.img) out.imgWhy = finImg ? finImg.why : 'the picture did not go out'; }
         finImg = null;
+        // A SKILL THAT WRITES ITSELF: a job finished with nothing failed, that no skill already did and that is not a
+        // replay of one, is saved as a DRAFT skill (drive/replay.js draft) -- skills/_drafts/<name>/, gitignored, not
+        // in the library until a person has read the typed text it stores and promoted it.
+        const ms = (MS.toJSON() || {}).ms || [];
+        if (!NO_DRAFTS && !missionReplay && ms.length && !ms.some((m) => m.s === 'failed') && !ms.some((m) => m.skill)) {
+          let d;
+          try { d = require('../drive/replay.js').draft(dir); } catch (e) { d = { ok: false, why: e.message }; }
+          if (d && d.ok) {
+            out.draft = { name: d.name, dir: d.dir, milestones: d.milestones, commands: d.commands, typed: d.typed, secrets: d.secrets };
+            const tip = 'this job was saved as a DRAFT skill, ' + d.name + ' (' + d.milestones + ' proven milestone(s)): check its typed text holds nothing private, then `node drive/replay.js promote ' + d.name + ' --yes` puts it in the library';
+            if (!out.hint) out.hint = tip; else out.draftHint = tip;
+          } else if (d && !d.exists) out.draft = { saved: false, why: d.why };
+        }
         return reply(out);
       }
       if (op === 'show') return reply({ ok: true, text: MS.text(), mission: MS.brief() });
@@ -1709,7 +2042,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         return reply({ ok: true, resumed: true, text: MS.text(), mission: MS.brief() });
       }
       if (op === 'drop') { const r = MS.drop(why); if (r.ok) atx(() => AT.setPlan(null)); return applied(r); }
-      return reply({ ok: false, why: 'mission ops: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop' });
+      return reply({ ok: false, why: 'mission ops: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop, ask' });
     }
 
     // THE DISPATCH, as a function rather than as the body of the loop, so a `plan` can walk back into
@@ -1891,7 +2224,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // own echo and the relay's `system` notices are skipped, so this returns a person's answer.
           const since = Number(cmd.since) || Date.now();
           const ms = Math.max(1000, Math.min(600000, Number(cmd.timeout) || 120000));
+          const waited0 = Date.now();
           const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && (Number(m.ts) || 0) >= since, ms));
+          BUD.rest(Date.now() - waited0);   // waiting on a person is not the agent grinding (core/budget.js)
           if (got) interrupt = null;   // the driver is attending to chat; let a paused plan resume
           if (!got) reply({ ok: false, why: stopped || 'nobody answered in time', timedOut: !stopped });
           else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
@@ -1948,6 +2283,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // is dropped, and the room is told. A bare finish with milestones still open is answered with a hint.
           // (A tool's own tree or flat plan takes the panel exactly as before.)
           let planHint = '';
+          // a task by another name is a new task: its budget starts again (core/budget.js)
+          if (depth === 0 && typeof cmd.task === 'string' && cmd.task.trim() && !BUD.same(cmd.task.trim())) newTask(cmd.task.trim());
           if (MS.active() && depth === 0 && !(Array.isArray(cmd.tree) && cmd.tree.length) && !(Array.isArray(cmd.steps) && cmd.steps.length)) {
             if (typeof cmd.task === 'string' && cmd.task.trim() && cmd.task.trim() !== MS.goal) {
               const d = MS.drop('a new task was declared: ' + cmd.task.trim().slice(0, 80));
@@ -2010,11 +2347,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // card in front of the operator naming them, and -- only if a person presses Allow -- the visit moves onto
           // that grant (the work folder, the mission, the panel all carry on) and the old one is released. A no, or
           // nobody, leaves the visit exactly as it was. Access still never grows without a person pressing Allow.
-          const want = { control: grantControl || !!cmd.control, shell: grantShell || !!cmd.shell, term: grantTerm || !!cmd.terminal };
-          if (want.control === grantControl && want.shell === grantShell && want.term === grantTerm) reply({ ok: true, already: true, control: grantControl, shell: grantShell, terminal: grantTerm });
+          const want = { control: grantControl || !!cmd.control, shell: grantShell || !!cmd.shell, term: grantTerm || !!cmd.terminal,
+                         camera: grantCamera || !!cmd.camera, audio: grantAudio || !!cmd.audio, files: grantFiles || !!cmd.files };
+          const held = () => ({ control: grantControl, shell: grantShell, terminal: grantTerm, camera: grantCamera, audio: grantAudio, files: grantFiles });
+          if (want.control === grantControl && want.shell === grantShell && want.term === grantTerm && want.camera === grantCamera && want.audio === grantAudio && want.files === grantFiles) reply(Object.assign({ ok: true, already: true }, held()));
           else {
             const why = String(cmd.why || '').slice(0, 200);
-            const what = [want.shell && !grantShell ? 'run commands on this machine' : '', want.term && !grantTerm ? 'use the Terminal (it shows in the Terminal panel)' : '', want.control && !grantControl ? 'use the keyboard and mouse' : ''].filter(Boolean).join(' and ');
+            const what = [want.shell && !grantShell ? 'run commands on this machine' : '', want.term && !grantTerm ? 'use the Terminal (it shows in the Terminal panel)' : '', want.control && !grantControl ? 'use the keyboard and mouse' : '',
+                          want.camera && !grantCamera ? 'take photos with its camera' : '', want.audio && !grantAudio ? 'record what it is playing' : '',
+                          want.files && !grantFiles ? 'copy files to and from it' : ''].filter(Boolean).join(' and ');
             const ask = '🔑 **May I also ' + what + '?**' + (why ? ' ' + why : '') + ' A new Allow card is on its way — nothing changes unless you press Allow.';
             try { stopTyping(); ws.send({ type: 'chat', text: ask }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: ask, mine: true, sent: true }) + '\n'); } catch (_) {}
             signoffAsked = false;
@@ -2029,7 +2370,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             if (!d.ok) {
               const refused = d.code === 3 && d.retry === false;
               driveStatus(refused ? 'Carrying on with the access I have' : 'No new access');
-              reply({ ok: false, why: refused ? 'the operator said no -- carry on with the access you have' : 'not allowed: ' + d.why, refused, control: grantControl, shell: grantShell });
+              reply(Object.assign({ ok: false, why: refused ? 'the operator said no -- carry on with the access you have' : 'not allowed: ' + d.why, refused }, held()));
             } else {
               const old = ws;
               ws = d.ws; selfName = d.user; ws.onDead = wake; lastGoodRelay = d.relay || lastGoodRelay;
@@ -2037,6 +2378,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               attachWatch(ws); attachTaps(ws);
               frame = null; img = null; before = null;          // the held picture belonged to the old socket
               grantControl = want.control; grantShell = want.shell; grantTerm = want.term;
+              grantCamera = want.camera; grantAudio = want.audio; grantFiles = want.files;
               // the OLD grant goes: closing its socket releases it (a join-leave would leave it attached to the host)
               try { old.onDead = null; old.close(); } catch (_) {}
               try { fs.writeFileSync(path.join(dir, 'ready.json'), JSON.stringify({ w: SW, h: SH, host: HOST, at: Date.now(), relay: lastGoodRelay, control: grantControl, shell: grantShell })); } catch (_) {}
@@ -2044,7 +2386,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               // the old grant's release clears the watchers' panel; put it back once the relay has done so
               await sleep(500);
               try { sendDrive(); } catch (_) {}
-              reply({ ok: true, control: grantControl, shell: grantShell, terminal: grantTerm });
+              reply(Object.assign({ ok: true }, held()));
             }
           }
         } else if (cmd.do === 'windows' || cmd.do === 'focus' || cmd.do === 'launch' || cmd.do === 'controls') {
@@ -2116,6 +2458,205 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               reply(res);
             }
           }
+        } else if (cmd.do === 'changed') {             // the driver says what it changed by clicking (a setting, a toggle)
+          const e = undo.record({ do: 'changed', what: cmd.what, undo: cmd.undo }, { ok: true }, { os: deskOsName || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined });
+          const list = Array.isArray(e) ? e : e ? [e] : [];
+          for (const x of list) { x.task = changeTask; changes.push(x); }
+          if (list.length) { saveChanges(); reply({ ok: true, id: list[0].id, what: list[0].what, reversible: list[0].reversible }); }
+          else reply({ ok: false, why: 'changed needs what: the change, in a few words (and undo: how it is put back)' });
+        } else if (cmd.do === 'changes') {             // what this task (all:1 -- this visit) changed on the machine
+          const list = cmd.all ? changes.slice() : changes.filter((x) => x.task === changeTask);
+          const moot = (() => { try { return new Map(undo.supersede(changes.filter((x) => !x.undone)).map((s) => [s.id, s.why || ('removed by ' + s.by)])); } catch (_) { return new Map(); } })();
+          reply({ ok: true, n: list.length, changes: list.map((x) => ({ id: x.id, what: x.what, reversible: x.reversible, how: x.undo ? x.undo.kind : null, undone: x.undone || undefined, gone: moot.get(x.id) })),
+                  text: undo.forChat(list.filter((x) => !x.undone && !moot.has(x.id))) || 'nothing changed' });
+        } else if (cmd.do === 'undo') {                // put one change back -- after the room's yes, or because they asked
+          // `id`: c3, or "last" (the newest that can be put back). A change put back by HAND (typed text, a setting) comes
+          // back as the how, for the driver to do. A command undo needs the shell consent and the room's yes -- unless
+          // they asked for it in so many words after the change ("undo c3", "undo all"): that IS their yes. A risky undo
+          // (it deletes what was made) is never taken on silence. dry:1 shows the command and runs nothing.
+          const ref = String(cmd.id == null ? '' : cmd.id).trim().toLowerCase();
+          const e = ref === 'last' ? [...changes].reverse().find((x) => !x.undone && x.undo && x.undo.kind === 'exec') : changes.find((x) => x.id === ref);
+          if (!e) reply({ ok: false, why: 'no change ' + JSON.stringify(ref) + ' in this visit\'s record -- {"do":"changes"} lists them' });
+          else if (e.undone) reply({ ok: false, why: e.id + ' was put back already (' + e.undone + ')' });
+          else if ((() => { try { return undo.supersede(changes.filter((x) => !x.undone)).find((s) => s.id === e.id); } catch (_) { return null; } })()) {
+            const s = undo.supersede(changes.filter((x) => !x.undone)).find((x) => x.id === e.id);
+            reply({ ok: false, why: e.id + ' (' + e.what + ') cannot be put back now: ' + (s.why || ('a later change, ' + s.by + ', removed it')), by: s.by });
+          }
+          else {
+            const inv = undo.inverse(e);
+            if (!inv.ok) reply({ ok: false, why: e.id + ' (' + e.what + ') is not put back by a command: ' + (e.undo && e.undo.kind === 'hint' ? e.undo.text : inv.why), byHand: e.undo && e.undo.kind === 'hint' ? e.undo.text : undefined });
+            else if (!grantShell) reply({ ok: false, why: 'putting it back runs a command on the host, and this visit was not granted that -- ask: {"do":"access","shell":1,"why":"..."}', needs: 'shell' });
+            else if (cmd.dry) reply({ ok: true, dry: true, id: e.id, what: e.what, cmd: inv.cmd, risky: inv.risky, note: inv.note });
+            else {
+              const since = Date.parse(e.at) || 0;
+              const asked = readInbox().some((m) => (Number(m.ts) || 0) >= since && new RegExp('\\bundo\\s+(?:' + e.id + '\\b|all\\b|everything\\b)', 'i').test(String(m.text || '')));
+              let a = null;
+              if (!asked) a = await askRoom('↩ **May I put this back?** ' + e.id + ': ' + e.md + (inv.risky && inv.note ? ' — it ' + inv.note : '') + (cmd.why ? ' ' + String(cmd.why).slice(0, 200) : ''), { ms: Number(cmd.timeout) || 60000, standing: !inv.risky });
+              if (!asked && a.verdict !== 'approved') reply({ ok: false, why: 'the room did not say yes -- nothing was put back', verdict: a.verdict, replies: a.replies });
+              else {
+                if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus('Putting back ' + e.id + ': ' + e.what.slice(0, 60));
+                const x = await runExec(inv.cmd, 60000);
+                if (x.transport) reply({ ok: false, why: x.why });
+                else if (!x.ok) reply({ ok: false, why: 'it could not be put back: ' + (String(x.output || '').trim().split(/\r?\n/).slice(-3).join(' ').slice(0, 300) || 'the command failed (' + x.code + ')'), code: x.code });
+                else {
+                  e.undone = new Date().toISOString(); saveChanges();
+                  roomNote('↩ Put back **' + e.id + '**: ' + e.md + '.');
+                  reply({ ok: true, id: e.id, undone: e.what, asked: asked || undefined });
+                }
+              }
+            }
+          }
+        } else if (cmd.do === 'fetch' || cmd.do === 'send' || cmd.do === 'camera' || cmd.do === 'audio') {
+          // FILES AND CAPTURES (core/desk.js, through exec): the visit's shell consent covers them, the room hears
+          // each one, and a photo or a recording is asked for every time -- a yes only, never silence.
+          const say = (t) => { if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus(t); };
+          const why = cmd.why != null ? ' ' + String(cmd.why).slice(0, 300) : '';
+          // THROUGH THE RELAY when the visit holds that consent (the camera / audio / files line on the Allow card): the relay
+          // does it and tells the room; THROUGH EXEC when it holds the run-commands one; else refused, naming what to ask for
+          const scope = cmd.do === 'camera' ? 'camera' : cmd.do === 'audio' ? 'audio' : 'files';
+          const viaRelay = (scope === 'camera' && grantCamera) || (scope === 'audio' && grantAudio) || (scope === 'files' && grantFiles);
+          if (viaRelay) {
+            if (cmd.do === 'fetch') {
+              say('Copying a file from this machine');
+              const t = await relayTake('file', { path: String(cmd.path) }, 300000);
+              if (!t.ok) reply({ ok: false, why: t.why, needs: t.needs, busy: t.busy });
+              else { const out = saveLocal(cmd.out, t.buf); reply({ ok: true, from: String(cmd.path), file: out, size: t.buf.length, via: 'relay' }); }
+            } else if (cmd.do === 'send') {
+              let data = null;
+              try { data = fs.readFileSync(String(cmd.file)); } catch (e) { reply({ ok: false, why: 'cannot read ' + cmd.file + ' here: ' + e.message }); }
+              if (data && data.length > RELAY_PUT_MAX) reply({ ok: false, why: leaf(cmd.file) + ' is ' + humanBytes(data.length) + ' -- the relay puts up to ' + humanBytes(RELAY_PUT_MAX) + ' on a machine' });
+              else if (data) {
+                let go = true;
+                if (cmd.overwrite) {
+                  const a = await askRoom('📄 **May I replace ' + String(cmd.to) + '** on this machine with ' + leaf(cmd.file) + ' (' + humanBytes(data.length) + ')?' + why, { ms: Number(cmd.timeout) || 60000 });
+                  if (a.verdict !== 'approved') { go = false; reply({ ok: false, why: 'the room did not say yes to replacing ' + String(cmd.to) + ' -- nothing was written', verdict: a.verdict, replies: a.replies }); }
+                }
+                if (go) {
+                  say('Putting ' + leaf(cmd.file) + ' on this machine');
+                  const pr = await relayPut(String(cmd.to), data, !!cmd.overwrite);
+                  if (!pr.ok) reply(pr.exists ? { ok: false, exists: true, why: 'there is already a file at ' + (pr.full || cmd.to) + ' -- nothing was written. overwrite:1 asks the room before replacing it, or send it under another name' }
+                                              : { ok: false, why: pr.why, needs: pr.needs });
+                  else reply({ ok: true, to: pr.full, size: data.length, replaced: pr.replaced, via: 'relay' });
+                }
+              }
+            } else {
+              const cam = cmd.do === 'camera', secs = Math.max(1, Math.min(6, Math.round(Number(cmd.seconds) || 5)));
+              const q = cam ? '📷 **May I take one photo with this machine\'s camera**' + (cmd.device ? ' (' + String(cmd.device).slice(0, 60) + ')' : '') + '?' + why + ' Only a yes allows it.'
+                            : '🔊 **May I record ' + secs + ' seconds of what this machine is playing** (its sound output — not the microphone)?' + why + ' Only a yes allows it.';
+              const a = await askRoom(q, { ms: Number(cmd.timeout) || 60000, standing: false });
+              if (a.verdict !== 'approved') reply({ ok: false, why: a.verdict === 'cancelled' ? 'the room said no' : 'nobody said yes -- a ' + (cam ? 'photo' : 'recording') + ' is never taken without one', verdict: a.verdict, replies: a.replies });
+              else {
+                say(cam ? 'Taking a photo with the camera' : 'Recording what this machine is playing');
+                const t = await relayTake(cam ? 'camera' : 'audio', cam ? (cmd.device ? { device: String(cmd.device) } : {}) : { seconds: secs }, 120000);
+                if (!t.ok) reply({ ok: false, why: t.why, needs: t.needs, busy: t.busy });
+                else {
+                  const out = saveLocal(cmd.out, t.buf);
+                  capture(out, cmd.keep);   // like a screenshot: it leaves with the visit unless kept
+                  reply(Object.assign({ ok: true, file: out, size: t.buf.length, mime: t.mime, via: 'relay' }, cam ? {} : { seconds: t.seconds }));
+                }
+              }
+            }
+          }
+          else if (!grantShell) reply({ ok: false, why: 'this needs the ' + scope + ' consent (or the run-commands one), and this visit has neither -- ask: {"do":"access","' + scope + '":1,"why":"..."}', needs: scope });
+          else if (cmd.do === 'fetch') {
+            say('Copying a file from this machine');
+            const st = await deskOp('stat', { path: String(cmd.path) });
+            if (!st.ok) reply(st);
+            else if (!st.exists) reply({ ok: false, why: 'there is nothing at ' + st.full });
+            else if (st.dir) reply({ ok: false, why: st.full + ' is a folder -- fetch copies one file' });
+            else {
+              const f = await readAll(String(cmd.path), FETCH_MAX);
+              if (!f.ok) reply(f);
+              else {
+                const out = saveLocal(cmd.out, f.buf);
+                roomNote('📄 I copied **' + leaf(f.full) + '** (' + humanBytes(f.buf.length) + ') from this machine.');
+                reply({ ok: true, from: f.full, file: out, size: f.buf.length });   // (not `bytes`: every answer's bytes is the wire's)
+              }
+            }
+          } else if (cmd.do === 'send') {
+            let data = null;
+            try { data = fs.readFileSync(String(cmd.file)); } catch (e) { reply({ ok: false, why: 'cannot read ' + cmd.file + ' here: ' + e.message }); }
+            const os = data ? await deskOs() : null;
+            const cap = os && os.ok ? SEND_MAX[os.os] || SEND_MAX.windows : SEND_MAX.windows;
+            if (data && data.length > cap) reply({ ok: false, why: leaf(cmd.file) + ' is ' + humanBytes(data.length) + ' -- send puts up to ' + humanBytes(cap) + ' on a ' + (os && os.os === 'linux' ? 'Linux' : 'Windows') + ' machine (' + (os && os.os === 'linux' ? '~88 KB' : '~4 KB') + ' a command)' });
+            else if (data) {
+              let to = String(cmd.to);
+              let st = os.ok ? await deskOp('stat', { path: to }) : os;
+              // a FOLDER as the destination: the file goes inside it, under its own name
+              if (st.ok && st.exists && st.dir) { to = st.full.replace(/[\\/]+$/, '') + (os.os === 'windows' ? '\\' : '/') + leaf(cmd.file); st = await deskOp('stat', { path: to }); }
+              let go = st.ok, replaced = false;
+              if (!st.ok) reply(st);
+              else if (st.exists && st.dir) { go = false; reply({ ok: false, why: st.full + ' is a folder' }); }
+              else if (st.exists && !cmd.overwrite) { go = false; reply({ ok: false, why: 'there is already a file at ' + st.full + ' -- nothing was written. overwrite:1 asks the room before replacing it, or send it under another name', exists: true }); }
+              else if (st.exists) {
+                const a = await askRoom('📄 **May I replace ' + st.full + '** on this machine with ' + leaf(cmd.file) + ' (' + humanBytes(data.length) + ')?' + why, { ms: Number(cmd.timeout) || 60000 });
+                if (a.verdict !== 'approved') { go = false; reply({ ok: false, why: 'the room did not say yes to replacing ' + st.full + ' -- nothing was written', verdict: a.verdict, replies: a.replies }); }
+                else replaced = true;
+              }
+              // REPLACING A FILE: its old copy is kept first (core/undo.js, as for an exec that overwrites one), so the
+              // change record can put it back; stamped after the new one is written
+              let capSet = null;
+              if (go && replaced) {
+                const syn = sentAs(st.full || to, os.os, true);
+                let caps = [];
+                try { const p = undo.prepare(syn, { os: os.os, seq: changes.length + 1, now: Date.now(), visit: VISIT_ID }); caps = p && Array.isArray(p.captures) ? p.captures : []; } catch (_) { caps = []; }
+                const captured = [];
+                for (const k of caps) if (k.when === 'before' && !stopped) { const x = await runExec(k.cmd, 15000); captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); }
+                capSet = { syn, caps, captured };
+              }
+              if (go) {
+                say('Putting ' + leaf(cmd.file) + ' on this machine');
+                const b64 = data.toString('base64'), stepN = Math.max(4, desk.writeChunk(os.os, to) || 4);
+                let r = { ok: true, size: 0 }, n = 0, lastPct = -1;
+                for (let i = 0; i === 0 || i < b64.length; i += stepN) {
+                  if (stopped) { r = { ok: false, why: stopped }; break; }
+                  r = await deskOp('write', { path: to, b64: b64.slice(i, i + stepN), append: i > 0, at: i > 0 ? (i / 4) * 3 : undefined });
+                  n++; trips++; wire += Math.min(stepN, b64.length - i);
+                  if (!r.ok) break;
+                  const pct = b64.length ? Math.floor(((i + stepN) / b64.length) * 10) * 10 : 100;
+                  if (pct !== lastPct && pct < 100 && b64.length > stepN * 4) { lastPct = pct; say('Putting ' + leaf(cmd.file) + ' on this machine — ' + pct + '%'); }
+                }
+                if (!r.ok) reply({ ok: false, why: 'stopped after ' + humanBytes(Math.min(data.length, Number(r.size) || 0)) + ' of ' + humanBytes(data.length) + ': ' + r.why + ' -- the part already written is at ' + (st.full || to), partial: true });
+                else if (Number(r.size) !== data.length) reply({ ok: false, why: 'the file on the machine is ' + humanBytes(Number(r.size) || 0) + ', not ' + humanBytes(data.length) + ' -- send it again', partial: true });
+                else {
+                  if (capSet) for (const k of capSet.caps) if (k.when === 'after' && !stopped) { const x = await runExec(k.cmd, 15000); capSet.captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); }
+                  roomNote('📄 I put **' + leaf(cmd.file) + '** (' + humanBytes(data.length) + ') on this machine at `' + (r.full || st.full || to) + '`' + (replaced ? ', replacing the one that was there' : '') + '.');
+                  reply({ ok: true, to: r.full || st.full || to, size: data.length, commands: n, replaced });
+                  if (capSet && capSet.captured.length && out) capturedFor.set(out, { captured: capSet.captured, syn: capSet.syn });
+                }
+              }
+            }
+          } else {
+            // A WEBCAM PHOTO, or A FEW SECONDS OF WHAT THE MACHINE IS PLAYING (loopback -- never a microphone). The
+            // room is asked FIRST, every time, naming the device; the standing yes does not apply: silence is a no.
+            const cam = cmd.do === 'camera';
+            const secs = Math.max(1, Math.min(7, Math.round(Number(cmd.seconds) || 5)));
+            const dry = await deskOp(cmd.do, cam ? { device: cmd.device, dry: 1 } : { seconds: secs, dry: 1 });
+            if (!dry.ok) reply(dry);
+            else {
+              const dev = String(dry.device || (Array.isArray(dry.cameras) && dry.cameras[0]) || (cam ? 'the camera' : 'the speakers'));
+              const q = cam ? '📷 **May I take one photo with this machine\'s camera** (' + dev + ')?' + why + ' Only a yes allows it.'
+                            : '🔊 **May I record ' + secs + ' seconds of what this machine is playing** (' + dev + ' — its sound output, not the microphone)?' + why + ' Only a yes allows it.';
+              const a = await askRoom(q, { ms: Number(cmd.timeout) || 60000, standing: false });
+              if (a.verdict !== 'approved') reply({ ok: false, why: a.verdict === 'cancelled' ? 'the room said no' : 'nobody said yes -- a ' + (cam ? 'photo' : 'recording') + ' is never taken without one', verdict: a.verdict, replies: a.replies });
+              else {
+                say(cam ? 'Taking a photo with the camera' : 'Recording what this machine is playing');
+                const c = await deskOp(cmd.do, cam ? { device: cmd.device } : { seconds: secs }, 30000);
+                if (!c.ok) reply(c);
+                else {
+                  const f = await readAll(c.path, 50 * 1048576);
+                  await deskOp('rm', { path: c.path });
+                  if (!f.ok) reply(f);
+                  else {
+                    const out = saveLocal(cmd.out, f.buf);
+                    capture(out, cmd.keep);   // like a screenshot: it leaves with the visit unless kept
+                    roomNote(cam ? '📷 I took one photo with the camera (' + dev + ').' : '🔊 I recorded ' + (Number(c.seconds) || secs) + ' seconds of what this machine is playing.');
+                    reply(Object.assign({ ok: true, file: out, size: f.buf.length, device: dev, mime: c.mime }, cam ? {} : { seconds: c.seconds, peak: c.peak, note: c.note }));
+                  }
+                }
+              }
+            }
+          }
         } else if (cmd.do === 'exec') {                // RUN ONE COMMAND on the host (needs --shell)
           // Gated three ways and it matters: this is the only verb that is the MACHINE rather than the
           // picture. The relay refuses it unless the grant was given `shell` (GRANT_SHELL_VERBS), the
@@ -2133,6 +2674,14 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               // Narrate only when nothing richer is driving: a tree owns the line (systemic rule), an
               // explicit intent is the author's words, and a quiet step opted out.
               if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus('Running a command');
+              // CAPTURE BEFORE CHANGE: what this command will overwrite, delete or re-set is kept or read first, and stamped
+              // after, so the record can put it back and a restore never lands on something changed again (core/undo.js).
+              // Internal commands: not steps of the budget, nothing on the panel.
+              let caps = [];
+              try { const p = undo.prepare(cmd, { os: deskOsName || '', seq: changes.length + 1, now: Date.now(), visit: VISIT_ID }); caps = p && Array.isArray(p.captures) ? p.captures : []; } catch (_) { caps = []; }
+              const captured = [];
+              const runCaps = async (when) => { for (const k of caps) if (k.when === when && !stopped) { const x = await runExec(k.cmd, 15000); captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); } };
+              await runCaps('before');
               ws.send({ type: 'exec', reqId: rid, cmd: command });
               const ms = Math.max(1000, Math.min(120000, Number(cmd.timeout) || 30000));
               const r = await raceStop(ws.waitFor((m) => m.type === 'exec-result' && m.reqId === rid, ms + 2000));
@@ -2142,7 +2691,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                 let output = '';
                 if (r.data) { try { output = Buffer.from(String(r.data), 'base64').toString('utf8'); } catch (_) { output = ''; } }
                 const code = (typeof r.code === 'number') ? r.code : -1;
+                if (code === 0) await runCaps('after');
                 reply({ ok: code === 0, code, output, truncated: !!r.truncated });
+                if (captured.length && out) capturedFor.set(out, { captured });
               }
             }
           }
@@ -2181,32 +2732,37 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // any point -- only a SILENT window flips from 'unclear' to 'approved' (marked `auto:true`), so
           // the agent proceeds instead of stalling with nobody there to type "yes". A human yes or a
           // cancel is untouched, so the standing yes can never talk over a real "stop".
-          const text = String(cmd.text || '');
-          if (text) { ws.send({ type: 'chat', text }); try { fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} }
-          driveStatus(AUTO_CONFIRM ? 'Proceeding unless you say stop…' : 'Waiting for your OK…');
-          const ms = Math.max(2000, Math.min(300000, Number(cmd.timeout) || 20000));
-          // WHAT A REPLY MEANS is core/consent.js: a negation, deferral or hesitation anywhere is a no ("not sure",
-          // "go back first", "let me think" -- the old yes-word-anywhere test approved the first two); a yes is
-          // only a short reply of nothing but yes-words. Anything else is unclear.
-          const since0 = Date.now(), deadline = since0 + ms, replies = [];
-          let verdict = 'unclear';
-          while (Date.now() < deadline && !stopped) {
-            const m = await raceStop(ws.waitFor((x) => x.type === 'chat' && !x.system && String(x.name || '') !== selfName && (Number(x.ts) || 0) >= since0, Math.max(1, deadline - Date.now())));
-            if (!m) break;
-            replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
-            const said = consent.confirmReply(String(m.text || ''));
-            if (said === 'no') { verdict = 'cancelled'; break; }        // a cancel wins immediately
-            if (said === 'yes') verdict = 'approved';                    // ...but keep listening for a late cancel
-          }
-          // Standing yes: ONLY a window that NO ONE answered (and no revoke) means go ahead. A reply it could not
-          // read as a yes is a person who said something -- never filled in as approval (it used to be).
-          let auto = false;
-          if (AUTO_CONFIRM && verdict === 'unclear' && !replies.length && !stopped) { verdict = 'approved'; auto = true; }
-          // The replies ride back in this answer, so the driver has read them -- as `chat-wait` does, the
-          // interrupt they raised is spent. Left set, the very "yes" that approved a restart cut the plan
-          // doing it at its first step. A message from before the question still stands.
-          if (replies.length && interrupt && (Number(interrupt.ts) || 0) >= since0) interrupt = null;
-          reply({ ok: true, verdict, replies, auto });
+          // (askRoom below holds the window: the confirm verb keeps listening to its end, so a late cancel wins)
+          const a = await askRoom(String(cmd.text || ''), { ms: cmd.timeout, grace: Infinity });
+          reply({ ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto });
+        } else if (cmd.do === 'budget') {              // the task's budget: show it, lower it, or ask the room for more
+          // {} shows it. {steps, minutes}: a LOWER limit is simply taken; a higher one -- or none (0) -- is asked of
+          // the room, as going on is. {more:1, why}: the budget is spent (or nearly): ask whether to carry on. When
+          // the serve already asked (the first refused command does), a `more` without a new reason does not ask
+          // twice: it waits for the answer, and hears one the room already gave.
+          const why = cmd.why != null ? String(cmd.why).slice(0, 300) : '';
+          const ms = Number(cmd.timeout) || 60000;
+          if (cmd.more) {
+            const recent = budgetAskedAt && Date.now() - budgetAskedAt < 10 * 60000;
+            const a = await askRoom(recent && !why ? '' : BUD.question(why), { ms, since: recent ? budgetAskedAt : 0 });
+            if (a.verdict === 'approved') { BUD.more({ steps: cmd.steps, minutes: cmd.minutes }); budgetAskedAt = 0; }
+            else budgetAskedAt = Date.now();   // heard: asking again listens to what comes after this answer
+            const out = { ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto, budget: BUD.brief() };
+            if (a.verdict === 'cancelled') out.hint = 'the room said no: finish the task -- status {fin:1, say, file}';
+            else if (a.verdict === 'unclear') out.hint = 'no clear answer yet: wait for the room (chat-wait), then ask again';
+            reply(out);
+          } else if (cmd.steps != null || cmd.minutes != null) {
+            const w = BUD.want({ steps: cmd.steps, minutes: cmd.minutes });
+            if (!w.raises) { BUD.set(w); reply({ ok: true, budget: BUD.brief() }); }
+            else {
+              const asks = [];
+              if (w.steps != null) asks.push(w.steps ? w.steps + ' steps' : 'no limit on steps');
+              if (w.minutes != null) asks.push(w.minutes ? w.minutes + ' minutes' : 'no time limit');
+              const a = await askRoom('⏱ May I give this task more room — ' + asks.join(' and ') + '?' + (why ? ' ' + why : ''), { ms });
+              if (a.verdict === 'approved') BUD.set(w);
+              reply({ ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto, budget: BUD.brief() });
+            }
+          } else reply({ ok: true, budget: BUD.brief() || { none: true, why: 'no budget: --budget-steps and --budget-min are 0' } });
         } else if (cmd.do === 'note-list') {           // the host's sticky notes, as the agent has them
           reply({ ok: true, notes: [...notesMap.values()] });
         } else if (cmd.do === 'note-add') {            // leave a sticky note on the host's board
@@ -2475,6 +3031,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const lk = await doLook(Object.assign({ settle: 300 }, cmd.look));
         out = Object.assign({}, out, { look: lk });
       }
+      // ...AND WHAT IT CHANGED goes in the visit's record, with how to put it back (core/undo.js) -- every step,
+      // a plan's included: a move inside a plan is a move
+      await noteChange(cmd, out);
       return out;
     }
 
@@ -2628,6 +3187,46 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         cmd = v.cmd; cmd.__vetted = 1;
         if (v.fixed.length) noteFixed(v.fixed);
       }
+      // A SPENT BUDGET (core/budget.js): the acting command is NOT run, and nothing of it reaches the panel. The first
+      // refusal asks the room itself, once, so the people watching hear that the agent has stopped and why; the agent
+      // then waits for their answer with `budget {more:1}`, which hears a yes they already gave. Looking, talking,
+      // the panel and finishing are never refused -- an agent out of budget can still see, report and sign off.
+      // ...and A PLAN WAITING FOR THE ROOM'S YES (a preview, a checkpoint -- core/mission.js) acts on nothing either.
+      // The agent may still look, talk, change the plan and ask again.
+      {
+        const g = MS.gate();
+        if (g && budget.isActing(cmd)) {
+          const what = g.kind === 'plan' ? 'the plan for “' + MS.goal + '” is waiting for the room\'s yes'
+                                         : 'the job is at a checkpoint after “' + g.t + '”, waiting for the room\'s yes to go on';
+          const r0 = { ok: false, refused: true, waiting: true, why: what + ' -- nothing was done. {"do":"mission","op":"ask"} asks again (and hears a yes they already gave); or change the plan as they asked.',
+                       ms: 0, bytes: 0, trips: 0, mission: MS.brief() };
+          ledger.push({ at: new Date().toISOString(), do: String(cmd.do || '?').slice(0, 40), ok: false, why: 'waiting for the room\'s yes', ms: 0, bytes: 0, trips: 0 });
+          r0.inbox = { n: unreadIds.length, latest: lastOp };
+          if (cmd.cid != null) r0.cid = cmd.cid;
+          writeOut(r0);
+          continue;
+        }
+      }
+      {
+        const spent = BUD.check(cmd);
+        if (spent) {
+          if (!budgetAskedAt) {
+            budgetAskedAt = Date.now();
+            const q = BUD.question();
+            try { ws.send({ type: 'chat', text: q }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: q, mine: true, sent: true }) + '\n'); } catch (_) {}
+          }
+          const why = spent.why + ' -- nothing was done. Stop here: the room has been asked whether to go on, and ' +
+                      '{"do":"budget","more":1,"why":"what is left, and why it will work now"} hears their answer. Or finish the task.';
+          const r0 = { ok: false, refused: true, budget: spent.budget, why, ms: 0, bytes: 0, trips: 0 };
+          ledger.push({ at: new Date().toISOString(), do: String(cmd.do || '?').slice(0, 40), ok: false, why: 'the task\'s budget is spent', ms: 0, bytes: 0, trips: 0 });
+          try { fs.writeFileSync(ledgerFile, JSON.stringify({ host: HOST, task: TASK, steps: ledger, totals: { bytes: wire, trips } }, null, 1)); } catch (_) {}
+          r0.inbox = { n: unreadIds.length, latest: lastOp };
+          if (MS.active()) r0.mission = MS.brief();
+          if (cmd.cid != null) r0.cid = cmd.cid;
+          writeOut(r0);
+          continue;
+        }
+      }
       // Tell the watchers what this step is, before doing it. An explicit `intent` beats the default
       // phrase; `status` sets it with no action (handled in step). Only top-level commands narrate --
       // a plan shows its own one line ("Working through N steps"), not a burst from every sub-step.
@@ -2649,7 +3248,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const talk = actionTree.isConversation(cmd);
         // anything the agent says to the room after "shall I sign off?" makes THAT the open question
         if (cmd.do === 'chat' || cmd.do === 'chat-img' || cmd.do === 'confirm') signoffAsked = false;
-        if ((lastDrive.fin || lastDrive.over) && !cmd.quiet && !talk) retire();
+        if ((lastDrive.fin || lastDrive.over) && !cmd.quiet && !talk) {
+          // new work after a finish is a new task, with a budget of its own (core/budget.js)
+          const wasFin = !!lastDrive.fin;
+          retire();
+          if (wasFin) newTask('');
+        }
         if (atAuto()) {
           // THE ACTION TREE: the command goes INTO the tree -- merged with the run it continues ("typed 11
           // characters", "pressed 16 keys: ↓←↓←…"), described, with itself as the live leaf -- and the line
@@ -2682,6 +3286,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const t0 = Date.now(), w0 = wire, p0 = trips;
       const mAt = MS.active() && MS.current() ? MS.current().id : '';   // the milestone this command works on (replay.js)
       const r = (await step(cmd)) || { ok: false, why: 'that command answered nothing' };
+      BUD.count(cmd);   // a step of the task's budget, whatever its answer: a failed attempt is a turn spent too
       r.ms = Date.now() - t0; r.bytes = wire - w0; r.trips = trips - p0;
       // The answer goes into the tree too (a look shows what it saw, an input whether it failed), and
       // every command re-arms the pause detector that ends a burst.
@@ -2710,6 +3315,18 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const h = MS.hint();
         if (h && !r.hint) r.hint = h;
         if (atRec) saveMission();
+      }
+      // ...AND, ONCE, WHAT THE FINISHED TASK CHANGED (the finish said it to the room): what the driver may be asked to undo
+      if (changesSaid && r && typeof r === 'object') {
+        changesSaid = false;
+        const tc = taskChanges();
+        if (tc.length) r.changes = { n: tc.length, list: tc.slice(0, 12).map((x) => x.id + ' ' + x.what + (x.undo && x.undo.kind === 'exec' ? '' : x.reversible ? ' (by hand)' : ' (cannot be put back)')),
+                                     hint: 'the room was told what changed; if they ask, {"do":"undo","id":"c1"} puts one back' };
+      }
+      // ...AND SO DOES A BUDGET NEARLY SPENT, once per task (core/budget.js): time to wrap up, or to ask now
+      if (r && typeof r === 'object') {
+        const bh = BUD.hint();
+        if (bh) { if (!r.hint) r.hint = bh; else r.budgetHint = bh; r.budget = BUD.brief(); }
       }
       // ...AND SO DOES A MISSING RESULT PICTURE (see picOwed), on every answer while the finished task is still
       // the one on show. New work (the green lifting) ends it: the moment for that picture has passed.
@@ -2741,6 +3358,19 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (cmd && cmd.cid != null && r && typeof r === 'object') r.cid = cmd.cid;
       writeOut(r);
       if (cmd.do === 'quit' || cmd.do === 'done') break;
+    }
+    // THE KEPT COPIES GO WITH THE VISIT (core/undo.js cleanup): what capture-before-change put in the host's temp folder
+    // is removed while the grant is still live -- the record's undos end with the visit anyway. Its own wait, not
+    // raceStop: a visit that ended by a sign-off in chat still cleans up after itself; a revoked one cannot.
+    if (grantShell && changes.some((e) => e.backup)) {
+      let cleaned = 0;
+      for (const c of (() => { try { return undo.cleanup(changes, { os: deskOsName || '', visit: VISIT_ID }); } catch (_) { return []; } })()) {
+        const rid = ++reqSeq;
+        try { ws.send({ type: 'exec', reqId: rid, cmd: c.cmd }); } catch (_) { break; }
+        const x = await ws.waitFor((m) => m.type === 'exec-result' && m.reqId === rid, 12000);
+        if (x && x.code === 0) cleaned++;
+      }
+      say('[.] ' + (cleaned ? 'removed the copies kept for undo on the host' : 'could not remove the copies kept for undo on the host (they are in its temp folder, agent-drive-undo)'));
     }
     try { clearInterval(keepAlive); } catch (_) {}
     try { clearTimeout(atIdleTimer); clearTimeout(atSendTimer); } catch (_) {}

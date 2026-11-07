@@ -86,7 +86,7 @@ it explain each verb.
 | `expect` | `until` | is the predicate true now? |  |
 | `wait` | `until` `poll` | poll until true, or time out |  |
 | `plan` | `steps` | many steps in one command; if/then/else and repeat/until; stops at the first that fails |  |
-| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` | the job's big plan (drive/mission.js) |  |
+| `mission` | `op` `plan` `t` `step` `steps` `m` `milestone` `before` `after` `now` `to` `done` `check` `into` `file` `say` `w` `h` `skill` `goal` `milestones` `preview` `checkpoints` `checkpoint` `replay` | the job's big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again |  |
 | `chat` | `text` `to` | say it in the session chat | `say`, `message`, `message`→`text`, `msg`→`text`, `body`→`text` |
 | `chat-img` | `file` `text` `to` `name` `w` `h` | post a picture to the chat | `path`→`file`, `image`→`file`, `img`→`file` |
 | `chat-wait` | `since` | wait for the next human reply |  |
@@ -100,6 +100,7 @@ it explain each verb.
 | `warn` | `text` | a caution line on the panel |  |
 | `confirm` | `text` | ask before something hard to undo; a no always wins | `message`→`text`, `msg`→`text`, `question`→`text` |
 | `captcha` | `text` | a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one | `recaptcha`, `hcaptcha` |
+| `budget` | `steps` `minutes` `more` | the task's budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room |  |
 | `done` | `text` `file` `w` `h` | sign off (with a picture) and hand the grant back |  |
 | `note-list` | — | the host's sticky notes |  |
 | `note-add` | `text` `x` `y` | leave a sticky note | `message`→`text` |
@@ -113,8 +114,15 @@ it explain each verb.
 | `launch` | `app` `args` `cwd` `wait` `focus` `dry` `look` | start an app by name, path or URL, as the signed-in user, and find its window (needs shell) | `start`, `open-app` |
 | `controls` | `title` `id` `max` `depth` `budget` | the controls of a window by NAME (UI Automation / AT-SPI): name, type, rect, cx/cy to click -- never a value; password fields flagged (needs shell) | `ui`, `accessibility` |
 | `terminal` | `open` `input` `keys` `signal` `close` `wait` `until` | the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent) | `term`, `console` |
-| `access` | `shell` `control` `terminal` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
+| `access` | `shell` `control` `terminal` `camera` `audio` `files` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
 | `exec` | `cmd` `text` | run one command on the host (needs --shell) | `run`, `shell`, `command`→`cmd`, `line`→`cmd` |
+| `changes` | `all` | what this task changed on the machine (all:1 -- this visit), each with whether and how it can be put back |  |
+| `undo` | `id` `dry` | put one change back: a command after the room's yes (or because they asked: "undo c3"); a change put back by hand comes back as the how; dry:1 shows the command only | `change`→`id`, `ref`→`id`, `which`→`id` |
+| `changed` | `what` `undo` | record a change you made by clicking (a setting, a toggle) and how it is put back -- it joins the task's record | `text`→`what`, `change`→`what`, `revert`→`undo`, `back`→`undo` |
+| `fetch` | `path` `out` | copy a file FROM the machine to here, in chunks (needs shell; said in the room) | `from`→`path`, `source`→`path`, `file`→`path`, `dest`→`out`, `save`→`out`, `to`→`out` |
+| `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
+| `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
+| `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
 
 Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `fresh` `timeout` `why` `cid`.
 <!-- verbs:end -->
@@ -126,7 +134,7 @@ Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `
 | `click {x,y}` / `clicks {at:[[x,y],...]}` | left click one / many |
 | `clickText {text,rect?,nth?}` | OCR the screen, find that word and CLICK it — no hand-measured x/y (it's `find` + `click` in one; `rect` limits where to look, `nth` picks among matches, `as` also remembers it) |
 | `right` / `dbl` {x,y} | right-click / double-click |
-| `keys {text, show?, secret?, human?, speed?}` | type text (window must have focus). The progress panel shows only its SHAPE ("typed 11 characters") unless `show:1` (a URL, a search term); `secret:1` hides it whatever else is set. **It types LIKE A PERSON by default** — the viewer's own Type-window planner ([core/autotype.js](../../core/autotype.js), copied character for character): a typist's rhythm, pauses at clause ends, the odd slip onto a neighbouring key fixed with Backspace; `speed` `slow` / `normal` / `fast` (≈40 / 70 / 105 words a minute). It takes as long as a person would, and stops when the operator writes (`stoppedAt`). **`human:0`** is the machine's instant typing (with a `speed`, the even robot pace); `--type-instant` / `SM_TYPE_HUMAN=0` makes instant the default for a whole visit. On a host that drops characters, `drive/type-text.js` (one key per command; `--show` / `--secret` / `--intent`) |
+| `keys {text, show?, secret?, human?, speed?}` | type text (window must have focus). The progress panel shows only its SHAPE ("typed 11 characters") unless `show:1` (a URL, a search term); `secret:1` hides it whatever else is set. **It types LIKE A PERSON by default** — the viewer's own Type-window planner ([core/autotype.js](../../core/autotype.js), copied character for character): a typist's rhythm, pauses at clause ends, the odd slip onto a neighbouring key fixed with Backspace; `speed` `slow` / `normal` / `fast` (≈40 / 70 / 105 words a minute). It takes as long as a person would, and stops when the operator writes (`stoppedAt`). **Everyone watching sees ScreenMirror's own "is auto-typing" card** under the agent's name while it types (`spot {k:"at"}`, as a colleague's Type window raises it), and **a person who presses a key stops the run** (`stoppedAt.tookKeyboard`) — they took the keyboard. **`human:0`** is the machine's instant typing (with a `speed`, the even robot pace); `--type-instant` / `SM_TYPE_HUMAN=0` makes instant the default for a whole visit. On a host that drops characters, `drive/type-text.js` (one key per command; `--show` / `--secret` / `--intent`) |
 | `press {code}` | one key, e.g. `Enter`, `Backspace`, `F5` |
 | `chord {mod,code}` | modifier + key, e.g. `ControlLeft` + `KeyT` |
 | `open {url, wait?, tab?, human?, speed?}` | Ctrl+L (Ctrl+T first with `tab:1`), type the URL — like a person at the fast pace unless `human:0` — Enter, wait ms (needs a focused browser) |
@@ -207,7 +215,8 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 
 | op | fields | what it does |
 |---|---|---|
-| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?}]}`, `why?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. |
+| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?, checkpoint?}]}`, `why?`, `preview?`, `checkpoints?`, `timeout?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. **`preview:1`** posts it as a question ("Shall I go ahead?") and waits `timeout` (default 60 s): the answer carries `preview {verdict, replies, auto}`, and anything but a yes HOLDS the job (`waiting:true`). **`checkpoints:1`** (or `checkpoint:true` on a milestone) asks after each milestone the same way. A new plan is a new task: its budget starts again. |
+| `ask` | `why?`, `timeout?` | The job is held (a preview, a checkpoint): ask the room again. A yes they gave after the last question counts; a new `why` re-posts the question with it. `{verdict, replies, waiting}`. |
 | `step` | `t` | Begin a short step of the current milestone (one nobody planned is added where the work is); `t:""` ends it. |
 | `steps` | `m?`, `steps:[…]`, `why?` | Rewrite a milestone's short steps. |
 | `achieve` | `m?`, `check?`, `file?`, `note?`, `timeout?` | Prove it: the milestone's `check` (or this `check`) must hold on a FRESH picture, polled up to `timeout` (default 2000 ms); with no check, `file` (a picture of it) is the proof and goes to the room with the ✓ line. Achieved → said in the room, the next milestone starts. Not → `ok:false` with what the check saw, and the miss is counted. |
@@ -215,13 +224,13 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 | `change` | `m`, `to?`, `done?`, `check?`, `steps?`, `why` | Rename or redefine a milestone (its row keeps its history). Changing what proves an achieved one opens it again. |
 | `split` | `m`, `into:[{t, done, …}, …]`, `why` | One milestone becomes several; the first carries it on. |
 | `skip` / `fail` | `m`, `why` | Not needed / cannot be done — said in the room; the plan moves on, and the report keeps it. |
-| `finish` | `file?`, `say?` | Every milestone achieved, skipped or failed → the report (one line per milestone, its time or reason, how often the plan changed), the picture and "Anything else, or shall I sign off?" as ONE message, panel green. Refused, naming them, while any is open. |
+| `finish` | `file?`, `say?` | Every milestone achieved, skipped or failed → the report (one line per milestone, its time or reason, how often the plan changed), the picture and "Anything else, or shall I sign off?" as ONE message, panel green. Refused, naming them, while any is open. A job with nothing failed, that no skill did and that is not a replay (`replay:1` on its plan) comes back with **`draft {name, dir, milestones, commands, typed, secrets}`**: it was saved as a draft skill in `skills/_drafts/<name>/` (`node drive/replay.js promote <name> --yes` after a person has read `typed`; `--no-drafts` turns it off). |
 | `show` · `resume` · `drop` | `why` for drop | The plan as text · reload `mission.json` after a restart · abandon it (said in the room). |
 
 `m` is a milestone's number ("3"), its id ("m3"), `current`, `next`, or part of its name. `add`, `change`, `split`,
 `skip` and `fail` need a `why` — the plan never changes silently. **Every answer while a job is planned carries
 `mission`** (`{goal, done, of, at, when, step, acts, tries}` — the current milestone and what will prove it) and, once
-per threshold, a **`hint`**: a milestone that missed its check twice (change the approach, replan, or ask), three
+per threshold, a **`hint`**. **While the job is held** (`mission.waiting`), every acting command is refused with `waiting:true` and nothing is sent; looking, talking and changing the plan still work. The hints: a milestone that missed its check twice (change the approach, replan, or ask), three
 times (ask the operator), a run of three failed actions (look before acting again), or 40+ actions without being
 achieved. Inside a planned job `status {step}` / `{substep}` land as a short step of the current milestone, a
 `status {task}` naming another job drops the plan, and a bare `status {fin:1}` with milestones still open is answered
@@ -268,6 +277,48 @@ every window and control also carries **`cx`/`cy`: its centre on this visit's sc
 
 Limits: on Linux these work on X11 (Wayland refuses `windows`/`focus`), need python3, and `controls` needs AT-SPI.
 Reading a Chromium/Electron window's controls may switch its accessibility support on.
+
+## What the task changed, and putting it back
+
+Every step that changes the machine — `exec` and a `terminal` line (read by [core/undo.js](../../core/undo.js): files
+moved, renamed, copied, made or deleted; services; registry values; processes ended; files written), `keys` (only how
+many characters and into which window — never the text), `launch`, a file `send` put there, and what the driver
+declares with `changed` — goes into the visit's record (`<serve-dir>/changes.json`), each with how it is put back: a
+command, by hand, or not at all (and why). **The finish of a task tells the room** what it changed on the machine —
+files, services, settings, what was declared; typed text and apps started stay in the record but not in that line,
+as typing is usually the job itself — and which of it can be put back; the finishing answer carries `changes {n, list}`.
+
+| verb | what it does |
+|---|---|
+| `changes {all?}` | This task's record (`all:1`: the visit's) — `{n, changes:[{id, what, reversible, how}], text}`. |
+| `undo {id, dry?}` | Put one back (`id`: `c3`, or `last`). A command undo needs `--shell` and the room's yes — unless they asked in so many words after the change ("undo c3", "undo all"): that is the yes. One that deletes what was made (a copy, a new file or folder — a folder only while empty) is never taken on silence. A change put back by hand answers `ok:false` with `byHand`: how. `dry:1` shows the command. |
+| `changed {what, undo?}` | Record a change made by clicking (a setting, a toggle) and how it is put back: words, or `{cmd, os}`. |
+
+Undo several newest first. **Capture before change:** before an `exec` runs, what it will overwrite, delete or re-set is
+kept or read first — a file copied into this visit's own folder in the host's temp (`agent-drive-undo`, up to 16 MB a
+file and 256 MB a visit), a registry value, a service's startup type, a file's mode or owner, an ACL — and stamped after,
+so those go back too, and a restore refuses if the thing changed again since. The copies are removed when the visit
+ends. Still not reversible: whole folder trees, files named by wildcards or unknown variables, anything over the cap,
+ended processes, Terminal lines. A change a LATER one made moot (a folder made, then deleted with what was in it) is
+marked `gone` in `changes`, left out of the finish, and `undo` says which change removed it.
+
+## Files, a webcam photo, a sound recording
+
+**Through the relay, with consents of their own:** a visit started with `--files`, `--camera` or `--audio` (or given them
+later with `access {files|camera|audio:1}`) asks for each on its own line of the Allow card. The RELAY then does the copy
+or the capture itself (`agent-take` / `agent-put`, in parts with a sha256) and says so in the machine's chat — no shell
+needed; answers carry `via:"relay"`. The relay reads up to 6 MB and puts up to 4 MB, and a recording is 1–6 s.
+**Otherwise through `exec`** (the shell consent): one command per step, built by [core/desk.js](../../core/desk.js). What is copied, put, photographed or recorded is said in the session chat as it happens.
+
+| verb | what it does |
+|---|---|
+| `fetch {path, out}` | Copy one file FROM the machine to `out` here, 360 KB a command (up to 100 MB). `{from, file, size}`. A folder, or nothing there, is refused with a reason. |
+| `send {file, to, overwrite?}` | Put the file `file` (here) ON the machine at `to` (a folder means inside it, under its own name), a chunk a command — ~4 KB on Windows (up to 2 MB), ~88 KB on Linux (up to 25 MB); the last answer's size is checked. A file that is there is refused (`exists`) unless `overwrite:1`, which asks the room first. `{to, size, commands, replaced}`; a send cut short says how far it got (`partial`). |
+| `camera {out, device?}` | One photo from the webcam (`device`: part of the camera's name). The room is asked first, naming the camera and your `why`; **only a clear yes allows it — never the standing yes, never silence**. `{file, size, device}` (the MCP tool returns the photo inline). |
+| `audio {out, seconds?}` | 1–7 s (default 5) of what the machine is PLAYING — its sound output, never a microphone — as a WAV. Asked for the same way as a photo. `{file, size, seconds, peak, device, note?}` |
+
+A refused photo or recording answers `ok:false` with `verdict` (`cancelled` or `unclear`) and the replies. The pictures and recordings
+are captures like a `shot`: they are deleted when the visit ends unless `keep:1`.
 
 ## Exclusive control & running commands
 

@@ -17,8 +17,17 @@ anyone can add — and every contributor's improvement reaches everyone through 
 - **Verify, don't hope** — every action may carry an expectation; a job is a *mission* of milestones achieved
   only with proof; a proven job can be **replayed** with no model turns.
 - **Behave like a person** — types like one by default (the ScreenMirror Type window's own planner), works in
-  the open (the progress panel, the session chat), asks before anything hard to undo, and hands CAPTCHAs to the
-  operator.
+  the open (the progress panel, the session chat, the "is auto-typing" card), asks before anything hard to undo,
+  and hands CAPTCHAs to the operator.
+- **Long jobs stop and ask** — every task has a **budget** of steps and minutes; a plan can be **previewed** to the
+  room before it starts and **checkpointed** after each milestone; nothing acts until they say yes.
+- **The library grows itself** — a job finished with every milestone proven is saved as a **draft skill**, which a
+  person reviews and promotes; a saved job can run again **with other values** (`--set amount=77.25`) and **on a schedule or a trigger** — a relay alert, a new file, a call (`drive/schedule.js`).
+- **Everything it changed is on record** — moved, made, deleted, typed, started — said to the room at the finish,
+  and put back on request (`undo c3`).
+- **Files, a photo, a recording** — files copied from and onto the machine, said in the room; a webcam photo or a
+  few seconds of its sound only when the room says yes, every time.
+- **Jobs in plain words** — `node kit.js intake "connect 10004 and do my sticky notes"` (and the MCP `intake` tool).
 - **Every command is checked before it runs** against one verb table (`node kit.js verbs`); the docs' table is
   generated from it.
 - **An MCP server** exposes it all as tools, pictures inline: `claude mcp add agent-drive -- node mcp/server.js`.

@@ -12,6 +12,10 @@ reconnect.json
 .env.*
 !.env.example
 
+# Skills the agent drafted itself after a proven job (drive/replay.js): local until a person reviews
+# the typed text they store and promotes them (node drive/replay.js promote <name> --yes).
+skills/_drafts/
+
 # Personal working logs — keep your own continuity notes; don't commit them.
 SESSION-LOG.md
 *.local.md

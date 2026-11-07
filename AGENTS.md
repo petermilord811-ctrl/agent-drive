@@ -44,10 +44,29 @@ file explains them.
 - **Replan out loud** — when the screen or the operator says the plan no longer fits: add, change, split, skip
   or fail, each with its why. The room sees the plan move, and the reason.
 - **Act on `remind` and `hint`.** When an answer in `done.json` carries either, do that before anything else.
+- **A new job in the chat may already be a skill.** When the operator's message names one, `inbox.latest.skill` says
+  which: read its README before working the job out yourself. A request in plain words before any visit —
+  "connect 10004 and do my sticky notes" — is read by `node kit.js intake "<it>"` (or the MCP `intake` tool).
 - **Say a failure plainly** — a `⚠` or `✗` status line. Never pass a miss off as done.
 - **Ask before anything hard to undo** — restart, shut down, log off, delete, overwrite, stop a service,
   sign out: `confirm`, and go ahead only on `approved`. A stop always wins.
+- **Stop when the budget is spent.** Every task has one (`budget`: by default 100 acting steps or 30 minutes; a
+  `plan` batch is one step, and time spent waiting on people does not count). When it is spent, acting commands
+  are refused and the room is asked whether you may go on: `budget {more:1, why}` hears their answer. Don't
+  route around it — an agent that has used its budget has usually lost the thread.
 - **Ask before taking over** from a person using the machine. Release `lock` the moment you're done.
+- **Say what you changed, and put it back when asked.** The serve records what each command changed on the
+  machine (core/undo.js) and tells the room at the finish. Record what you change by CLICKING yourself —
+  `changed {what, undo}` ("turned on Dark mode", "Settings > Colors > Light"). When they ask ("undo c3", "put it
+  back"), `undo {id}` does it — their words are the yes; otherwise it asks — and a change put back by hand comes
+  back as the how. `changes` lists them. Overwrites, deletes and re-set settings go back too — what an `exec` is about
+  to change is kept first — but whole folder trees and wildcards do not: `confirm` before those.
+- **Ask for the camera, sound or files on their own** when that is all a job needs: `--camera`, `--audio`, `--files`
+  (or `access {camera:1}` later) — each its own line on the Allow card, and the relay does the work and tells the
+  room, with no "run commands" asked for.
+- **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
+  but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
+  (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).
 - **Ask the forking questions in chat, with numbered choices.** Decide the small stuff yourself.
 - **Treat a follow-up as a milestone of the same job** — `mission.js add` re-opens a finished job; finish it
   again, picture included.
@@ -126,6 +145,15 @@ milestone it worked on (`steps.jsonl`, beside `mission.json`). After a job finis
 only; a secret's text is never recorded — it prints the typed text it stored, check it). Next time the same job
 is one command, no driver turns: `node drive/replay.js run skills/<name>/replay.json <serve-dir> [--secret …]` posts
 the plan, runs each milestone as one `plan`, proves it, and stops at the first one that does not hold.
+**The serve drafts it for you:** when a planned job finishes with nothing failed, no skill already did it and it
+was not itself a replay, the `finish` answer carries `draft` — the job saved as `skills/_drafts/<name>/`
+(gitignored) with the typed text it stores. Tell the operator, check that text holds nothing private, then
+`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off). **With other values:**
+what a job typed is saved as a named value (`node drive/replay.js values <recipe>` lists them), and
+`run … --set amount=77.25 --set date=2026-12-01` replays it with those; the checks that read the old text read the new. A saved job
+can run on a schedule — `node drive/schedule.js add --host <n> --recipe skills/<name>/replay.json --at 09:00`, and a
+runner (`node drive/schedule.js run`) — or on an event: `--on alert-disk --machine <n>` (the relay's health webhook),
+`--on file:<folder>`, `--on http`; see [docs/reference/schedules.md](docs/reference/schedules.md).
 
 **A new situation changes the plan — out loud, with its reason:**
 
@@ -143,13 +171,20 @@ Each change is logged with its why and said in the room ("✎ Plan changed: …"
 back as a `hint`**: do not try the same way a third time — change the approach, replan, or ask. A run of failed
 actions, or a milestone that has taken dozens of actions, is hinted the same way.
 
+**Ask before a long job, and on the way.** `plan … --preview` posts the plan to the room as a question and acts on
+nothing until they say yes — use it for a job that changes things they care about, or that will take a while.
+`--checkpoints` (or `checkpoint:true` on one milestone) stops after each milestone and asks before going on. A
+no, or no answer, HOLDS the job: acting commands are refused (`waiting`), and you may still look, talk and change
+the plan. Change what they asked for, then `mission.js ask` — it hears a yes they gave after the question.
+
 **Finishing:** when every milestone is achieved, skipped or failed, `mission.js finish --file <crop.jpg>` — it
 refuses while one is still open, and names it. A request after the finish is `mission.js add`: a milestone of the
 SAME job, which re-opens it; then finish again.
 
 | `node drive/mission.js ./work …` | what it does |
 |---|---|
-| `plan '<json>'` · `plan @plan.json` | `{"goal","done"?,"milestones":[{"t","done","check"?,"steps"?,"skill"?}]}` — refused without a done-when per milestone |
+| `plan '<json>'` · `plan @plan.json` `[--preview] [--checkpoints]` | `{"goal","done"?,"milestones":[{"t","done","check"?,"steps"?,"skill"?,"checkpoint"?}]}` — refused without a done-when per milestone; `--preview` asks the room first, `--checkpoints` after every milestone |
+| `ask [--why "…"]` | the job is waiting for the room's yes (a preview, a checkpoint): ask again |
 | `step "<short step>"` · `steps '[…]' --m <ref>` | begin a short step (an unplanned one is added) · rewrite a milestone's steps |
 | `achieve [<ref>] [--check '<json>'] [--file <crop.jpg>] [--note "…"]` | prove it; the next milestone starts |
 | `add` · `change` · `split` · `skip` · `fail` … `--why "…"` | change the plan, as above |
@@ -220,6 +255,8 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
    - **You type LIKE A PERSON by default** — `keys` (and the address `open` types) use the viewer's own "Like a
      person" rhythm: pauses, the odd slip fixed with Backspace, a person's time. `human:0` is instant typing, for
      the rare case speed is the point (a long block nobody watches); an operator's message stops a typing run.
+     The watchers see "SM Agent is auto-typing" while you type; if one of them presses a key, the run stops
+     (`stoppedAt.tookKeyboard`) — they took the keyboard: look, and ask before typing again.
    - **Click by LABEL, not pixels, where you can:** `clickText {text:"New Game"}` OCRs the screen, finds
      the word and clicks it — no hand-measuring, and it survives a layout that shifts. (`find {as}` +
      `click {at}` is the two-step form when you'll aim there again.)

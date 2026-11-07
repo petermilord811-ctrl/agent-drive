@@ -72,6 +72,13 @@ ok(new Set(ds).size > 3, 'like a person, the gaps vary (' + ds.join(',') + ')');
   ok(!r2.ok && r2.stopped && r2.at === 10, 'run: stop() ends it between keys (' + JSON.stringify(r2) + ')');
   ok(got.filter((m) => m.action === 'down').length === got.filter((m) => m.action === 'up').length, '...and releases what it held');
 
+  // onStep: every step, once it has gone out, with how far into the text it is -- what the watchers' card counts
+  const short = at.atPlan('Hello world', { human: true, speed: 'fast' }, seeded(6));
+  const heard = [];
+  await at.run(short, () => {}, { onStep: (i, s) => heard.push([i, s.src]) });
+  ok(heard.length === short.steps.length && heard.every(([i], k) => i === k), 'run: onStep hears every step, in order');
+  ok(heard[heard.length - 1][1] === short.total, '...and the last one has reached the whole text (' + heard[heard.length - 1][1] + ' of ' + short.total + ')');
+
   console.log((fail ? 'FAIL' : 'ok') + ' humantype: ' + pass + '/' + (pass + fail));
   process.exit(fail ? 1 : 0);
 })();

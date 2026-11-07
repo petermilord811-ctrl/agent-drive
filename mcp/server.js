@@ -174,6 +174,8 @@ const EXTRA = {
   confirm: 'Says it to everyone and waits (timeout ms, default 20000): go ahead only on verdict "approved".',
   captcha: 'Blocks until the operator replies (timeout ms, default 10 min).',
   access: 'Blocks while a person decides on the new Allow card (about two minutes).',
+  budget: 'more:1 (and a higher limit) asks the room and blocks for their answer (timeout ms, default 60000). When the budget is spent, acting tools are refused until they say yes.',
+  mission: 'op plan with preview:1, op achieve at a checkpoint, and op ask wait for the room\'s yes (timeout ms, default 60000); while the job waits, acting tools are refused (waiting:true).',
   exec: 'Needs a grant that may run commands: connect {shell:true}, or access {shell:true}.',
   done: 'Ends the visit, like disconnect.',
   quit: 'Ends the visit, like disconnect.',
@@ -205,6 +207,9 @@ const CONNECT_TOOL = {
       relay: { type: 'string', description: 'the relay, wss://... (default: SM_RELAY, from the environment or the kit\'s .env)' },
       control: { type: 'boolean', description: 'ask for the keyboard and mouse (default true; serving needs it)' },
       shell: { type: 'boolean', description: 'also ask to run commands -- a consent of its own on the card (default false)' },
+      camera: { type: 'boolean', description: 'also ask to take photos with its camera -- its own line on the card; each photo is still asked for in chat' },
+      audio: { type: 'boolean', description: 'also ask to record what it is PLAYING (never a microphone) -- its own line on the card' },
+      files: { type: 'boolean', description: 'also ask to copy files to and from it -- its own line on the card' },
       monitor: { type: 'integer', minimum: 0, description: 'which screen (default 0)' },
     },
     required: ['host', 'task'],
@@ -217,18 +222,37 @@ const DISCONNECT_TOOL = {
     'quietly (quit). Waits for the client to exit. Only once the operator is finished -- it hangs up on them.',
   inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'a sign-off for the room' } }, additionalProperties: false },
 };
-const TOOLS = [CONNECT_TOOL, DISCONNECT_TOOL];
+// A JOB ASKED FOR IN PLAIN WORDS (core/intake.js): "connect 10004 and do my sticky notes" -> the machine, the skill, the
+// access to ask for, and connect's own fields. Reads nothing but the kit's skills; connects to nothing.
+const INTAKE_TOOL = {
+  name: 'intake',
+  description: 'Read a job asked for in plain words ("connect 10004 and do my sticky notes") into what connect needs: the machine, ' +
+    'the task, the access to ask for -- and the skill that already does it, with its run line. Nothing is connected: call connect ' +
+    'with the `connect` fields when they are right, and read the skill before working the job out yourself.',
+  inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'the request, as the person wrote it' } }, required: ['text'], additionalProperties: false },
+};
+const intake = require(path.join(KIT, 'core', 'intake.js'));
+function intakeCall(args) {
+  const text = typeof args.text === 'string' ? args.text : '';
+  if (!text.trim()) return errResult('intake needs text: the request, as the person wrote it');
+  const r = intake.parse(text, intake.skills());
+  const out = Object.assign({}, r);
+  if (r.host && r.task) out.connect = { host: r.host, task: r.task, control: !!r.needs.control, shell: !!r.needs.shell };
+  if (r.needs.terminal) out.terminal = 'the job needs the Terminal panel: after connect, ask for it with access {terminal:true}';
+  return { content: [textBlock(out)] };
+}
+const TOOLS = [CONNECT_TOOL, DISCONNECT_TOOL, INTAKE_TOOL];
 const TOOL_VERB = new Map();   // tool name -> verb
 for (const verb of verbs.VERBS) {
   let name = String(verb).replace(/-/g, '_');
-  if (name === 'connect' || name === 'disconnect' || TOOL_VERB.has(name)) name = 'do_' + name;
+  if (name === 'connect' || name === 'disconnect' || name === 'intake' || TOOL_VERB.has(name)) name = 'do_' + name;
   TOOL_VERB.set(name, verb);
   TOOLS.push(verbTool(verb, name));
 }
 
 const INSTRUCTIONS = [
   'agent-drive drives a machine through ScreenMirror for the person who invited you. Each visit needs a person at the machine to press Allow.',
-  '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size.',
+  '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size. A request in plain words ("connect 10004 and do my sticky notes")? intake {text} reads it into connect\'s fields and finds the skill that does it.',
   '2. Every serve verb is a tool (a "-" in a verb is "_" here: chat_wait, note_add). look returns the picture inline with its scale: click what you see in ITS pixels with click {lx,ly}. Any acting verb takes look:{} to act and see in one call.',
   '3. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); remind and hint (do those first).',
   '4. Any command may carry intent (its name on the watchers\' panel), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
@@ -254,7 +278,16 @@ function stepMs(c) {
     case 'pause': ms = clamp(Number(c.ms) || 0, 0, 30000); break;
     case 'open': ms = (Number(c.wait) || 2500) + 5000; break;
     case 'spotlight': case 'beam': ms = c.forever ? 1800000 : 90000; break;
-    case 'mission': ms = clamp(t || 2000, 0, 30000) + 45000; break;
+    // a preview, a checkpoint and `ask` wait for the ROOM (60 s by default); an achieve at a checkpoint may poll its
+    // check and then ask, so it gets both
+    case 'mission': ms = (c.op === 'plan' && c.preview) || c.op === 'ask' || c.op === 'achieve' ? 2 * clamp(t || 60000, 2000, 300000) + 45000 : clamp(t || 2000, 0, 30000) + 45000; break;
+    case 'budget': ms = clamp(t || 60000, 2000, 300000) + 15000; break;
+    // a photo or a recording asks the room first (60 s by default), then captures and reads it back
+    case 'camera': case 'audio': ms = clamp(t || 60000, 2000, 300000) + 90000; break;
+    // a file is one command per chunk: minutes for a big one (and a send may ask before replacing a file)
+    case 'fetch': case 'send': ms = 20 * 60000; break;
+    // the room's yes (60 s by default), then the undo command itself
+    case 'undo': ms = clamp(t || 60000, 2000, 300000) + 75000; break;
     case 'plan': ms = planMs(c.steps, 0); break;
   }
   if (c.expect) ms += 45000;
@@ -372,6 +405,7 @@ async function connect(args, ctx) {
   argv.push('--host', host, '--agent', AGENT, '--task', task);
   if (control) argv.push('--control');   // without it the visit is watch-only: acting verbs come back needs:'control'
   if (shell) argv.push('--shell');
+  for (const k of ['camera', 'audio', 'files']) if (args[k]) argv.push('--' + k);   // each its own line on the Allow card
   if (mon) argv.push('--mon', String(mon));
   argv.push('--serve', dir);
   // if this server dies outright (a SIGKILL on Linux/macOS leaves no stdin-close to notice), the client hands the
@@ -544,7 +578,7 @@ function told(v, res) {
 // when this ended the visit -- the client's exit.
 async function answerOf(v, cmd, a) {
   const more = [];
-  const pic = cmd.do === 'look' ? (a && a.ok && a.out) : (a && a.look && a.look.ok && a.look.out);
+  const pic = cmd.do === 'look' ? (a && a.ok && a.out) : cmd.do === 'camera' ? (a && a.ok && a.file) : (a && a.look && a.look.ok && a.look.out);
   if (pic) {
     const im = imageBlock(path.resolve(v.dir, String(pic)));
     more.push(im || textBlock({ picture: String(pic), why: 'the picture could not be read back' }));
@@ -610,8 +644,10 @@ async function toolsCall(id, params) {
   const args = params.arguments == null ? {} : params.arguments;
   const meta = params._meta || {};
   const ctx = { id, progressToken: meta.progressToken, cancelled: false, progressN: 0 };
-  if (name !== 'connect' && name !== 'disconnect' && !TOOL_VERB.has(name)) return rpcError(id, -32602, 'Unknown tool: ' + name);
+  if (name !== 'connect' && name !== 'disconnect' && name !== 'intake' && !TOOL_VERB.has(name)) return rpcError(id, -32602, 'Unknown tool: ' + name);
   if (!args || typeof args !== 'object' || Array.isArray(args)) return reply(id, errResult('arguments is an object of the tool\'s fields'));
+  // reading a request touches no visit: it is answered at once, outside the queue of a visit's commands
+  if (name === 'intake') { try { return reply(id, intakeCall(args)); } catch (e) { return reply(id, errResult('intake failed: ' + ((e && e.message) || e))); } }
   calls.set(id, ctx);
   try {
     const r = await serial(async () => {

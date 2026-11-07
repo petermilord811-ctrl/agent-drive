@@ -92,15 +92,16 @@ function specOf(s, i) {
   if (!ck.ok) return { ok: false, why: where + ': ' + ck.why };
   const st = stepsOf(o.steps);
   if (!st.ok) return { ok: false, why: where + ': ' + st.why };
-  return { ok: true, m: { t, done, check: ck.check, steps: st.list, skill: clip(o.skill, 60) } };
+  return { ok: true, m: { t, done, check: ck.check, steps: st.list, skill: clip(o.skill, 60), checkpoint: !!o.checkpoint && o.checkpoint !== '0' && o.checkpoint !== 'false' } };
 }
+const truthy = (v) => !!v && v !== '0' && v !== 'false' && v !== 'no';
 
 function create(opts) {
   const o = opts || {};
   const now = typeof o.now === 'function' ? o.now : () => Date.now();
   let J = null;   // the mission, or null before the first plan
 
-  const mk = (spec, id) => ({ id: id || 'm' + (++J.seq), t: spec.t, done: spec.done, check: spec.check, skill: spec.skill || '',
+  const mk = (spec, id) => ({ id: id || 'm' + (++J.seq), t: spec.t, done: spec.done, check: spec.check, skill: spec.skill || '', checkpoint: !!spec.checkpoint,
                          s: 'todo', steps: spec.steps.map((t) => ({ t, s: 'todo' })), why: '', ev: null,
                          tries: 0, acts: 0, bad: 0, badFrom: 0, t0: null, t1: null, busy: 0, since: null, hinted: {},
                          added: false, changed: false });
@@ -167,7 +168,11 @@ function create(opts) {
     // ids keep counting across jobs in one visit: the panel keys a milestone's row by its id, so a new job's "m1"
     // must never land on an old job's row (and its history)
     J = { v: 1, goal, done: clip(s.done != null ? s.done : s.when, 200), status: 'active', t0: prev ? prev.t0 : now(), t1: null,
-          seq: J ? J.seq : 0, ms: [], cur: null, log: prev ? prev.log : [] };
+          seq: J ? J.seq : 0, ms: [], cur: null, log: prev ? prev.log : [],
+          // CHECKPOINTS: after each milestone (checkpoints:true), or after the ones marked checkpoint:true, the agent
+          // stops and asks the room before going on. The GATE is a question the room has not said yes to yet --
+          // the plan before it starts (a preview), or going on after a checkpoint; while it stands, nothing acts.
+          checkpoints: truthy(s.checkpoints), gate: null };
     for (const sp of specs) {
       const p = old.find((m) => same(m.t, sp.t));
       const m = mk(sp, p ? p.id : '');
@@ -421,6 +426,42 @@ function create(opts) {
     return { ok: true, say: '⏹ **Plan dropped** — ' + (clip(why, 200) || 'stopped') };
   }
 
+  // ---- asking before going on ----------------------------------------------------------------------------
+  // The roadmap: "Preview / dry-run: before a multi-step plan, show the operator the steps and act on confirm" and
+  // "Milestone checkpoints for long jobs: pause at natural milestones for a thumbs-up instead of running 40 steps
+  // blind." A PREVIEW is the plan shown to the room before anything acts, ending in the question; a CHECKPOINT is
+  // a milestone achieved and the question whether to go on to the next. Either holds the GATE until the room says
+  // yes, and while it stands the serve refuses every acting command (the asking itself is the serve's: chat).
+  function previewText() {
+    if (!J) return '';
+    return (planText('Here is my plan', '') + '\n\n**Shall I go ahead?** Say yes to start, or tell me what to change.').slice(0, 1990);
+  }
+  function checkpointText(ref) {
+    const m = find(ref);
+    if (!J || !m) return '';
+    // what comes next: the milestone now current (achieving one makes the next current), else the first still open
+    const c = cur();
+    const nx = c && c !== m ? c : J.ms.find((x) => x !== m && (x.s === 'todo' || x.s === 'doing')) || null;
+    return '✋ **Checkpoint — ' + m.t + ' is done.**' + (nx ? ' Next: ' + nx.t + ' — done when ' + nx.done + '.' : '') + ' **Shall I carry on?**';
+  }
+  const isCheckpoint = (ref) => { const m = find(ref); return !!(J && m && (J.checkpoints || m.checkpoint)); };
+  function hold(kind, ref) {
+    if (!active()) return null;
+    const m = ref != null ? find(ref) : null;
+    J.gate = { kind: kind === 'checkpoint' ? 'checkpoint' : 'plan', m: m ? m.id : '', t: m ? m.t : '', since: now() };
+    log('hold', m, J.gate.kind === 'checkpoint' ? 'waiting for the room\'s yes to go on after ' + q(m ? m.t : '') : 'waiting for the room\'s yes to the plan');
+    return Object.assign({}, J.gate);
+  }
+  function release(how) {
+    if (!J || !J.gate) return false;
+    log('go', null, 'the room said yes' + (how ? ' (' + clip(how, 60) + ')' : ''));
+    J.gate = null;
+    return true;
+  }
+  const gate = () => (active() && J.gate ? Object.assign({}, J.gate) : null);
+  // the room's answers up to now were heard (and were not a yes): asking again listens only to what comes after
+  function heard() { if (J && J.gate) J.gate.since = now(); }
+
   // ---- what every answer carries -------------------------------------------------------------------------
   // Each action run while a milestone is current counts against it, and a run of failed ones is a streak.
   function act(ok) {
@@ -452,6 +493,7 @@ function create(opts) {
       o.acts = m.acts;
       if (m.tries) o.tries = m.tries;
     } else if (J.status === 'active') o.next = 'every milestone is closed — mission finish (with file: a picture of the result)';
+    if (J.gate && J.status === 'active') o.waiting = J.gate.kind === 'plan' ? 'the room\'s yes to the plan' : 'the room\'s yes to go on after ' + q(clip(J.gate.t, 40));
     return o;
   }
 
@@ -470,8 +512,9 @@ function create(opts) {
     const G = { todo: '○', doing: '●', done: '✓', skipped: '⤼', failed: '✗' }, S = { todo: '·', doing: '›', done: '✓' };
     const lines = [J.goal + '   [' + J.status + ' · ' + J.ms.filter((m) => m.s === 'done').length + '/' + J.ms.length + ' achieved · ' + dur((J.t1 || now()) - J.t0) + ']'];
     if (J.done) lines.push('  done when: ' + J.done);
+    if (J.gate && J.status === 'active') lines.push('  WAITING for ' + (J.gate.kind === 'plan' ? 'the room\'s yes to the plan' : 'the room\'s yes to go on after ' + q(J.gate.t)) + ' -- mission ask');
     J.ms.forEach((m, i) => {
-      lines.push(String(i + 1).padStart(3) + '. ' + (G[m.s] || '?') + ' ' + m.t + '   (' + m.id + (m.id === J.cur ? ', NOW' : '') + (m.skill ? ', skill ' + m.skill : '') + ')');
+      lines.push(String(i + 1).padStart(3) + '. ' + (G[m.s] || '?') + ' ' + m.t + '   (' + m.id + (m.id === J.cur ? ', NOW' : '') + (m.skill ? ', skill ' + m.skill : '') + (J.checkpoints || m.checkpoint ? ', checkpoint' : '') + ')');
       lines.push('       done when: ' + m.done + (m.check ? '   check: ' + JSON.stringify(m.check).slice(0, 120) : ''));
       for (const x of m.steps) lines.push('       ' + (S[x.s] || '·') + ' ' + x.t);
       if (m.s === 'done' && m.ev) lines.push('       proof: ' + (m.ev.how === 'check' ? 'the check held' + (m.ev.saw ? ' (saw: ' + m.ev.saw + ')' : '') : 'a picture ' + m.ev.file) + (m.ev.note ? ' — ' + m.ev.note : ''));
@@ -494,7 +537,7 @@ function create(opts) {
     for (const r of x.ms.slice(0, CAP_MS)) {
       if (!r || typeof r !== 'object' || !/^m\d+$/.test(str(r.id)) || !clip(r.t, 90) || ms.some((y) => y.id === r.id)) continue;
       const ck = checkOf(r.check);
-      ms.push({ id: r.id, t: clip(r.t, 90), done: clip(r.done, 200) || 'done', check: ck.ok ? ck.check : null, skill: clip(r.skill, 60),
+      ms.push({ id: r.id, t: clip(r.t, 90), done: clip(r.done, 200) || 'done', check: ck.ok ? ck.check : null, skill: clip(r.skill, 60), checkpoint: !!r.checkpoint,
                 s: /^(todo|doing|done|skipped|failed)$/.test(str(r.s)) ? r.s : 'todo',
                 steps: (Array.isArray(r.steps) ? r.steps : []).slice(0, CAP_STEPS).map((y) => ({ t: clip(y && y.t, 80), s: /^(todo|doing|done)$/.test(str(y && y.s)) ? y.s : 'todo' })).filter((y) => y.t),
                 why: clip(r.why, 200), ev: r.ev && typeof r.ev === 'object' ? { how: r.ev.how === 'check' ? 'check' : 'picture', saw: clip(r.ev.saw, 120), note: clip(r.ev.note, 160), file: str(r.ev.file).slice(0, 400), at: num(r.ev.at) } : null,
@@ -504,7 +547,10 @@ function create(opts) {
     if (!ms.length) return { ok: false, why: 'that saved plan has no usable milestones' };
     const seq = ms.reduce((n, m) => Math.max(n, num(m.id.slice(1))), num(x.seq));
     J = { v: 1, goal: clip(x.goal, 100), done: clip(x.done, 200), status: /^(active|finished|dropped)$/.test(str(x.status)) ? x.status : 'active',
-          t0: num(x.t0) || now(), t1: x.t1 == null ? null : num(x.t1), seq, ms, cur: null,
+          t0: num(x.t0) || now(), t1: x.t1 == null ? null : num(x.t1), seq, ms, cur: null, checkpoints: !!x.checkpoints,
+          // a question the room had not said yes to stays unanswered across a restart: nothing acts until it is
+          gate: x.gate && typeof x.gate === 'object' && /^(plan|checkpoint)$/.test(str(x.gate.kind))
+            ? { kind: x.gate.kind, m: /^m\d+$/.test(str(x.gate.m)) ? str(x.gate.m) : '', t: clip(x.gate.t, 90), since: num(x.gate.since) } : null,
           log: (Array.isArray(x.log) ? x.log : []).slice(-CAP_LOG).filter((l) => l && typeof l === 'object').map((l) => ({ at: num(l.at), op: clip(l.op, 20), m: l.m ? str(l.m).slice(0, 8) : undefined, t: l.t ? clip(l.t, 90) : undefined, what: clip(l.what, 200), why: l.why ? clip(l.why, 200) : undefined })) };
     let c = active() ? ms.find((m) => m.id === str(x.cur) && (m.s === 'doing' || m.s === 'todo')) || ms.find((m) => m.s === 'doing') || nextTodo() : null;
     for (const m of ms) if (m.s === 'doing' && m !== c) m.s = 'todo';
@@ -521,6 +567,7 @@ function create(opts) {
 
   return { plan, step, setSteps, add, change, split, skip, fail, toAchieve, achieved, missed, finishable, finish, report, drop,
            act, hint, brief, skeleton, text, toJSON, load, find, active, current: cur, humanSteps,
+           previewText, checkpointText, isCheckpoint, hold, release, gate, heard,
            get status() { return J ? J.status : 'none'; }, get goal() { return J ? J.goal : ''; } };
 }
 

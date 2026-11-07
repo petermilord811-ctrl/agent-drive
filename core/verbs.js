@@ -71,7 +71,7 @@ const V = {
   expect:    { f: ['until'], need: (c) => (c.until || c.expect) ? '' : 'expect needs until:<predicate>', what: 'is the predicate true now?' },
   wait:      { f: ['until', 'poll'], need: (c) => (c.until || c.expect) ? '' : 'wait needs until:<predicate>', what: 'poll until true, or time out' },
   plan:      { f: ['steps'], need: (c) => Array.isArray(c.steps) ? '' : 'plan needs steps:[...]', what: 'many steps in one command; if/then/else and repeat/until; stops at the first that fails' },
-  mission:   { f: ['op', 'plan', 't', 'step', 'steps', 'm', 'milestone', 'before', 'after', 'now', 'to', 'done', 'check', 'into', 'file', 'say', 'w', 'h', 'skill', 'goal', 'milestones'], need: (c) => nonEmpty(c.op) ? '' : 'mission needs op: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop', what: 'the job\'s big plan (drive/mission.js)' },
+  mission:   { f: ['op', 'plan', 't', 'step', 'steps', 'm', 'milestone', 'before', 'after', 'now', 'to', 'done', 'check', 'into', 'file', 'say', 'w', 'h', 'skill', 'goal', 'milestones', 'preview', 'checkpoints', 'checkpoint', 'replay'], need: (c) => nonEmpty(c.op) ? '' : 'mission needs op: plan, step, steps, achieve, add, change, split, skip, fail, finish, show, resume, drop, ask', what: 'the job\'s big plan (drive/mission.js); preview:1 asks the room before it starts, checkpoints:1 after each milestone; ask asks again' },
   // ---- talking ----
   chat:        { f: ['text', 'to'], need: (c) => nonEmpty(c.text) ? '' : 'chat needs text', what: 'say it in the session chat' },
   'chat-img':  { f: ['file', 'text', 'to', 'name', 'w', 'h'], need: (c) => nonEmpty(c.file) ? '' : 'chat-img needs file: a .jpg/.png to post', what: 'post a picture to the chat' },
@@ -86,6 +86,7 @@ const V = {
   warn:        { f: ['text'], what: 'a caution line on the panel' },
   confirm:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'confirm needs text: what you are about to do, said to everyone', what: 'ask before something hard to undo; a no always wins' },
   captcha:     { f: ['text'], what: 'a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one' },
+  budget:      { f: ['steps', 'minutes', 'more'], what: 'the task\'s budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room' },
   done:        { f: ['text', 'file', 'w', 'h'], what: 'sign off (with a picture) and hand the grant back' },
   // ---- ScreenMirror's own features ----
   'note-list': { f: [], what: 'the host\'s sticky notes' },
@@ -101,8 +102,17 @@ const V = {
   launch:      { f: ['app', 'args', 'cwd', 'wait', 'focus', 'dry'].concat(ACT), need: (c) => nonEmpty(c.app) ? '' : 'launch needs app: a name, a path or a URL', what: 'start an app by name, path or URL, as the signed-in user, and find its window (needs shell)' },
   controls:    { f: ['title', 'id', 'max', 'depth', 'budget'], what: 'the controls of a window by NAME (UI Automation / AT-SPI): name, type, rect, cx/cy to click -- never a value; password fields flagged (needs shell)' },
   terminal:    { f: ['open', 'input', 'keys', 'signal', 'close', 'wait', 'until'], need: (c) => (c.open || c.input != null || nonEmpty(c.keys) || c.signal || c.close) ? '' : 'terminal needs something to do: input:"a line", keys:"raw keys", signal:1 (Ctrl+C), open:1 or close:1', what: 'the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent)' },
-  access:      { f: ['shell', 'control', 'terminal'], need: (c) => (c.shell || c.control || c.terminal) ? '' : 'access needs what to ask for: shell:1 (run commands), terminal:1 (the Terminal panel) and/or control:1 (keyboard and mouse), and why', what: 'ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow' },
+  access:      { f: ['shell', 'control', 'terminal', 'camera', 'audio', 'files'], need: (c) => (c.shell || c.control || c.terminal || c.camera || c.audio || c.files) ? '' : 'access needs what to ask for: shell:1 (run commands), terminal:1 (the Terminal panel), control:1 (keyboard and mouse), camera:1, audio:1 (what it plays) and/or files:1, and why', what: 'ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow' },
   exec:        { f: ['cmd', 'text'], need: (c) => nonEmpty(c.cmd != null ? c.cmd : c.text) ? '' : 'exec needs cmd: the command line to run', what: 'run one command on the host (needs --shell)' },
+  // ---- what the visit changed, and putting it back (core/undo.js)
+  changes:     { f: ['all'], what: 'what this task changed on the machine (all:1 -- this visit), each with whether and how it can be put back' },
+  undo:        { f: ['id', 'dry'], need: (c) => nonEmpty(c.id) ? '' : 'undo needs id: a change from `changes` (c3), or "last"', what: 'put one change back: a command after the room\'s yes (or because they asked: "undo c3"); a change put back by hand comes back as the how; dry:1 shows the command only' },
+  changed:     { f: ['what', 'undo'], need: (c) => nonEmpty(c.what) ? '' : 'changed needs what: the change you made, in a few words', what: 'record a change you made by clicking (a setting, a toggle) and how it is put back -- it joins the task\'s record' },
+  // ---- files and captures, through exec (core/desk.js) -- they need the shell consent; the room hears each one
+  fetch:       { f: ['path', 'out'], need: (c) => !nonEmpty(c.path) ? 'fetch needs path: the file on the machine' : !nonEmpty(c.out) ? 'fetch needs out: where to save it here' : '', what: 'copy a file FROM the machine to here, in chunks (needs shell; said in the room)' },
+  send:        { f: ['file', 'to', 'overwrite'], need: (c) => !nonEmpty(c.file) ? 'send needs file: the file here to put on the machine' : !nonEmpty(c.to) ? 'send needs to: the path (or folder) on the machine' : '', what: 'put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room' },
+  camera:      { f: ['out', 'device', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'camera needs out: the .jpg to save the photo to', what: 'one photo from the machine\'s webcam -- the room is asked first, every time, and only a yes allows it (needs shell)' },
+  audio:       { f: ['out', 'seconds', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'audio needs out: the .wav to save the recording to', what: 'up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell)' },
 };
 // inside a `plan`, a step may be a CHOICE or a LOOP instead of a verb
 const CONTROL_KEYS = ['if', 'then', 'else', 'repeat', 'until', 'steps', 'poll', 'fresh', 'quiet', 'intent', 'note'];
@@ -126,6 +136,12 @@ const FIELD_ALIAS = {
   'chat-img': { path: 'file', image: 'file', img: 'file' },
   exec:      { command: 'cmd', line: 'cmd' },
   scroll:    { notches: 'n', delta: 'n', amount: 'n' },
+  undo:      { change: 'id', ref: 'id', which: 'id' },
+  changed:   { text: 'what', change: 'what', revert: 'undo', back: 'undo' },
+  fetch:     { from: 'path', source: 'path', file: 'path', dest: 'out', save: 'out', to: 'out' },
+  send:      { from: 'file', source: 'file', path: 'to', dest: 'to' },
+  camera:    { file: 'out', path: 'out', to: 'out', camera: 'device' },
+  audio:     { file: 'out', path: 'out', to: 'out', secs: 'seconds', duration: 'seconds' },
 };
 
 // A key as people write it ("esc", "ctrl", "win", "a", "5", "f4") -> the code the hosts map. Unknown names pass

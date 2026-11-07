@@ -8,6 +8,9 @@
 //   node kit.js tools [word]     # the tools only
 //   node kit.js verbs [word]     # the serve's commands: each verb, its fields, what it does (core/verbs.js)
 //   ... --json                   # either, machine-readable
+//   node kit.js intake "connect 10004 and do my sticky notes" [--json] [--sh|--powershell]
+//                                # a job asked for in plain words: the machine, the skill, the access to ask for,
+//                                # and the command line that starts the visit (core/intake.js)
 //
 // ...and the contributor's commands (dev/kitops.js) -- how many people grow one kit:
 //   node kit.js check            # what CI checks: catalog and tool headers, no secrets / private data, docs current
@@ -23,6 +26,7 @@
 // No dependencies.
 'use strict';
 const fs = require('fs'), path = require('path');
+const intake = require('./core/intake.js');   // reads the skills catalog, and a job asked for in plain words
 const ROOT = __dirname;
 // Normally skills/ beside this file; SM_SKILLS_DIR overrides it (tests, or a second library).
 // SM_SITUATIONS_DIR is the same thing under the folder's old name.
@@ -57,6 +61,35 @@ const AREAS = [
   }
 }
 
+// A JOB ASKED FOR IN PLAIN WORDS (core/intake.js): which machine, which skill, what to ask for at the door, and the
+// command line that starts the visit. Exits 0 when it understood a machine and a job, 1 when not, 2 when nothing was asked.
+if (process.argv[2] === 'intake') {
+  const rest = process.argv.slice(3), switches = ['--json', '--sh', '--powershell'];
+  const shell = rest.includes('--sh') ? 'sh' : rest.includes('--powershell') ? 'powershell' : (process.platform === 'win32' ? 'powershell' : 'sh');
+  const text = rest.filter((a) => !switches.includes(a)).join(' ').trim();
+  if (!text) { console.error('say the job in plain words: node kit.js intake "connect 10004 and do my sticky notes" [--json] [--sh|--powershell]'); process.exit(2); }
+  const r = intake.parse(text, intake.skills(SKILLS));
+  const cmd = intake.command(r, { shell });
+  if (process.argv.includes('--json')) { process.stdout.write(JSON.stringify(Object.assign({}, r, { command: cmd, shell }), null, 2) + '\n'); process.exit(r.ok ? 0 : 1); }
+  const asks = [r.needs.control && 'the keyboard and mouse (--control)', r.needs.shell && 'running commands (--shell)',
+                r.needs.terminal && 'the Terminal panel (--terminal)'].filter(Boolean);
+  const out = ['understood: ' + text, ''];
+  out.push('  machine  ' + (r.host || 'none understood -- name it by its five-digit number: "on machine 10004"'));
+  if (r.skill) {
+    out.push('  skill    ' + r.skill.slug + ' -- ' + r.skill.name);
+    out.push('           ' + (r.skill.run ? 'run:  ' + r.skill.run : 'read: skills/' + r.skill.slug + '/README.md (it has no run line)'));
+  } else out.push('  skill    none -- the driver works it out (look: node kit.js skills <word>)');
+  if (r.others.length) out.push('           ' + (r.skill ? 'close: ' : 'maybe: ') + r.others.map((o) => o.slug).join(', '));
+  out.push('  task     ' + (r.task || '(none -- say what the visit is for)'));
+  out.push('  access   ' + (asks.length ? asks.join(', ') : 'nothing beyond watching (a watch-only visit: it looks, reads and chats)'));
+  out.push('  why      ' + r.why, '');
+  const where = shell === 'sh' ? 'a POSIX shell; --powershell for PowerShell' : 'PowerShell; --sh for a POSIX shell';
+  out.push(r.host ? 'start the visit (' + where + '):' : 'start the visit once you know the machine, its number in place of NNNNN (' + where + '):');
+  out.push('  ' + cmd);
+  console.log(out.join('\n'));
+  process.exit(r.ok ? 0 : 1);
+}
+
 const args = process.argv.slice(2);
 const asJson = args.includes('--json');
 const words = args.filter((a) => !a.startsWith('--'));   // --json, --md, --write-doc are switches, not words
@@ -79,42 +112,13 @@ function toolsIn(dir) {
   return names.map((n) => toolOf(path.join(dir, n))).filter(Boolean);
 }
 
-// Parse a leading `--- ... ---` frontmatter block into {key: value}: line-based `key: value`, no YAML
-// dependency (none of the skills needs nested data).
-function frontmatter(text) {
-  const m = /^﻿?---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text);
-  if (!m) return null;
-  const out = {};
-  for (const line of m[1].split(/\r?\n/)) {
-    const kv = /^([A-Za-z][\w-]*)\s*:\s*(.*)$/.exec(line);
-    if (kv) out[kv[1].toLowerCase()] = kv[2].trim();
-  }
-  return out;
-}
-function firstHeading(text) { const m = /^#\s+(.+)$/m.exec(text); return m ? m[1].trim() : ''; }
-function firstProse(text) {
-  const body = text.replace(/^﻿?---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
-  for (const raw of body.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#') || line.startsWith('>') || line.startsWith('|') || line.startsWith('-')) continue;
-    return line.replace(/[*_`]/g, '').slice(0, 160);
-  }
-  return '';
-}
+// The catalog itself -- each skills/<slug>/README.md's frontmatter (name / when / tags / run), or its first heading
+// and prose line without one; skills/_template and a folder without a README are not skills -- is read by
+// core/intake.js, the same reader that matches a job asked for in plain words to a skill. Here each skill gains its
+// README's path and its own scripts.
 function skills() {
-  const out = [];
-  let slugs;
-  try { slugs = fs.readdirSync(SKILLS).sort(); } catch (_) { console.error('no skills/ folder found at ' + SKILLS); process.exit(2); }
-  for (const slug of slugs) {
-    if (slug.startsWith('_')) continue;   // skills/_template is the mould for `node kit.js new`, not a skill
-    let text;
-    try { text = fs.readFileSync(path.join(SKILLS, slug, 'README.md'), 'utf8'); } catch (_) { continue; }   // a folder without a README is not a skill
-    const fm = frontmatter(text) || {};
-    out.push({ slug, name: fm.name || firstHeading(text) || slug, when: fm.when || firstProse(text) || '',
-               tags: (fm.tags || '').split(/[,\s]+/).filter(Boolean), run: fm.run || '',
-               path: 'skills/' + slug + '/README.md', tools: toolsIn(path.join(SKILLS, slug)) });
-  }
-  return out;
+  try { fs.readdirSync(SKILLS); } catch (_) { console.error('no skills/ folder found at ' + SKILLS); process.exit(2); }
+  return intake.skills(SKILLS).map((s) => Object.assign(s, { path: 'skills/' + s.slug + '/README.md', tools: toolsIn(path.join(SKILLS, s.slug)) }));
 }
 const matches = (text) => !query || text.toLowerCase().includes(query);
 
