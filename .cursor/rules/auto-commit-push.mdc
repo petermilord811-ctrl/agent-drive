@@ -1,0 +1,14 @@
+---
+description: Always commit and push after learnings or fixes in this repo
+alwaysApply: true
+---
+
+# Auto-commit and push
+
+After any skill/docs/AGENTS/gotchas fix or the post-sign-off **check → analyze → learn** pass:
+
+1. Stage the relevant files (not `.env`, `*.local.json`, or throwaway `work/` clutter).
+2. Commit with a concise message focused on why.
+3. Push to the tracked remote (`origin` / current upstream).
+
+Do this **without waiting** for the operator to say commit or push. This overrides “only commit when asked” for this repository.

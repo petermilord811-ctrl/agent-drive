@@ -121,6 +121,7 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **After sign-off: check → analyze → learn is MUST**, not optional and not “when asked.” Whatever you
   faced while solving (wrong fills, ads, misreads, slow paths) gets a short review and is written into
   the skill / this file / AGENTS before you stop. Waiting for “learn it” has been a repeated miss.
+  Then **auto-commit and push** those learnings (no wait for “commit/push”).
 
 ## More from a live run (host 34123, 2026-11-06/07) — Master sudoku in Firefox
 - **`F11` fullscreen blanks the capture the same way maximize does.** Window chrome may still draw; the
@@ -147,6 +148,12 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   the real clues → sudoku.com Game Over at 3/3. That looks like random wrong presses — it isn’t. Do **not**
   refill the poisoned board. `play` now detects the Game Over modal, starts **New Game** once, re-reads,
   and only `learnFrom` after a confirmed win. If asked why: misread clues, not click noise.
+- **“Loading game” half-board (34123, 2026-11-07):** right after open, the grid can look like a game while
+  a Loading watermark still sits on it — clues shift/duplicate. Wait until it clears, then offline
+  `sudoku.js … read <shot>` and spot-check a row against the picture **before** `play`. Proven clean
+  visit after that: **16.6 s**, 0 mistakes. `play` now settles a few holds and re-captures before read.
+- **Proof after `play`:** `play` already `status fin:1`. A second `fin:1` will not attach a picture —
+  `shot` → crop → `chat-img` (or let `fast.js` do it).
 - **New Game on the Excellent / score panel** is a wide **white** button (~screen y **834** on 34123),
   not baseline `643+dy`. `play` scans for that white row. Difficulty menu still uses `DIFF[d]+dy`.
 - **Ads / crash:** “Play Ad”, “Loading game”, tab crash (“Restore This Tab”) — wait or F5; don’t

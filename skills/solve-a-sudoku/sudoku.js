@@ -604,6 +604,12 @@ if (cmd === 'play') {
     img = capture('board_raw.png'); st = screenState(img);
     if (st.kind === 'game' && hintOn(img, st.g)) st = { kind: 'other', why: 'a hint still covers the board after a cell was selected' };
   }
+  // Fresh open can still show "Loading game" over a half-drawn board that looks like kind=game.
+  if (st.kind === 'game') {
+    pushTree('Letting the board finish loading');
+    act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }, { do: 'hold' }, { do: 'hold' }] });
+    img = capture('board_raw.png'); st = screenState(img);
+  }
   T.look = since(t, s);
   if (st.kind !== 'game') {
     N.look.s = 'warn';

@@ -86,6 +86,9 @@ file explains them.
 - **After every sign-off: check → analyze → learn.** Review the visit (ledger, exits, chat, what burned
   time or failed once). Encode the lesson into skill code/docs, gotchas, or AGENTS before you stop.
   Do this even when the job “succeeded.” Do not wait for the operator to say “learn it.”
+- **Auto-commit and push after learnings/fixes.** Once the check→analyze→learn pass (or any skill/docs
+  fix) is written, `git commit` and `git push` to the tracked remote without waiting to be asked.
+  Skip secrets (`.env`, `*.local.json`) and throwaway `work/` clutter.
 
 ### MUST NOT — ever
 

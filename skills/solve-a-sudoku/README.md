@@ -31,6 +31,9 @@ before glyphs; on 34123 it turned 18 s Chrome solves into 5–15 minute visits. 
 6. **Silent misread → Game Over:** a wrong clue read can still yield one solver solution (0 doubts) and
    then burn 3 mistakes. That is **not** random clicking. `play` recovers once (New Game → re-read);
    never learn the lost board. Live fix after that path: **19.1 s**, no mistakes (34123, 2026-11-07).
+7. **Perfect path:** wait out “Loading game”, then `read <shot>` and confirm a row vs the picture before
+   `play`. Live **16.6 s**, 0 mistakes (34123, 2026-11-07). After `play`’s own finish, proof is
+   `chat-img` (or `fast.js`) — not a second `status fin:1`.
 
 **Live targets:** total visit ≤2 min is routine when the board is visible (~30–40 s proven). Puzzle slice
 ≤15 s (look+fill+check, excluding new-game/ads) is the next squeeze — fill is still ~8–16 s of host actions.
