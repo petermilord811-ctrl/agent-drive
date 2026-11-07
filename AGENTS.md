@@ -59,7 +59,8 @@ file explains them.
   machine (core/undo.js) and tells the room at the finish. Record what you change by CLICKING yourself —
   `changed {what, undo}` ("turned on Dark mode", "Settings > Colors > Light"). When they ask ("undo c3", "put it
   back"), `undo {id}` does it — their words are the yes; otherwise it asks — and a change put back by hand comes
-  back as the how. `changes` lists them.
+  back as the how. `changes` lists them. Overwrites, deletes and re-set settings go back too — what an `exec` is about
+  to change is kept first — but whole folder trees and wildcards do not: `confirm` before those.
 - **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
   but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
   (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).

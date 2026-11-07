@@ -46,6 +46,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 - **Replay with values**: what a saved job typed (an amount, a date, a URL, a file name) is a named value with the
   original as its default — `node drive/replay.js values <recipe>` lists them, `run --set name=value` replays the job
   with another, and the checks that read the old text read the new. Recipes are v2; old ones run as before.
+- **Capture before change**: what an `exec` is about to overwrite, delete or re-set — a file (kept in the host's
+  temp, up to 16 MB), a registry value, a startup type, a mode or owner, an ACL — is kept or read first, so `undo` puts
+  those back too, refusing when the thing changed again since; the copies go when the visit ends. A change a later
+  one made moot is marked `gone` and is not offered back.
 
 ## 1.0.0 — 2026-11-06
 

@@ -294,8 +294,13 @@ as typing is usually the job itself — and which of it can be put back; the fin
 | `undo {id, dry?}` | Put one back (`id`: `c3`, or `last`). A command undo needs `--shell` and the room's yes — unless they asked in so many words after the change ("undo c3", "undo all"): that is the yes. One that deletes what was made (a copy, a new file or folder — a folder only while empty) is never taken on silence. A change put back by hand answers `ok:false` with `byHand`: how. `dry:1` shows the command. |
 | `changed {what, undo?}` | Record a change made by clicking (a setting, a toggle) and how it is put back: words, or `{cmd, os}`. |
 
-Undo several newest first. Old values (a registry setting, a file's contents) are never read, so those changes say
-they cannot be put back from here.
+Undo several newest first. **Capture before change:** before an `exec` runs, what it will overwrite, delete or re-set is
+kept or read first — a file copied into this visit's own folder in the host's temp (`agent-drive-undo`, up to 16 MB a
+file and 256 MB a visit), a registry value, a service's startup type, a file's mode or owner, an ACL — and stamped after,
+so those go back too, and a restore refuses if the thing changed again since. The copies are removed when the visit
+ends. Still not reversible: whole folder trees, files named by wildcards or unknown variables, anything over the cap,
+ended processes, Terminal lines. A change a LATER one made moot (a folder made, then deleted with what was in it) is
+marked `gone` in `changes`, left out of the finish, and `undo` says which change removed it.
 
 ## Files, a webcam photo, a sound recording (needs `--shell`)
 

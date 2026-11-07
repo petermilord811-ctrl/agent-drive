@@ -70,7 +70,8 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
   an operator's message that names a job brings that skill with it in the inbox (`inbox.latest.skill`).
 - **Change log / undo hints.** ✅ 2026-11-06: core/undo.js reads what each command changed (files moved, renamed,
   made, deleted; services; registry; typed text; apps started; a file `send` put there) and how it goes back; the finish
-  tells the room, `changes` lists it, `undo` puts one back after a yes (or because they asked: "undo c3").
+  tells the room, `changes` lists it, `undo` puts one back after a yes (or because they asked: "undo c3"). Capture before
+  change (2026-11-06): overwrites, deletes, registry values, startup types, modes and ACLs are kept first, so they go back too.
 - **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting
   commands are refused and the room is asked (`budget {more:1}`).
 - **Self-updating skills.** ✅ 2026-11-06: a planned job that finishes proven, that no skill did and that was not a

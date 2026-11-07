@@ -1110,9 +1110,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const changes = [];
     const changesFile = path.join(dir, 'changes.json');
     let changeTask = 0, changesSaid = false, lastWindow = '';
+    // CAPTURE BEFORE CHANGE (core/undo.js prepare): what an exec is about to overwrite, delete or re-set is copied or read
+    // first -- into this visit's own folder in the host's temp -- so it can be put back; the copies go when the visit ends.
+    const VISIT_ID = 'v' + Date.now().toString(36) + process.pid.toString(36);
+    const capturedFor = new WeakMap();   // a step's answer -> {captured, syn?}: what was read around it
+    // a change a LATER one made moot (a folder made, then deleted with everything in it) is not offered back
+    const gone = () => { try { return new Set(undo.supersede(changes.filter((e) => !e.undone)).map((s) => s.id)); } catch (_) { return new Set(); } };
     // what the finish says: the machine's state -- files, services, settings, what the driver declared. Typed text and
     // apps started stay in the record (`changes`) but not in the summary: typing was usually the job itself.
-    const taskChanges = () => changes.filter((e) => e.task === changeTask && !e.undone && e.kind !== 'typed' && e.kind !== 'launched');
+    const taskChanges = () => { const g = gone(); return changes.filter((e) => e.task === changeTask && !e.undone && !g.has(e.id) && e.kind !== 'typed' && e.kind !== 'launched'); };
     const saveChanges = () => { try { fs.writeFileSync(changesFile, JSON.stringify(changes, null, 1)); } catch (_) {} };
     const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; changeTask++; };
     const missionFile = path.join(dir, 'mission.json');
@@ -1591,6 +1597,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // (a literal path, never a folder with things in it); one it REPLACED cannot be put back: the old one was not kept.
     const psq = (s) => "'" + String(s).replace(/['‘’‚‛]/g, (c) => c + c) + "'";
     const shq = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+    // a file `send` put at `to`, as a command core/undo.js reads as making (or, with force, replacing) that file
+    const sentAs = (to, os, force) => os === 'linux' ? { do: 'exec', cmd: 'cp -- ' + shq('/tmp/agent-drive-sent') + ' ' + shq(to) }
+      : { do: 'exec', cmd: 'powershell -NoProfile -Command "New-Item -ItemType File ' + (force ? '-Force ' : '') + '-Path ' + psq(to) + '"' };
     async function noteChange(cmd, r) {
       try {
         if (!cmd || !r || r.ok !== true || typeof cmd.do !== 'string') return;
@@ -1601,16 +1610,22 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const os = deskOsName;
         let c = cmd;
         const to = cmd.do === 'send' ? String(r.to || '') : '';
+        const cap = capturedFor.get(r) || null;
         if (cmd.do === 'send') {
           if (!to) return;
-          c = r.replaced ? { do: 'changed', what: 'replaced ' + to + ' with ' + leaf(cmd.file), undo: 'the file it replaced was not kept — restore it from a backup or File History, if there is one' }
-            : os === 'linux' ? { do: 'exec', cmd: 'cp -- ' + shq('/tmp/agent-drive-sent') + ' ' + shq(to) }
-            : { do: 'exec', cmd: 'powershell -NoProfile -Command "New-Item -ItemType File -Path ' + psq(to) + '"' };
+          // a replaced file whose old copy was kept (send's own capture) goes back like an overwrite; one not kept cannot
+          c = cap && cap.syn ? cap.syn
+            : r.replaced ? { do: 'changed', what: 'replaced ' + to + ' with ' + leaf(cmd.file), undo: 'the file it replaced was not kept — restore it from a backup or File History, if there is one' }
+            : sentAs(to, os);
         }
-        const got = undo.record(c, { ok: true }, { os: os || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined });
+        const got = undo.record(c, { ok: true }, { os: os || '', now: Date.now(), seq: changes.length + 1, window: lastWindow || undefined, captured: cap ? cap.captured : undefined, visit: VISIT_ID });
         const list = Array.isArray(got) ? got : got ? [got] : [];
         for (const e of list) {
-          if (cmd.do === 'send') { e.verb = 'send'; if (!r.replaced) { e.what = 'put ' + leaf(cmd.file) + ' on this machine at ' + to; e.md = 'put **' + leaf(cmd.file) + '** on this machine at `' + to + '`'; } }
+          if (cmd.do === 'send') {
+            e.verb = 'send';
+            if (!r.replaced) { e.what = 'put ' + leaf(cmd.file) + ' on this machine at ' + to; e.md = 'put **' + leaf(cmd.file) + '** on this machine at `' + to + '`'; }
+            else if (cap && cap.syn) { e.what = 'replaced ' + to + ' with ' + leaf(cmd.file); e.md = 'replaced `' + to + '` with **' + leaf(cmd.file) + '**'; }
+          }
           e.task = changeTask;
           changes.push(e);
         }
@@ -2397,8 +2412,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           else reply({ ok: false, why: 'changed needs what: the change, in a few words (and undo: how it is put back)' });
         } else if (cmd.do === 'changes') {             // what this task (all:1 -- this visit) changed on the machine
           const list = cmd.all ? changes.slice() : changes.filter((x) => x.task === changeTask);
-          reply({ ok: true, n: list.length, changes: list.map((x) => ({ id: x.id, what: x.what, reversible: x.reversible, how: x.undo ? x.undo.kind : null, undone: x.undone || undefined })),
-                  text: undo.forChat(list.filter((x) => !x.undone)) || 'nothing changed' });
+          const moot = (() => { try { return new Map(undo.supersede(changes.filter((x) => !x.undone)).map((s) => [s.id, s.why || ('removed by ' + s.by)])); } catch (_) { return new Map(); } })();
+          reply({ ok: true, n: list.length, changes: list.map((x) => ({ id: x.id, what: x.what, reversible: x.reversible, how: x.undo ? x.undo.kind : null, undone: x.undone || undefined, gone: moot.get(x.id) })),
+                  text: undo.forChat(list.filter((x) => !x.undone && !moot.has(x.id))) || 'nothing changed' });
         } else if (cmd.do === 'undo') {                // put one change back -- after the room's yes, or because they asked
           // `id`: c3, or "last" (the newest that can be put back). A change put back by HAND (typed text, a setting) comes
           // back as the how, for the driver to do. A command undo needs the shell consent and the room's yes -- unless
@@ -2408,6 +2424,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           const e = ref === 'last' ? [...changes].reverse().find((x) => !x.undone && x.undo && x.undo.kind === 'exec') : changes.find((x) => x.id === ref);
           if (!e) reply({ ok: false, why: 'no change ' + JSON.stringify(ref) + ' in this visit\'s record -- {"do":"changes"} lists them' });
           else if (e.undone) reply({ ok: false, why: e.id + ' was put back already (' + e.undone + ')' });
+          else if ((() => { try { return undo.supersede(changes.filter((x) => !x.undone)).find((s) => s.id === e.id); } catch (_) { return null; } })()) {
+            const s = undo.supersede(changes.filter((x) => !x.undone)).find((x) => x.id === e.id);
+            reply({ ok: false, why: e.id + ' (' + e.what + ') cannot be put back now: ' + (s.why || ('a later change, ' + s.by + ', removed it')), by: s.by });
+          }
           else {
             const inv = undo.inverse(e);
             if (!inv.ok) reply({ ok: false, why: e.id + ' (' + e.what + ') is not put back by a command: ' + (e.undo && e.undo.kind === 'hint' ? e.undo.text : inv.why), byHand: e.undo && e.undo.kind === 'hint' ? e.undo.text : undefined });
@@ -2473,6 +2493,17 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                 if (a.verdict !== 'approved') { go = false; reply({ ok: false, why: 'the room did not say yes to replacing ' + st.full + ' -- nothing was written', verdict: a.verdict, replies: a.replies }); }
                 else replaced = true;
               }
+              // REPLACING A FILE: its old copy is kept first (core/undo.js, as for an exec that overwrites one), so the
+              // change record can put it back; stamped after the new one is written
+              let capSet = null;
+              if (go && replaced) {
+                const syn = sentAs(st.full || to, os.os, true);
+                let caps = [];
+                try { const p = undo.prepare(syn, { os: os.os, seq: changes.length + 1, now: Date.now(), visit: VISIT_ID }); caps = p && Array.isArray(p.captures) ? p.captures : []; } catch (_) { caps = []; }
+                const captured = [];
+                for (const k of caps) if (k.when === 'before' && !stopped) { const x = await runExec(k.cmd, 15000); captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); }
+                capSet = { syn, caps, captured };
+              }
               if (go) {
                 say('Putting ' + leaf(cmd.file) + ' on this machine');
                 const b64 = data.toString('base64'), stepN = Math.max(4, desk.writeChunk(os.os, to) || 4);
@@ -2488,8 +2519,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                 if (!r.ok) reply({ ok: false, why: 'stopped after ' + humanBytes(Math.min(data.length, Number(r.size) || 0)) + ' of ' + humanBytes(data.length) + ': ' + r.why + ' -- the part already written is at ' + (st.full || to), partial: true });
                 else if (Number(r.size) !== data.length) reply({ ok: false, why: 'the file on the machine is ' + humanBytes(Number(r.size) || 0) + ', not ' + humanBytes(data.length) + ' -- send it again', partial: true });
                 else {
+                  if (capSet) for (const k of capSet.caps) if (k.when === 'after' && !stopped) { const x = await runExec(k.cmd, 15000); capSet.captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); }
                   roomNote('📄 I put **' + leaf(cmd.file) + '** (' + humanBytes(data.length) + ') on this machine at `' + (r.full || st.full || to) + '`' + (replaced ? ', replacing the one that was there' : '') + '.');
                   reply({ ok: true, to: r.full || st.full || to, size: data.length, commands: n, replaced });
+                  if (capSet && capSet.captured.length && out) capturedFor.set(out, { captured: capSet.captured, syn: capSet.syn });
                 }
               }
             }
@@ -2541,6 +2574,14 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               // Narrate only when nothing richer is driving: a tree owns the line (systemic rule), an
               // explicit intent is the author's words, and a quiet step opted out.
               if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus('Running a command');
+              // CAPTURE BEFORE CHANGE: what this command will overwrite, delete or re-set is kept or read first, and stamped
+              // after, so the record can put it back and a restore never lands on something changed again (core/undo.js).
+              // Internal commands: not steps of the budget, nothing on the panel.
+              let caps = [];
+              try { const p = undo.prepare(cmd, { os: deskOsName || '', seq: changes.length + 1, now: Date.now(), visit: VISIT_ID }); caps = p && Array.isArray(p.captures) ? p.captures : []; } catch (_) { caps = []; }
+              const captured = [];
+              const runCaps = async (when) => { for (const k of caps) if (k.when === when && !stopped) { const x = await runExec(k.cmd, 15000); captured.push({ id: k.id, ok: !x.transport && x.ok, output: x.output || '' }); } };
+              await runCaps('before');
               ws.send({ type: 'exec', reqId: rid, cmd: command });
               const ms = Math.max(1000, Math.min(120000, Number(cmd.timeout) || 30000));
               const r = await raceStop(ws.waitFor((m) => m.type === 'exec-result' && m.reqId === rid, ms + 2000));
@@ -2550,7 +2591,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                 let output = '';
                 if (r.data) { try { output = Buffer.from(String(r.data), 'base64').toString('utf8'); } catch (_) { output = ''; } }
                 const code = (typeof r.code === 'number') ? r.code : -1;
+                if (code === 0) await runCaps('after');
                 reply({ ok: code === 0, code, output, truncated: !!r.truncated });
+                if (captured.length && out) capturedFor.set(out, { captured });
               }
             }
           }
@@ -3215,6 +3258,19 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (cmd && cmd.cid != null && r && typeof r === 'object') r.cid = cmd.cid;
       writeOut(r);
       if (cmd.do === 'quit' || cmd.do === 'done') break;
+    }
+    // THE KEPT COPIES GO WITH THE VISIT (core/undo.js cleanup): what capture-before-change put in the host's temp folder
+    // is removed while the grant is still live -- the record's undos end with the visit anyway. Its own wait, not
+    // raceStop: a visit that ended by a sign-off in chat still cleans up after itself; a revoked one cannot.
+    if (grantShell && changes.some((e) => e.backup)) {
+      let cleaned = 0;
+      for (const c of (() => { try { return undo.cleanup(changes, { os: deskOsName || '', visit: VISIT_ID }); } catch (_) { return []; } })()) {
+        const rid = ++reqSeq;
+        try { ws.send({ type: 'exec', reqId: rid, cmd: c.cmd }); } catch (_) { break; }
+        const x = await ws.waitFor((m) => m.type === 'exec-result' && m.reqId === rid, 12000);
+        if (x && x.code === 0) cleaned++;
+      }
+      say('[.] ' + (cleaned ? 'removed the copies kept for undo on the host' : 'could not remove the copies kept for undo on the host (they are in its temp folder, agent-drive-undo)'));
     }
     try { clearInterval(keepAlive); } catch (_) {}
     try { clearTimeout(atIdleTimer); clearTimeout(atSendTimer); } catch (_) {}
