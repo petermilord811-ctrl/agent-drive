@@ -33,6 +33,20 @@ Its icon is ScreenMirror's mark: the server sends `mcp/icon-32.png` and `mcp/ico
 server icons shows it instead of its generic one; not every client draws them yet, and one that kept the server's
 first answer shows it once the server is restarted.
 
+### Cursor (plugin — branded icon in Customize and chat)
+
+Cursor's MCP list / chat icons come from the **plugin logo**, not from `serverInfo.icons`. This repo is a Cursor
+plugin (`.cursor-plugin/plugin.json`, root `mcp.json`, `assets/logo.png`).
+
+1. Uninstall any local copy of **screenmirror-agent-drive** (Customize → plugin → Uninstall).
+2. Install from GitHub so the logo is an `https://raw.githubusercontent.com/…` URL (a `~/.cursor/plugins/local`
+   copy only gets a `file://` logo; Cursor can show that on the plugin header but not on the MCP row / chat).
+   - **Marketplace:** [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish) with
+     `https://github.com/petermilord811-ctrl/agent-drive`, then Install from Customize.
+   - **Team marketplace:** Dashboard → Plugins & MCPs → Import from Repo → same URL.
+3. Configure plugin variables **SM_JOIN_KEY** and **SM_RELAY** (Customize → plugin → Configure).
+4. Reload the window. The plugin header and the **agent-drive** MCP card should both show ScreenMirror's mark.
+
 ## What it needs
 
 | variable | |

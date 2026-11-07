@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "agent-drive": {
+      "command": "node",
+      "args": [
+        "${CURSOR_PLUGIN_ROOT}/mcp/server.js"
+      ],
+      "env": {
+        "SM_JOIN_KEY": "${SM_JOIN_KEY}",
+        "SM_RELAY": "${SM_RELAY}"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "screenmirror-agent-drive",
+  "version": "1.0.2",
+  "description": "Drive a real computer through ScreenMirror — with consent at every step.",
+  "author": {
+    "name": "ScreenMirror"
+  },
+  "repository": "https://github.com/petermilord811-ctrl/agent-drive",
+  "homepage": "https://github.com/petermilord811-ctrl/agent-drive#readme",
+  "license": "MIT",
+  "keywords": [
+    "screenmirror",
+    "mcp",
+    "computer-use",
+    "agent-drive"
+  ],
+  "logo": "assets/logo.png",
+  "mcpServers": "mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "SM_JOIN_KEY": {
+        "type": "string",
+        "title": "ScreenMirror join key",
+        "description": "The right to ask to join a machine. Must match the relay secret."
+      },
+      "SM_RELAY": {
+        "type": "string",
+        "title": "ScreenMirror relay",
+        "description": "WebSocket relay URL (cert-valid hostname), e.g. wss://relay.example.sslip.io"
+      }
+    },
+    "required": [
+      "SM_JOIN_KEY",
+      "SM_RELAY"
+    ]
+  }
+}
