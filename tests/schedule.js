@@ -65,11 +65,11 @@ r = parseSpec(['--host', '10004', '--at', '07:05', '--days=sat']);
 ok(r.ok && r.spec.time === '07:05' && r.spec.days.join() === 'sat', 'the words of a command line work too');
 const why = (a) => { const x = parseSpec(a); return x.ok ? '' : x.why; };
 ok(/--at HH:MM/.test(why({})), 'no when at all: it says the three ways');
-ok(/one of --at, --every and --once/.test(why({ at: '09:00', every: '1h' })), 'two kinds of when: refused');
+ok(/one of --at, --every, --once and --on/.test(why({ at: '09:00', every: '1h' })), 'two kinds of when: refused');
 ok(['24:00', '9', '09:60', 'noon', ''].every((t) => /HH:MM/.test(why({ at: t }))), 'a time of day that is not HH:MM on a 24-hour clock');
 ok(/--days goes with --at/.test(why({ every: '1h', days: 'mon' })), '--days without --at');
 ok(/not a day/.test(why({ at: '09:00', days: 'mon,funday' })) && /not a day/.test(why({ at: '09:00', days: 'mo' })), 'a day that is not one');
-ok(['0m', '5 parsecs', '', '-1h', '1.5h'].every((t) => /--every is a number and a unit/.test(why({ every: t }))), '--every that is not a positive number and a unit');
+ok(['0m', '5 parsecs', '', '-1h', '1.5h', '5constructor'].every((t) => /--every is a number and a unit/.test(why({ every: t }))), '--every that is not a positive number and a unit');
 ok(['2026-02-30 09:00', '2026-12-01', '12/01/2026 09:00', '2026-12-01 24:00'].every((t) => /--once is a date and a time/.test(why({ once: t }))), '--once that is not a real date and time');
 
 // ---- nextFire: --at -----------------------------------------------------------------------------------------------------

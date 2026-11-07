@@ -29,6 +29,11 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   or a command line runs at a time of day (on chosen days), every N minutes, hours, days or weeks, or once — by a
   runner you start (`node drive/schedule.js run`). Every visit still needs Allow unless the owner pre-authorised
   the agent; a run nobody lets in is recorded and never retried in a loop; missed fires are skipped, not caught up.
+- **Triggered runs** (`--on`): a saved job starts when the relay raises a health alert for a machine (its webhook:
+  `alert-disk`, `recovered-offline` …), when a file lands in a folder, or when the runner is called — the event's
+  facts handed to a recipe as `--set` values (and to a command as `SM_EVENT` / `SM_MACHINE` / `SM_FILE`). The
+  runner listens on 127.0.0.1 behind a secret token (`node drive/schedule.js hook` prints the addresses); a burst of
+  the same event starts one run.
 - **Jobs asked for in plain words** (`core/intake.js`): "connect 10004 and do my sticky notes" is read into the
   machine, the skill that does it, the access to ask for and the command line — `node kit.js intake "…"`, and the
   MCP server's new `intake` tool. An operator's chat message that names a job carries its skill in the inbox
@@ -38,11 +43,22 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   file unless `overwrite:1`, which asks the room. A photo or up to 7 s of what the machine is playing (never a
   microphone) is asked of the room every time — only a clear yes allows it, never the standing yes or silence. The
   MCP `camera` tool returns the photo inline.
+- **The camera, sound and files as consents of their own** (`--camera`, `--audio`, `--files`; `access` mid-visit; the
+  MCP `connect` fields): each is its own line on ScreenMirror's Allow card, and the RELAY takes the photo, records
+  or copies the file itself and says so in the machine's chat (`agent-take` / `agent-put`) — no "run commands"
+  needed. A photo or a recording is still asked of the room each time. Needs a relay at viewer 2.229.0 or later.
 - **The change record and undo** (`core/undo.js`): what each command changed on the machine — files moved,
   renamed, copied, made or deleted, services, registry values, processes, files written, typed text (never the
   text), apps started, a file `send` put there, and what the driver declares with `changed` — with how it is put
   back. The finish of a task tells the room; `changes` lists it; `undo {id}` puts one back after a yes, or because
   they asked ("undo c3"); one that deletes what was made is never taken on silence.
+- **Replay with values**: what a saved job typed (an amount, a date, a URL, a file name) is a named value with the
+  original as its default — `node drive/replay.js values <recipe>` lists them, `run --set name=value` replays the job
+  with another, and the checks that read the old text read the new. Recipes are v2; old ones run as before.
+- **Capture before change**: what an `exec` is about to overwrite, delete or re-set — a file (kept in the host's
+  temp, up to 16 MB), a registry value, a startup type, a mode or owner, an ACL — is kept or read first, so `undo` puts
+  those back too, refusing when the thing changed again since; the copies go when the visit ends. A change a later
+  one made moot is marked `gone` and is not offered back.
 - **The board** (`core/board.js`, [plan 07](docs/plans/07-the-board.md)): the panel is the room's control surface. Its buttons
   post chat lines with marks only the panel sends, honoured by the serve itself: pause / go on, stop the task, stop after
   a step, answers by question id (the inviter's yes only; anyone's no), Undo, the autonomy dial (each action / risky

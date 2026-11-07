@@ -207,6 +207,9 @@ const CONNECT_TOOL = {
       relay: { type: 'string', description: 'the relay, wss://... (default: SM_RELAY, from the environment or the kit\'s .env)' },
       control: { type: 'boolean', description: 'ask for the keyboard and mouse (default true; serving needs it)' },
       shell: { type: 'boolean', description: 'also ask to run commands -- a consent of its own on the card (default false)' },
+      camera: { type: 'boolean', description: 'also ask to take photos with its camera -- its own line on the card; each photo is still asked for in chat' },
+      audio: { type: 'boolean', description: 'also ask to record what it is PLAYING (never a microphone) -- its own line on the card' },
+      files: { type: 'boolean', description: 'also ask to copy files to and from it -- its own line on the card' },
       monitor: { type: 'integer', minimum: 0, description: 'which screen (default 0)' },
     },
     required: ['host', 'task'],
@@ -283,6 +286,8 @@ function stepMs(c) {
     case 'camera': case 'audio': ms = clamp(t || 60000, 2000, 300000) + 90000; break;
     // a file is one command per chunk: minutes for a big one (and a send may ask before replacing a file)
     case 'fetch': case 'send': ms = 20 * 60000; break;
+    // the room's yes (60 s by default), then the undo command itself
+    case 'undo': ms = clamp(t || 60000, 2000, 300000) + 75000; break;
     case 'plan': ms = planMs(c.steps, 0); break;
   }
   if (c.expect) ms += 45000;
@@ -400,6 +405,7 @@ async function connect(args, ctx) {
   argv.push('--host', host, '--agent', AGENT, '--task', task);
   if (control) argv.push('--control');   // without it the visit is watch-only: acting verbs come back needs:'control'
   if (shell) argv.push('--shell');
+  for (const k of ['camera', 'audio', 'files']) if (args[k]) argv.push('--' + k);   // each its own line on the Allow card
   if (mon) argv.push('--mon', String(mon));
   argv.push('--serve', dir);
   // if this server dies outright (a SIGKILL on Linux/macOS leaves no stdin-close to notice), the client hands the

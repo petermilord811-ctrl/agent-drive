@@ -56,7 +56,7 @@ unless someone presses Allow on it. The code goes out as an MCP progress notific
 
 | tool | what it does |
 |---|---|
-| `connect {host, task, relay?, control?, shell?, monitor?}` | Starts `core/agent-join.js --serve <visit folder>` and waits for Allow. Answers `{w, h, host, dir, code, at, pid}`; every x/y is a screen pixel at `w`×`h`. If the visit cannot start, the answer gives the client's reason, its exit code and the end of its stderr. |
+| `connect {host, task, relay?, control?, shell?, camera?, audio?, files?, monitor?}` | Starts `core/agent-join.js --serve <visit folder>` and waits for Allow. Answers `{w, h, host, dir, code, at, pid}`; every x/y is a screen pixel at `w`×`h`. If the visit cannot start, the answer gives the client's reason, its exit code and the end of its stderr. |
 | one tool per verb in `core/verbs.js` | Generated at startup, with `-` turned into `_` (`chat_wait`, `note_add`, `spotlight_off`). A call becomes `{do: <verb>, ...arguments}`, and the result is done.json's JSON as text. `ok:false` comes back as `isError`. The schema is the verb's own fields plus the common ones, with `additionalProperties:false`. The serve's verb table still has the last word: an unknown field is `refused` (and nothing is sent), and a common slip is renamed and reported in `fixed`. |
 | `look {rect?, max?, settle?, out?}` | Returns `[text: the answer, image: the PNG]`. `out` is optional. Click what you see in **its** pixels with `click {lx, ly}`. |
 | any acting verb with `look:{}` | Acts, then returns the picture of the result in the same answer. |
