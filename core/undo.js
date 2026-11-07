@@ -1,6 +1,6 @@
 'use strict';
-// @tool what a command changed on the host and how to put it back: a journal entry per change (moved, renamed, made, deleted, a service flipped, text typed) with an undo command or a plain hint; pure, offline
-// @run  const undo = require('./undo.js'); const e = undo.record(cmd, reply, {os, now, seq, window})   (a library: the serve journals each entry, lists them at the finish, and after a yes runs undo.inverse(e).cmd)
+// @tool what a command changed on the host and how to put it back: a journal entry per change (moved, renamed, made, deleted, a service flipped, text typed) with an undo command or a plain hint; what to read or keep BEFORE a command runs so an overwrite, a delete or a reset can be put back; pure, offline
+// @run  const undo = require('./undo.js'); const p = undo.prepare(cmd, ctx); /* run p.captures */ const e = undo.record(cmd, reply, {os, now, seq, window, captured})   (a library: the serve journals each entry, lists them at the finish, after a yes runs undo.inverse(e).cmd, and at the end runs undo.cleanup(entries, ctx))
 // core/undo.js -- WHAT DID THE AGENT CHANGE, AND HOW IS IT PUT BACK?
 //
 // An agent on somebody's machine moves files, makes folders, flips services and types into windows. When the job
@@ -10,14 +10,97 @@
 // in chat does it run inverse(entry).cmd. This module decides what a command changed and what would reverse it.
 // It never runs anything, reads no file, keeps no state, and never throws: commands are JSON somebody wrote.
 //
-//   record(cmd, result, ctx) -> entry | entry[] | null      ctx: {os:'windows'|'linux'|'', now, seq, window?}
+//   record(cmd, result, ctx) -> entry | entry[] | null   ctx: {os:'windows'|'linux'|'', now, seq, window?, captured?}
 //     entry {id:'c<seq>', at, verb, what, md, kind:'exec'|'typed'|'launched'|'declared', reversible,
-//            undo: {kind:'exec', os, cmd, risky, note} | {kind:'hint', text} | null}
+//            undo: {kind:'exec', os, cmd, risky, note} | {kind:'hint', text} | null,
+//            paths?: {os, made?, from?, to?, removed?},      where it changed something (WHAT A LATER CHANGE MADE MOOT)
+//            backup?: {os, path, bytes, sudo?}}               the kept copy its undo puts back (CAPTURE BEFORE CHANGE)
 //     One entry per change: a command that made several is an ARRAY numbered seq, seq+1, ... (advance the count by
 //     its length). `md` is `what` as Markdown, its paths as code. Only result.ok === true is recorded.
 //   inverse(entry)           -> {ok:true, cmd, os, risky, note} | {ok:false, why}    cmd: a line for exec, as is
 //   summary(entries, max)    -> one short paragraph for the finish message ('' when nothing changed)
 //   forChat(entries)         -> a short Markdown list, each line saying whether (and how) it can be put back
+//   prepare(cmd, ctx)        -> null | {captures: [{id, kind, when, os, cmd, what, maxBytes?}]}   before an exec runs
+//   cleanup(entries, ctx)    -> [{os, cmd}]          when the visit ends: the commands that remove its kept copies
+//   supersede(entries)       -> [{id, by, why}]      the earlier entries a later one made moot
+//
+// CAPTURE BEFORE CHANGE. Some changes leave nothing to put back from once they are made: a file overwritten (Set-
+// Content, Out-File, >, cp or Copy-Item onto one, New-Item -Force) or deleted (Remove-Item, del, rm), a registry
+// value set or deleted (Set-ItemProperty, New-ItemProperty -Force, reg add /v, Remove-ItemProperty, reg delete /v),
+// a service's startup type (Set-Service -StartupType, sc config start=), a unit enabled, disabled, masked (systemctl),
+// permissions (chmod, chown, chgrp, icacls). The serve asks first:
+//   prepare(cmd, ctx) -> null | {captures: [{id, kind, when, os, cmd, what, maxBytes?}]}
+//     ctx as for record, and: visit -- the folder this visit's copies go in ([A-Za-z0-9_-], 1..64; 'visit' when none:
+//     pass one, unique to the visit); maxBytes -- the copy cap (16 MB unless set; 64 MB at most). Only an exec is
+//     prepared: a Terminal line runs as the Terminal's user, in a folder only its prompt says.
+//     kind 'backup' (when 'before') keep a copy of a file before it is overwritten or deleted, with its size, times,
+//                                   attributes (Windows) or mode and owner (Linux), and a hash of the copy
+//          'stamp'  (when 'after')  what the command left there (size, time, hash), so that putting the copy back
+//                                   can refuse when the file changed AGAIN since
+//          'value'  (before, after) a registry value (type, data), a service's Start and DelayedAutostart, a unit's
+//                                   is-enabled and is-active, a file's mode and owner (ls -ldn), a file's DACL and
+//                                   owner (icacls); read after the command too, for the same refusal
+//          'exists' (before)        was the folder (mkdir -p, New-Item -Force) or the registry key (reg add) there?
+//     `what` says it in a sentence; `maxBytes` is the cap a backup holds to.
+//   The serve runs every 'before' capture through exec as it is, then the command, then -- if it succeeded -- every
+//   'after' one, and calls record(cmd, result, {..., captured: [{id, ok, output}]}) with what each printed (a failed
+//   or missing one is fine: that change is then as it would be without). A capture prints ONE line,
+//   {"undo":"<id>","ok":true|false,...}, ASCII with \uXXXX escapes, found by its id among whatever else is printed;
+//   an id is k<n>-<8 hex>, the hex a hash of what it reads, so an answer from another command never matches. Each is
+//   one PowerShell or sh line, well inside cmd.exe's 8,191 characters (a capture that would not fit is not offered).
+//   Without ctx.captured record() is what it always was. With it:
+//     * a file overwritten, emptied, appended to, edited in place or touched is put back from its copy, its time and
+//       attributes (Windows) or mode (Linux) too -- only if it is still EXACTLY what the command left: size and
+//       SHA-256 (Windows), cksum's CRC and size (Linux), against the 'stamp'. The copy is checked against the hash
+//       taken when it was made; PowerShell reads it once and writes those very bytes, so a copy changed or swapped in
+//       the folder is refused, never written. A file the command CREATED where nothing was (>, Set-Content, cp,
+//       touch) is deleted -- only if it is still exactly as made. A file deleted is made again from its copy (times,
+//       attributes; mode, and owner when run as root) -- only if nothing is at that path now, and never over anything
+//       (CreateNew; set -C). A file a move or a copy replaced is put back: the move moved back first.
+//     * a registry value goes back to its old type and data -- or is deleted, with its key when the command made the
+//       key and nothing else is in it -- only if it is still what the command set; a deleted one is put back only if
+//       there is none now. A key reg add made is deleted only while empty.
+//     * a service's startup type (sc.exe config ... start= auto|delayed-auto|demand|disabled|boot|system), a unit's
+//       enabled state (systemctl enable|disable|mask|unmask) and, after --now, its running state, a file's mode and
+//       owner (chmod, chown), a file's DACL (SetAccessControl) and owner (icacls /setowner) -- each only if it is
+//       still what the command left.
+//     * what was that way already -- a folder or key already there, a value set to what it had, the same bytes --
+//       is no change: no entry. The last change to a thing in a command carries the undo; an earlier one to the same
+//       thing says it is put back with it.
+//   WHERE THE COPIES GO. Windows: [IO.Path]::GetTempPath()\agent-drive-undo\<visit>\ -- C:\Windows\Temp\... for the
+//   host's LocalSystem -- each folder made with a protected DACL (this account and Administrators only) and refused
+//   when it is a link or owned by anyone else; a copy is k<n>-<8 hex>-<12 hex>.bak, created new. Linux: ${TMPDIR:-
+//   /tmp}/agent-drive-undo-<uid>/<visit>/, mkdir -m 700, refused when it is a link or not this account's; a copy is
+//   made by mktemp. A refusal answers "unsafe" and nothing is copied.
+//   THE CAP: one file at most 16 MB, a visit's copies 256 MB together. A capture is one exec, which the host ends at
+//   10 s: reading, writing and hashing 16 MB fits that with PowerShell's start on a slow disk; putting it back reads
+//   the copy into memory to check and write the same bytes; and the temp folder sits on the system drive, no place
+//   to duplicate a database or a video unasked. Over it the answer is "too big" and the change stays "cannot be put
+//   back", saying so. A folder is never copied (no cap holds a tree), nor is a link.
+//   STILL NOT REVERSIBLE, AND WHY: what a wildcard, a pipeline or an unknown variable named (which files is not known
+//   before it runs); a folder deleted with what was in it, and cp -r / Copy-Item -Recurse of one (trees are never
+//   copied); a file over the cap; a link deleted; a registry KEY deleted, or emptied by New-Item -Force (its content
+//   is a tree); reg delete /va; a registry value of a type .NET cannot write back, or over 4 KB (an undo is one
+//   command line); chmod -R, chown -R, icacls /T (trees); icacls /setintegritylevel, /restore, /substitute; a service
+//   deleted, or reconfigured another way (sc config without start=, Set-Service -DisplayName); a process ended; a
+//   Terminal line's changes; a sudo command's path through $HOME or a variable (root's would be read, not the
+//   command's); an overwrite whose 'after' read is missing (it could not tell a later change from its own -- its copy
+//   is kept, and the hint says where); past 16 captures in one command (8 files overwritten), the rest, as without --
+//   each capture is an exec; anything once cleanup() has removed the copies.
+//   cleanup(entries, ctx) -> [{os, cmd}]: run when the visit ends. Removes the copies in the visit's folder (ctx.visit
+//   on ctx.os) and in each folder an entry's backup names -- only files named as a copy is named -- then each folder,
+//   and agent-drive-undo itself, if empty; under sudo again for copies made under sudo. Prints
+//   {"undo":"cleanup","ok":true,"removed":N}.
+//
+// WHAT A LATER CHANGE MADE MOOT. An entry's paths are lists of where it acted: made (created or changed there), from
+// and to (a move or a rename), removed (deleted). On Windows a variable is written %NAME% and ~ %USERPROFILE%, on
+// Linux $NAME and $HOME; a registry key Registry::HKEY_...\key, a value Registry::HKEY_...\key\name. supersede(entries)
+// lists each earlier entry that a later one made moot -- neither put back (`undone`) -- because the later one deleted
+// or moved away a path that IS or HOLDS what the earlier one made, changed or moved there, or that holds the folder
+// the earlier one would put something back into: a folder made, a file put in it, then the folder deleted with all
+// in it -- both earlier entries are moot, by the delete. Paths are compared as written (Windows: either slash, any
+// case; . and .. resolved): one written through a variable never meets one written out, so it errs toward listing
+// less. `why` names what the later one did, and "put cN back first" when that one can be.
 //
 // WHAT IT READS. exec runs `cmd.exe /c <line>` on Windows -- builtins, or `powershell -Command "..."` -- and
 // `/bin/sh -c` on Linux; terminal types a line into the Terminal panel's shell. Each is read the way its shell reads
@@ -39,7 +122,8 @@
 //     a folder, else it became D:\x -- so the undo looks first (Test-Path -PathType Container, then Join-Path with
 //     the name; sh: [ -d ], then the name), and the undo of THAT, fed back to record(), reads as the move it undoes;
 //   * what cannot be put back says why, plainly: Remove-Item and rm use no Recycle Bin, Set-Content kept no old
-//     contents, the registry value's old setting was never read, a closed program cannot be resumed;
+//     contents, the registry value's old setting was never read (unless prepare() kept or read it first), a closed
+//     program cannot be resumed;
 //   * typed text is never stored: its length (what the panel shows anyway) and the window it went into.
 //
 // THE CASES IT IS BUILT FOR
@@ -55,7 +139,7 @@
 //   * a command read as nothing (an alias, an abbreviated parameter, a pipeline) would leave no trace at all.
 //
 // Pure and offline; proven in tests/undo.js, which also runs the undo commands for real against a temp folder
-// (PowerShell on Windows, sh where there is one).
+// (PowerShell on Windows, sh where there is one) -- and the captures, the command, the restores and cleanup().
 
 const MAX_DEPTH = 6;          // a shell inside a shell inside a block ...
 const MAX_TEXT = 64 * 1024;   // a longer command is read as one opaque entry
@@ -1567,14 +1651,15 @@ function native(name, args, env, facts, src, from, el) {
         if (op === 'query' || op === 'compare' || !op || op === '/?') return undefined;
         const key = T[1] || '';
         if (/^\\\\/.test(key)) return unknown(facts, src);                          // another machine's registry
+        const view = low.includes('/reg:32') ? '32' : low.includes('/reg:64') ? '64' : '';   // which half of the registry a 64-bit Windows shows
         if (op === 'add') {
-          if (low.includes('/v') || low.includes('/ve')) add({ op: 'regset', keyRaw: key, name: low.includes('/ve') ? '(Default)' : after('/v'), tool: 'reg add' });
-          else add({ op: 'regkeyadd', keyRaw: key, tool: 'reg add' });
+          if (low.includes('/v') || low.includes('/ve')) add({ op: 'regset', keyRaw: key, name: low.includes('/ve') ? '(Default)' : after('/v'), tool: 'reg add', view });
+          else add({ op: 'regkeyadd', keyRaw: key, tool: 'reg add', view });
           return undefined;
         }
         if (op === 'delete') {
-          if (low.includes('/v') || low.includes('/ve') || low.includes('/va')) add({ op: 'regdel', keyRaw: key, name: low.includes('/va') ? null : low.includes('/ve') ? '(Default)' : after('/v'), all: low.includes('/va'), tool: 'reg delete' });
-          else add({ op: 'regkeydel', keyRaw: key, tool: 'reg delete' });
+          if (low.includes('/v') || low.includes('/ve') || low.includes('/va')) add({ op: 'regdel', keyRaw: key, name: low.includes('/va') ? null : low.includes('/ve') ? '(Default)' : after('/v'), all: low.includes('/va'), tool: 'reg delete', view });
+          else add({ op: 'regkeydel', keyRaw: key, tool: 'reg delete', view });
           return undefined;
         }
         return unknown(facts, src);
@@ -1633,7 +1718,17 @@ function native(name, args, env, facts, src, from, el) {
         if (script == null || env.depth >= MAX_DEPTH) return unknown(facts, src);
         return analyze(psParse(script, env.depth + 1), Object.assign({}, env, { shell: 'ps', depth: env.depth + 1 }), facts);
       }
-      case 'icacls': return T.some((t) => /^\/(grant|deny|remove|reset|setowner|setintegritylevel|restore|substitute|inheritance)/i.test(t)) ? unknown(facts, src) : undefined;
+      case 'icacls': {
+        if (!T.some((t) => /^\/(grant|deny|remove|reset|setowner|setintegritylevel|restore|substitute|inheritance)/i.test(t))) return undefined;
+        // a plain entry, as any command it cannot put back -- but one path's permissions set by /grant /deny /remove
+        // /reset /setowner /inheritance carry what they changed, so a capture of its permissions can put them back
+        const s = oneLine(src || ''), last = facts[facts.length - 1];
+        if (last && last.unknown === s) return undefined;
+        const p = args[0];
+        const one = p && p.t != null && !/^\/|[*?]/.test(p.t) && !low.some((t) => /^\/(setintegritylevel|restore|substitute|save|l)$/.test(t));
+        facts.push(one ? { unknown: s, acl: pathEffect('acl', env, p, { tool: 'icacls', recurse: low.includes('/t'), owner: low.includes('/setowner') }) } : { unknown: s });
+        return undefined;
+      }
       case 'attrib': return T.some((t) => /^[+-][rahsoixvpu]$/i.test(t)) ? unknown(facts, src) : undefined;
       case 'ipconfig': return T.some((t) => /^\/(release|renew|flushdns|registerdns|setclassid)/i.test(t)) ? unknown(facts, src) : undefined;
       default:
@@ -2109,6 +2204,718 @@ function describeSvc(e, d) {
 }
 
 // ============================================================================================================
+// CAPTURE BEFORE CHANGE (see the header). capturePlan() finds, in what a command will do, each thing whose old state
+// must be read first -- one SET per thing, the last change to it in the command carrying the undo; prepare() turns
+// each into commands; record() reads what they printed (readCaptured) and says the change from before and after
+// (OUTCOME); cleanup() removes a visit's copies. Every command here is one line: PowerShell inside cmd.exe's double
+// quotes (no " or % in it, every value through psValue) or sh (every value through shValue / sq).
+// ============================================================================================================
+const KEEP_MAX = 16 * 1024 * 1024;     // the biggest file a copy is kept of (ctx.maxBytes moves it, up to KEEP_CEIL)
+const KEEP_CEIL = 64 * 1024 * 1024;
+const KEEP_TOTAL = 256 * 1024 * 1024;  // all of one visit's copies together
+const HASH_MAX = 64 * 1024 * 1024;     // a file the 'after' read hashes (inside the host's 10 s); past it, its size and time say whether it changed
+const VALUE_B64 = 5464;                // 4 KB of registry data, as base64: what an undo's one command line carries
+const CAPS_MAX = 16;                   // captures for one command: each is an exec, so a long list is a slow command
+const WIN_BAK = /^(.+\\agent-drive-undo\\[A-Za-z0-9_-]{1,64})\\k\d{1,4}-[0-9a-f]{8}-[0-9a-f]{12}\.bak$/i;
+const LNX_BAK = /^(\/[A-Za-z0-9/._-]*\/agent-drive-undo-\d{1,10}\/[A-Za-z0-9_-]{1,64})\/k\d{1,4}-[0-9a-f]{8}-[A-Za-z0-9]{6,32}$/;
+const fnv8 = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); };
+const visitOf = (c) => { const v = c && (typeof c.visit === 'string' || typeof c.visit === 'number') ? String(c.visit) : ''; return /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : 'visit'; };
+const capOf = (c) => (c && typeof c.maxBytes === 'number' && Number.isFinite(c.maxBytes) ? Math.max(0, Math.min(KEEP_CEIL, Math.floor(c.maxBytes))) : KEEP_MAX);
+const human = (n) => (n < 1024 ? plural(n, 'byte') : n < 1048576 ? Math.round(n / 1024) + ' KB' : Math.round(n / 104857.6) / 10 + ' MB');
+const count = (v) => { const n = typeof v === 'number' ? v : typeof v === 'string' && /^\d{1,16}$/.test(v) ? Number(v) : NaN; return Number.isSafeInteger(n) && n >= 0 ? n : null; };
+const digits = (v) => (typeof v === 'string' && /^\d{1,20}$/.test(v) ? v : typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? String(v) : null);
+const literalOnly = (v) => !!v && v.parts.every((p) => p.s != null);
+// 'name=' + the value quoted -- or null (never the text "null") when it cannot be written safely
+const setTo = (name, q) => (q == null ? null : name + '=' + q);
+const quotable = (v, os) => !!v && (os === 'windows' ? psValue(v) : shValue(v)) != null;
+
+// ---- the registry, as a path names it ------------------------------------------------------------------------
+const HIVES = { HKLM: 'LocalMachine', HKEY_LOCAL_MACHINE: 'LocalMachine', HKCU: 'CurrentUser', HKEY_CURRENT_USER: 'CurrentUser', HKCR: 'ClassesRoot',
+  HKEY_CLASSES_ROOT: 'ClassesRoot', HKU: 'Users', HKEY_USERS: 'Users', HKCC: 'CurrentConfig', HKEY_CURRENT_CONFIG: 'CurrentConfig' };
+const HIVE_NAME = { LocalMachine: 'HKEY_LOCAL_MACHINE', CurrentUser: 'HKEY_CURRENT_USER', ClassesRoot: 'HKEY_CLASSES_ROOT', Users: 'HKEY_USERS', CurrentConfig: 'HKEY_CURRENT_CONFIG' };
+// HKCU:\Software\X, HKEY_CURRENT_USER\Software\X, Registry::HKCU\Software\X -> {hive, sub, name, view}
+function regTarget(e) {
+  const text = e.path ? textOf(e.path) : typeof e.keyRaw === 'string' ? e.keyRaw : null;
+  const m = text == null ? null : /^(?:(?:Microsoft\.PowerShell\.Core\\)?Registry::)?([A-Za-z_]+):?\\+(.+)$/i.exec(text);
+  const hive = m && own(HIVES, m[1].toUpperCase()) ? HIVES[m[1].toUpperCase()] : null;
+  if (!hive) return null;
+  const sub = m[2].replace(/\\+$/, '');
+  if (!sub || /[\u0000-\u001f/]|\\\\/.test(sub)) return null;
+  return { hive, sub, name: HIVE_NAME[hive] + '\\' + sub, view: e.view === '32' ? 'Registry32' : e.view === '64' ? 'Registry64' : 'Default' };
+}
+const regName = (n) => (/^\(default\)$/i.test(String(n)) ? '' : String(n));
+
+// ---- what to read, for which change ---------------------------------------------------------------------------
+// a fact -> the thing its old state is read from: {fam, key, ...} (key: the same thing, the same set)
+function captureTarget(f, os) {
+  const e = f.effect || (f.unknown != null && isObj(f.acl) ? f.acl : null);
+  if (!e || e.why) return null;
+  const sudo = e.sudo || null, sk = sudo ? '|' + sudo.tool + ':' + (sudo.user || '') : '';
+  const file = (v, inside) => {
+    // under sudo only a path written out: a $HOME in it would be root's, not the command's
+    if (!v || !v.parts || !v.parts.length || v.inside || isReg(v) || (sudo && !literalOnly(v)) || !quotable(v, os)) return null;
+    return { fam: 'file', v, inside: inside || null, sudo, key: os + '|file|' + pkey(v) + '|' + (inside || '') + sk };
+  };
+  switch (e.op) {
+    case 'write': return e.kind === 'new' ? null : file(e.path);
+    case 'del': return e.dir || (e.recurse && /^(del|erase)$/i.test(e.tool || '')) ? null : file(e.path);   // del /s: that name in every folder below
+    case 'copy': case 'move': return e.src && e.dst ? file(e.dst.v, e.dst.inside) : null;
+    case 'mkfile': return e.force ? file(e.path) : null;
+    case 'touch': return file(e.path);
+    case 'mkdir': return (e.maybe || e.force) && e.path && !e.path.inside && !(sudo && !literalOnly(e.path)) && quotable(e.path, os) ? { fam: 'dir', v: e.path, sudo, key: os + '|dir|' + pkey(e.path) + sk } : null;
+    case 'regset': case 'regdel': {
+      const r = os === 'windows' && !e.all && e.name != null ? regTarget(e) : null;
+      return r ? { fam: 'regval', reg: r, name: regName(e.name), key: 'windows|regval|' + r.view + '|' + r.name.toLowerCase() + '|' + regName(e.name).toLowerCase() } : null;
+    }
+    case 'regkeyadd': { const r = os === 'windows' ? regTarget(e) : null; return r ? { fam: 'regkey', reg: r, key: 'windows|regkey|' + r.view + '|' + r.name.toLowerCase() } : null; }
+    case 'svc':
+      if (!e.name || /[*?[\]]/.test(e.name)) return null;
+      if (e.action === 'startup' && os === 'windows') return { fam: 'startup', name: e.name, key: 'windows|startup|' + e.name.toLowerCase() };
+      if (e.tool === 'systemctl' && os === 'linux' && /^(enable|disable|mask|unmask)$/.test(e.action) && !/^-/.test(e.name)) return { fam: 'unit', name: e.name, user: !!e.user, sudo, key: 'linux|unit|' + (e.user ? 'user|' : '') + e.name + sk };
+      return null;
+    case 'perm': return os === 'linux' && !e.recurse && e.path && !e.path.inside && !(sudo && !literalOnly(e.path)) && quotable(e.path, os) ? { fam: 'mode', v: e.path, sudo, key: 'linux|mode|' + pkey(e.path) + sk } : null;
+    case 'acl': return os === 'windows' && !e.recurse && e.path && !e.path.inside && quotable(e.path, os) ? { fam: 'acl', v: e.path, key: 'windows|acl|' + pkey(e.path) } : null;
+    default: return null;
+  }
+}
+// the sets of one command, in order, each with its captures {id, kind, when}; byFact: a fact's index -> its set
+function capturePlan(facts, os) {
+  const sets = [], byKey = new Map(), byFact = new Map();
+  for (let i = 0; i < facts.length; i++) {
+    let t = null;
+    try { t = captureTarget(facts[i], os); } catch (_) { t = null; }
+    if (!t) continue;
+    let s = byKey.get(t.key);
+    if (!s) { s = Object.assign(t, { facts: [], effects: [] }); byKey.set(t.key, s); sets.push(s); }
+    s.facts.push(i); s.effects.push(facts[i].effect || facts[i].acl); s.last = i;
+    byFact.set(i, s);
+  }
+  let n = 0;
+  for (const s of sets) s.caps = [];
+  for (const s of sets) {
+    const ops = s.effects.map((x) => x.op);
+    if (s.fam === 'file' && ops.includes('move') && ops.length > 1) continue;     // a move shares its place with nothing else
+    const kinds = s.fam === 'file' ? (ops.every((o) => o === 'del' || o === 'move') ? [['backup', 'before']] : [['backup', 'before'], ['stamp', 'after']])
+      : s.fam === 'dir' || s.fam === 'regkey' ? [['exists', 'before']]
+      : s.fam === 'regval' && ops.every((o) => o === 'regdel') ? [['value', 'before']]
+      : [['value', 'before'], ['value', 'after']];
+    if (n + kinds.length > CAPS_MAX) break;
+    for (const [kind, when] of kinds) { n++; s.caps.push({ id: 'k' + n + '-' + fnv8(s.key + '|' + kind + '|' + when), kind, when }); }
+  }
+  return { sets, byFact };
+}
+
+// ---- the capture commands ---------------------------------------------------------------------------------------
+// Each prints ONE line: {"undo":"<id>","ok":true,...}, or ok:false with why. PowerShell's is ConvertTo-Json with
+// every character outside printable ASCII as \uXXXX (a pipe's code page would mangle it), as core/desk's scripts do.
+const PS_SHA = (x) => '[BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash(' + x + ")).Replace('-','')";
+const PS_TAIL = ["} catch { $e=$_.Exception; while ($e.InnerException) { $e=$e.InnerException }; $o.ok=$false; $o.why=''+$e.Message }",
+  '$j=ConvertTo-Json -InputObject $o -Compress -Depth 4',
+  "[Console]::Out.Write([regex]::Replace($j,'[^\\x20-\\x7e]',{param($m) '\\u{0:x4}' -f [int][char]$m.Value})+[char]10)",
+  'if (-not $o.ok) { exit 1 }'];
+function psCapture(id, body) {
+  if (!body || body.some((l) => l == null)) return null;
+  return psLine(["$o=[ordered]@{undo='" + id + "';ok=$true}", 'try {'].concat(body.filter((l) => l !== ''), PS_TAIL));
+}
+const shCapture = (lines, sudo) => (lines.some((l) => l == null) ? null : shLine(lines.filter((l) => l !== ''), sudo));
+// what is at a path: none | link | dir | file {size, attr, ct, wt (FILETIME, UTC)}; "no permission" is an error, never "none"
+const PS_ST = "function St($f) { $r=[ordered]@{}; $a=$null; try { $a=[IO.File]::GetAttributes($f) } catch { $e=$_.Exception; while ($e.InnerException) { $e=$e.InnerException }; " +
+  "if (-not (($e -is [IO.FileNotFoundException]) -or ($e -is [IO.DirectoryNotFoundException]))) { throw $e } }; if ($null -eq $a) { $r.was='none' } elseif ($a -band 1024) { $r.was='link' } " +
+  "elseif ($a -band 16) { $r.was='dir' } else { $i=[IO.FileInfo]::new($f); $r.was='file'; $r.size=$i.Length; $r.attr=[int]$a; $r.ct=''+$i.CreationTimeUtc.ToFileTimeUtc(); $r.wt=''+$i.LastWriteTimeUtc.ToFileTimeUtc() }; $r }";
+const PS_HS = "function Hs($f) { $r=[IO.File]::Open($f,'Open','Read','ReadWrite'); try { " + PS_SHA('$r') + ' } finally { $r.Close() } }';
+// the visit's folder: made with a protected DACL (this account and Administrators), $null when it is a link or not ours
+const psKd = (visit) => "function Kd { $me=[Security.Principal.WindowsIdentity]::GetCurrent().User; $ba=[Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'); " +
+  "$ok=@($me.Value,'S-1-5-18','S-1-5-32-544'); $d=[IO.Path]::Combine([IO.Path]::GetTempPath(),'agent-drive-undo'); $v=[IO.Path]::Combine($d,'" + visit + "'); " +
+  "foreach ($x in @($d,$v)) { if (-not [IO.Directory]::Exists($x)) { $s=[Security.AccessControl.DirectorySecurity]::new(); $s.SetAccessRuleProtection($true,$false); " +
+  "foreach ($u in @($me,$ba)) { $s.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($u,'FullControl','ContainerInherit,ObjectInherit','None','Allow')) }; " +
+  '[void][IO.Directory]::CreateDirectory($x,$s) }; if (([IO.File]::GetAttributes($x) -band 1024) -or ($ok -notcontains ' +
+  '[IO.Directory]::GetAccessControl($x).GetOwner([Security.Principal.SecurityIdentifier]).Value)) { return $null } }; $v }';
+function psBackup(s, id, o) {
+  const P = psValue(s.v), L = s.inside ? psValue(lit(s.inside)) : '';
+  if (P == null || L == null) return null;
+  // read ONCE, hash those bytes, write those bytes: the copy is exactly what was hashed
+  const keep = "$r=[IO.File]::Open($f,'Open','Read','ReadWrite'); try { $x=[byte[]]::new($r.Length); $n=0; while ($n -lt $x.Length) { $c=$r.Read($x,$n,$x.Length-$n); if ($c -le 0) { break }; $n+=$c } } finally { $r.Close() }; " +
+    "if ($n -ne $x.Length) { throw 'the file changed while it was read' }; $b=[IO.Path]::Combine($v,'" + id + "-'+[Guid]::NewGuid().ToString('N').Substring(0,12)+'.bak'); " +
+    "$w=[IO.File]::Open($b,'CreateNew','Write','None'); try { $w.Write($x,0,$x.Length) } finally { $w.Close() }; $o.bak=$b; $o.size=$x.Length; $o.hash=" + PS_SHA('$x');
+  return psCapture(id, [PS_ST, psKd(o.visit), '$p=' + P, '$o.in=0',
+    L ? 'if ([IO.Directory]::Exists($p)) { $p=[IO.Path]::Combine($p,' + L + '); $o.in=1 }' : '',
+    '$f=[IO.Path]::GetFullPath($p)', '$o.full=$f', '$t=St $f', 'foreach ($k in @($t.Keys)) { $o[$k]=$t[$k] }',
+    "if ($o.was -eq 'file') { if ($o.size -gt " + o.cap + ") { $o.skip='big'; $o.cap=" + o.cap + " } else { $v=Kd; if ($null -eq $v) { $o.skip='unsafe' } else { $u=0; " +
+    'foreach ($y in [IO.Directory]::GetFiles($v)) { $u+=[IO.FileInfo]::new($y).Length }; if ($u + $o.size -gt ' + KEEP_TOTAL + ") { $o.skip='full'; $o.cap=" + KEEP_TOTAL + ' } else { ' + keep + ' } } } }']);
+}
+function psStamp(s, id) {
+  const P = psValue(s.v), L = s.inside ? psValue(lit(s.inside)) : '';
+  if (P == null || L == null) return null;
+  return psCapture(id, [PS_ST, PS_HS, '$p=' + P, '$f=[IO.Path]::GetFullPath($p)', '$o.full=$f', '$o.at=St $f',
+    "if (($o.at.was -eq 'file') -and ($o.at.size -le " + HASH_MAX + ')) { $o.at.hash=Hs $f }',
+    L ? 'if ([IO.Directory]::Exists($f)) { $g=[IO.Path]::Combine($f,' + L + "); $o.inn=St $g; if (($o.inn.was -eq 'file') -and ($o.inn.size -le " + HASH_MAX + ')) { $o.inn.hash=Hs $g } }' : '']);
+}
+function shBackup(s, id, o) {
+  const P = shValue(s.v);
+  if (P == null) return null;
+  const J = (rest) => `printf '{"undo":"${id}","ok":true,${rest}}\\n'`;
+  return shCapture(['umask 077',
+    `fail() { printf '{"undo":"${id}","ok":false,"why":"%s"}\\n' "$1"; exit 1; }`,
+    'p=' + P, 'in=0',
+    s.inside ? 'if [ -d "$p" ]; then p="$p"' + sq('/' + s.inside) + '; in=1; fi' : '',
+    'if [ -L "$p" ]; then w=link; elif [ -d "$p" ]; then w=dir; elif [ -f "$p" ]; then w=file; elif [ -e "$p" ]; then w=other; else w=none; fi',
+    'if [ "$w" != file ]; then ' + J('"was":"%s","in":%s') + ' "$w" "$in"; exit 0; fi',
+    "[ -r \"$p\" ] || fail 'it cannot be read'",
+    'set -- $(cksum < "$p"); crc=$1; size=$2',
+    "case \"$crc:$size\" in *[!0-9:]*|:*|*:) fail 'cksum gave no answer';; esac",
+    'set -- $(ls -ldn -- "$p"); mode=$1; uid=$3; gid=$4',
+    "case \"$uid:$gid\" in *[!0-9:]*|:*|*:) fail 'ls gave no owner';; esac",
+    "case \"$mode\" in ''|*[!a-zA-Z.+@-]*) fail 'ls gave no mode';; esac",
+    `S=$(printf '"was":"file","in":%s,"size":%s,"crc":"%s","mode":"%s","uid":%s,"gid":%s' "$in" "$size" "$crc" "$mode" "$uid" "$gid")`,
+    'if [ "$size" -gt ' + o.cap + ' ]; then ' + J('%s,"skip":"big","cap":' + o.cap) + ' "$S"; exit 0; fi',
+    // the folder: this account's own, under its temp folder -- refused when it is a link or someone else's
+    'r=${TMPDIR:-/tmp}; case "$r" in /*) ;; *) r=/tmp;; esac; case "$r" in *[!A-Za-z0-9/._-]*) r=/tmp;; esac',
+    'r=${r%/}/agent-drive-undo-$(id -u); v=$r/' + o.visit,
+    'for d in "$r" "$v"; do mkdir -m 700 -- "$d" 2>/dev/null; if [ -L "$d" ] || [ ! -d "$d" ] || [ ! -O "$d" ]; then ' + J('%s,"skip":"unsafe"') + ' "$S"; exit 0; fi; done',
+    'set -- $(du -sk -- "$v" 2>/dev/null); u=$(( ${1:-0} * 1024 ))',
+    'if [ $((u + size)) -gt ' + KEEP_TOTAL + ' ]; then ' + J('%s,"skip":"full","cap":' + KEEP_TOTAL) + ' "$S"; exit 0; fi',
+    `b=$(mktemp "$v/${id}-XXXXXXXXXXXX") || fail 'no copy could be made'`,
+    "cat < \"$p\" > \"$b\" && touch -r \"$p\" \"$b\" && [ \"$(cksum < \"$b\")\" = \"$crc $size\" ] || { rm -f -- \"$b\"; fail 'the file changed while it was copied'; }",
+    J('%s,"bak":"%s"') + ' "$S" "$b"'], s.sudo);
+}
+function shStamp(s, id) {
+  const P = shValue(s.v);
+  if (P == null) return null;
+  return shCapture([
+    "st() { if [ -L \"$1\" ]; then printf '{\"was\":\"link\"}'; elif [ -d \"$1\" ]; then printf '{\"was\":\"dir\"}'; elif [ -f \"$1\" ]; then set -- $(cksum < \"$1\" 2>/dev/null); " +
+    "printf '{\"was\":\"file\",\"crc\":\"%s\",\"size\":\"%s\"}' \"$1\" \"$2\"; elif [ -e \"$1\" ]; then printf '{\"was\":\"other\"}'; else printf '{\"was\":\"none\"}'; fi; }",
+    'p=' + P, 'a=$(st "$p")', 'i=null',
+    s.inside ? 'if [ -d "$p" ]; then i=$(st "$p"' + sq('/' + s.inside) + '); fi' : '',
+    `printf '{"undo":"${id}","ok":true,"at":%s,"inn":%s}\\n' "$a" "$i"`], s.sudo);
+}
+// a registry value's signature: SHA-256 of type:count:base64(data) ('-' when there is none); $script:T/C/D hold them
+const PS_SG = "function Sg($k,$n) { if (@($k.GetValueNames()) -notcontains $n) { return '-' }; $t=''+$k.GetValueKind($n); $v=$k.GetValue($n,$null,'DoNotExpandEnvironmentNames'); $c=0; " +
+  "if (($t -eq 'String') -or ($t -eq 'ExpandString')) { $d=[Text.Encoding]::Unicode.GetBytes(''+$v) } elseif ($t -eq 'MultiString') { $c=@($v).Count; $d=[Text.Encoding]::Unicode.GetBytes((@($v) -join [char]0)) } " +
+  "elseif ($t -eq 'DWord') { $d=[BitConverter]::GetBytes([int]$v) } elseif ($t -eq 'QWord') { $d=[BitConverter]::GetBytes([long]$v) } else { $d=[byte[]]$v }; if ($null -eq $d) { $d=[byte[]]@() }; " +
+  "$script:T=$t; $script:C=$c; $script:D=[Convert]::ToBase64String($d); " + PS_SHA("[Text.Encoding]::UTF8.GetBytes($t+':'+$c+':'+$script:D)") + ' }';
+const psRegOpen = (r, write) => ["$h=[Microsoft.Win32.RegistryKey]::OpenBaseKey('" + r.hive + "','" + r.view + "')", '$k=$h.OpenSubKey(' + psValue(lit(r.sub)) + (write ? ',$true)' : ')')];
+function captureCmd(s, k, o) {
+  const id = k.id, os = o.os;
+  switch (s.fam) {
+    case 'file':
+      if (k.kind === 'backup') return os === 'windows' ? psBackup(s, id, o) : shBackup(s, id, o);
+      return os === 'windows' ? psStamp(s, id) : shStamp(s, id);
+    case 'dir':
+      if (os === 'windows') return psCapture(id, [PS_ST, setTo('$p', psValue(s.v)), '$o.full=[IO.Path]::GetFullPath($p)', '$o.was=(St $o.full).was']);
+      return shCapture([setTo('p', shValue(s.v)), 'if [ -L "$p" ]; then w=link; elif [ -d "$p" ]; then w=dir; elif [ -e "$p" ]; then w=other; else w=none; fi',
+        `printf '{"undo":"${id}","ok":true,"was":"%s"}\\n' "$w"`], s.sudo);
+    case 'regval':
+      return psCapture(id, [PS_SG].concat(psRegOpen(s.reg, false), ['$n=' + psValue(lit(s.name)),
+        "if ($null -eq $k) { $o.key=0; $o.sig='-' } else { $o.key=1; $o.sig=Sg $k $n" + (k.when === 'before' ? "; if ($o.sig -ne '-') { $o.type=$script:T; $o.count=$script:C; " +
+          'if ($script:D.Length -le ' + VALUE_B64 + ") { $o.data=$script:D } else { $o.skip='long' } }" : '') + '; $k.Close() }']));
+    case 'regkey':
+      return psCapture(id, psRegOpen(s.reg, false).concat(["if ($null -eq $k) { $o.was='none' } else { $o.was='key'; $k.Close() }"]));
+    case 'startup':
+      return psCapture(id, ['$n=' + psValue(lit(s.name)), '$c=@(Get-Service -Name $n -ErrorAction SilentlyContinue)', 'if ($c.Count -eq 0) { $c=@(Get-Service -DisplayName $n) }',
+        "$k=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SYSTEM\\CurrentControlSet\\Services\\'+$c[0].Name)", "if ($null -eq $k) { throw ('there is no service ' + $n) }",
+        "$o.name=$c[0].Name; $o.start=[int]$k.GetValue('Start',-1); $o.delayed=[int]$k.GetValue('DelayedAutostart',0); $k.Close()"]);
+    case 'unit': {
+      const u = sq(s.name), uo = s.user ? '--user ' : '';
+      return shCapture([`e=$(systemctl ${uo}is-enabled ${u} 2>/dev/null); a=$(systemctl ${uo}is-active ${u} 2>/dev/null)`,
+        "case \"$e\" in ''|*[!a-z-]*) e=unknown;; esac; case \"$a\" in ''|*[!a-z-]*) a=unknown;; esac",
+        `printf '{"undo":"${id}","ok":true,"enabled":"%s","active":"%s"}\\n' "$e" "$a"`], s.sudo);
+    }
+    case 'mode':
+      return shCapture([setTo('p', shValue(s.v)), `if [ -e "$p" ]; then set -- $(ls -ldnL -- "$p"); printf '{"undo":"${id}","ok":true,"mode":"%s","uid":"%s","gid":"%s"}\\n' "$1" "$3" "$4"; ` +
+        `else printf '{"undo":"${id}","ok":false,"why":"it is not there"}\\n'; exit 1; fi`], s.sudo);
+    case 'acl':
+      return psCapture(id, [setTo('$p', psValue(s.v)), '$f=[IO.Path]::GetFullPath($p)', '$o.full=$f', '$a=[IO.File]::GetAttributes($f)',
+        "if ($a -band 16) { $s=[IO.Directory]::GetAccessControl($f,'Access,Owner'); $o.dir=1 } else { $s=[IO.File]::GetAccessControl($f,'Access,Owner'); $o.dir=0 }",
+        "$o.sddl=$s.GetSecurityDescriptorSddlForm('Access'); $o.owner=$s.GetOwner([Security.Principal.SecurityIdentifier]).Value"]);
+    default: return null;
+  }
+}
+function captureWhat(s, k, o) {
+  const at = k.when === 'after' ? ' after the command' : ' before the command changes it';
+  const place = s.v ? shown(s.v) + (s.inside ? ' (or ' + s.inside + ' in it, if that is a folder)' : '') : '';
+  const w = {
+    file: () => (k.kind === 'backup' ? 'keep a copy of ' + place + ', if it is a file of at most ' + human(o.cap) + ',' + at
+      : 'read what is at ' + place + ' after the command, so that putting it back can tell whether it changed again'),
+    dir: () => 'see whether the folder ' + place + ' is there already',
+    regval: () => 'read the registry value ' + (s.name || '(Default)') + ' in ' + s.reg.name + at,
+    regkey: () => 'see whether the registry key ' + s.reg.name + ' is there already',
+    startup: () => 'read how the service ' + s.name + ' starts' + at,
+    unit: () => 'read whether ' + s.name + ' is enabled and running' + at,
+    mode: () => 'read the permissions and owner of ' + place + at,
+    acl: () => 'read the permissions of ' + place + at,
+  }[s.fam];
+  return w ? clip(oneLine(w()), 300) : '';
+}
+
+// ---- what the captures printed ----------------------------------------------------------------------------------
+// ctx.captured: [{id, ok, output}] -> Map id -> the answer's object (ok:false with why when it said nothing readable)
+function readCaptured(list) {
+  const got = new Map();
+  for (const it of list.slice(0, 200)) {
+    if (!isObj(it) || typeof it.id !== 'string' || !/^k\d{1,4}-[0-9a-f]{8}$/.test(it.id)) continue;
+    const text = typeof it.output === 'string' ? it.output.slice(-600000) : '';
+    const lines = text.split(/\r?\n/);
+    let o = null;
+    for (let i = lines.length - 1; i >= 0 && !o; i--) {
+      const l = lines[i].trim();
+      if (l[0] !== '{') continue;
+      try { const x = JSON.parse(l); if (isObj(x) && x.undo === it.id && typeof x.ok === 'boolean') o = x; } catch (_) { /* not this line */ }
+    }
+    if (!o) {
+      const last = lines.map((l) => oneLine(l)).filter(Boolean).pop() || '';
+      o = { ok: false, why: it.ok === false && !last ? 'the host did not answer' : 'its answer could not be read' + (last ? ' (' + clip(last, 80) + ')' : '') };
+    }
+    got.set(it.id, o);
+  }
+  return got;
+}
+const capWhy = (o) => clip(oneLine(str(o && o.why) || 'it failed'), 120);
+const WAS = ['none', 'file', 'dir', 'link', 'other'];
+// a file's state as a capture said it, checked: {was, size, ...; bak + hash (Windows) / crc (Linux) when a copy is kept}
+function fileState(o, os, before) {
+  if (!isObj(o) || !WAS.includes(o.was)) return null;
+  const st = { was: o.was, in: o.in === 1 ? 1 : 0 };
+  if (o.was !== 'file') return st;
+  st.size = count(o.size);
+  if (st.size == null) return null;
+  if (os === 'windows') {
+    st.wt = digits(o.wt); st.ct = digits(o.ct) || st.wt; st.attr = Number.isInteger(o.attr) && o.attr >= 0 ? o.attr : 32;
+    if (typeof o.hash === 'string' && /^[0-9A-F]{64}$/.test(o.hash)) st.hash = o.hash;
+    if (!st.wt) return null;
+  } else {
+    st.crc = typeof o.crc === 'string' && /^\d{1,10}$/.test(o.crc) ? o.crc : null;
+    if (!st.crc) return null;
+    if (before) {
+      st.mode = typeof o.mode === 'string' && /^-[-rwxsStT]{9}[.+@]?$/.test(o.mode) ? o.mode : null;
+      st.uid = count(o.uid); st.gid = count(o.gid);
+    }
+  }
+  if (before) {
+    if (typeof o.bak === 'string' && (os === 'windows' ? WIN_BAK.test(o.bak) && st.hash : LNX_BAK.test(o.bak))) st.bak = o.bak;
+    if (typeof o.skip === 'string') st.skip = o.skip;
+    st.cap = count(o.cap);
+  }
+  return st;
+}
+function skipWhy(b) {
+  if (b.skip === 'big') return 'it was ' + human(b.size) + ', over the ' + human(b.cap != null ? b.cap : KEEP_MAX) + ' a copy is kept of';
+  if (b.skip === 'full') return 'this visit\u2019s copies already fill the ' + human(KEEP_TOTAL) + ' they may take';
+  if (b.skip === 'unsafe') return 'the folder copies are kept in is not this account\u2019s alone';
+  return 'the copy could not be made';
+}
+// a sentence and its Markdown, with more on the end
+const append = (s, text) => ({ what: clip(s.what + text, 400), md: clip(s.md + mdEsc(text), 700) });
+// the change as it is described without captures, with why no copy (or no old value) was kept added to how it is put back
+function withWhy(base, why) {
+  const r = Object.assign({}, base);
+  if (r.undo && r.undo.kind === 'hint') r.undo = hint(r.undo.text + ' (' + why + ')');
+  else if (r.undo && r.undo.kind === 'exec') r.undo = Object.assign({}, r.undo, { note: r.undo.note + ' (' + why + ')' });
+  else r.undo = hint(why);
+  return r;
+}
+const notBack = (base, text) => result(base, false, hint(text));
+
+// ---- putting back: the lines each restore is made of --------------------------------------------------------------
+// The kept copy: there, and exactly what was kept (the hash taken when it was made). PowerShell reads it ONCE and
+// writes those very bytes, so a copy changed after the check cannot be what goes back.
+function psKept(k) {
+  return ['$b=' + psValue(lit(k.bak)), "if (-not [IO.File]::Exists($b)) { throw ('the copy kept of it is gone (' + $b + '), so nothing was put back') }",
+    '$x=[IO.File]::ReadAllBytes($b)', 'if (' + PS_SHA('$x') + " -ne '" + k.hash + "') { throw ('the copy kept of it (' + $b + ') is not what was kept, so nothing was put back') }"];
+}
+// the file at $t is exactly what the command left there (the 'after' read): else nothing is touched
+function psAsLeft(a) {
+  return ['$i=[IO.FileInfo]::new($t)', "if ((-not $i.Exists) -or ($i.Attributes -band 1040)) { throw ($t + ' is not the file this change left there, so it was left as it is') }",
+    a.hash ? "$r=[IO.File]::Open($t,'Open','Read','ReadWrite'); try { $h=" + PS_SHA('$r') + ' } finally { $r.Close() }' : '',
+    'if (($i.Length -ne ' + a.size + ') -or (' + (a.hash ? "$h -ne '" + a.hash + "'" : '$i.LastWriteTimeUtc.ToFileTimeUtc() -ne ' + a.wt) +
+    ")) { throw ($t + ' was changed again after this change, so it was left as it is') }"].filter((l) => l !== '');
+}
+const ATTR_SET = 1 | 2 | 4 | 32 | 256 | 4096 | 8192;   // read-only, hidden, system, archive, temporary, offline, not indexed: what SetAttributes sets
+const psTimes = (k, made) => [made ? '[IO.File]::SetCreationTimeUtc($t,[DateTime]::FromFileTimeUtc(' + k.ct + '))' : '',
+  '[IO.File]::SetLastWriteTimeUtc($t,[DateTime]::FromFileTimeUtc(' + k.wt + '))', '[IO.File]::SetAttributes($t,[IO.FileAttributes]' + ((k.attr & ATTR_SET) || 128) + ')'].filter((l) => l !== '');
+const psRecreate = (k) => ["if ([IO.File]::Exists($t) -or [IO.Directory]::Exists($t)) { throw ($t + ' is there again, so the copy was not put back over it') }",
+  "$w=[IO.File]::Open($t,'CreateNew','Write','None'); try { $w.Write($x,0,$x.Length) } finally { $w.Close() }"].concat(psTimes(k, true));
+const psOverwrite = (k) => ["[IO.File]::SetAttributes($t,'Normal')", "$w=[IO.File]::Open($t,'Open','Write','None'); try { $w.SetLength(0); $w.Write($x,0,$x.Length) } finally { $w.Close() }"].concat(psTimes(k, false));
+// sh: the copy is this account's alone (mode 700 folder); cksum's CRC and size say it is the one kept
+const shKept = (k) => ['b=' + sq(k.bak), '[ -f "$b" ] || { echo "the copy kept of it ($b) is gone, so nothing was put back" >&2; exit 1; }',
+  '[ "$(cksum < "$b")" = ' + sq(k.crc + ' ' + k.size) + ' ] || { echo "the copy kept of it ($b) is not what was kept, so nothing was put back" >&2; exit 1; }'];
+const shAsLeft = (a) => ['if [ -L "$t" ] || [ ! -f "$t" ] || [ "$(cksum < "$t")" != ' + sq(a.crc + ' ' + a.size) + ' ]; then echo "$t was changed again after this change, so it was left as it is" >&2; exit 1; fi'];
+// '-rwsr-x--T' -> '5750' (setuid 4 + sticky 1): the mode ls printed, as chmod takes it
+function modeOct(m) {
+  if (typeof m !== 'string' || !/^.[-r][-w][-xsS][-r][-w][-xsS][-r][-w][-xtT]/.test(m)) return null;
+  let special = 0, out = '';
+  for (let i = 0; i < 3; i++) {
+    const t = m.slice(1 + i * 3, 4 + i * 3);
+    out += (t[0] === 'r' ? 4 : 0) + (t[1] === 'w' ? 2 : 0) + (/[xst]/.test(t[2]) ? 1 : 0);
+    if (/[sStT]/.test(t[2])) special += [4, 2, 1][i];
+  }
+  return special + out;
+}
+const shMode = (k) => (k.mode && modeOct(k.mode) ? ' && chmod ' + modeOct(k.mode) + ' -- "$t"' : '');
+const shRecreate = (k) => ['if [ -e "$t" ] || [ -L "$t" ]; then echo "$t is there again, so the copy was not put back over it" >&2; exit 1; fi',
+  '(set -C; cat < "$b" > "$t") && touch -r "$b" "$t"' + shMode(k) + (k.uid != null && k.gid != null ? ' && { [ "$(id -u)" != 0 ] || chown ' + k.uid + ':' + k.gid + ' -- "$t"; }' : '')];
+const shOverwrite = (k) => ['cat < "$b" > "$t" && touch -r "$b" "$t"' + shMode(k)];
+
+// ---- from before and after to the entry: OUTCOME[fam](set, got, os) -> result | null (no change at all) | undefined
+// (nothing usable: the entry is as it would be without captures) ------------------------------------------------
+function fileOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1];
+  const base = describe(e, { os });
+  if (!base) return undefined;
+  const B = got('backup', 'before');
+  if (B === undefined) return undefined;
+  const plain = (why) => Object.assign(withWhy(base, why), { paths: pathsOf(e, os) });
+  if (!B.ok) return plain('no copy of it was kept: ' + capWhy(B));
+  const b = fileState(B, os, true);
+  if (!b) return plain('no copy of it was kept: its answer could not be read');
+  if (b.was === 'dir') return plain('no copy was kept: it was a folder, and a folder is never copied — only single files are');
+  if (b.was === 'link' || b.was === 'other') return plain('no copy was kept: it was a link, not a plain file');
+  if (b.was === 'file' && !b.bak) return plain('no copy was kept: ' + skipWhy(b));
+  const T = b.in && s.inside ? joinP(normTail(s.v, os), lit(s.inside), os) : s.v;     // where the change happened, exactly
+  const paths = pathsOf(e, os, T);
+  const backup = b.bak ? Object.assign({ os, path: b.bak, bytes: b.size }, s.sudo ? { sudo: s.sudo } : {}) : null;
+  const run = (lines, risky, note, sentence) => {
+    const cmd = os === 'windows' ? psLine(lines) : shLine(lines, s.sudo);
+    if (!cmd) return Object.assign(notBack(sentence, vague('quote', '', 'put it back by hand') + (backup ? ' (a copy of what was there is kept at ' + backup.path + ' until this visit ends)' : '')), { paths }, backup ? { backup } : {});
+    return Object.assign(result(sentence, true, runUndo(os, cmd, risky, note)), { paths }, backup ? { backup } : {});
+  };
+  const W = (k) => (os === 'windows' ? [setTo('$t', psValue(T))] : [setTo('t', shValue(T))]).concat(k);
+  if (e.op === 'move') {
+    if (b.was === 'none') return Object.assign({}, base, { paths });                   // it replaced nothing: the move's own undo
+    const src = e.src;
+    const back = os === 'windows'
+      ? [setTo('$back', psValue(src.v)), src.inside ? 'if (Test-Path -LiteralPath $back -PathType Container) { $back=Join-Path $back ' + psValue(lit(src.inside)) + ' }' : '',
+        "if (Test-Path -LiteralPath $back) { throw ($back + ' is already there, so nothing was moved') }", 'Move-Item -LiteralPath $t -Destination $back']
+      : [setTo('back', shValue(src.v)), src.inside ? 'if [ -d "$back" ]; then back="$back"' + sq('/' + src.inside) + '; fi' : '',
+        'if [ -e "$back" ] || [ -L "$back" ]; then echo "$back is already there, so nothing was moved" >&2; exit 1; fi', 'mv -- "$t" "$back" || exit 1'];
+    return run(W(os === 'windows' ? psKept(b) : shKept(b)).concat(back.filter((l) => l !== ''), os === 'windows' ? psRecreate(b) : shRecreate(b)), false,
+      'moves it back from ' + shown(T) + ' to ' + shown(src.v) + (src.inside ? ' (into it, if that is a folder)' : '') + ' — not over anything that is there now — then puts back the file it replaced there, from the copy kept of it (' + human(b.size) + ')',
+      append(base, ', replacing the file that was there'));
+  }
+  // what the command left there: read after it ran -- or, when every change to it was a delete, nothing
+  let a = null;
+  if (s.caps.some((k) => k.kind === 'stamp')) { const A = got('stamp', 'after'); if (A && A.ok) a = fileState(b.in && s.inside ? A.inn : A.at, os, false); }
+  else a = { was: 'none' };
+  if (b.was === 'none') {
+    if (!a || (a.was !== 'none' && a.was !== 'file')) return undefined;
+    if (a.was === 'none') return null;                                              // nothing was there, nothing is
+    return run(W(os === 'windows' ? psAsLeft(a).concat(["[IO.File]::SetAttributes($t,'Normal')", '[IO.File]::Delete($t)']) : shAsLeft(a).concat(['rm -f -- "$t"'])), true,
+      'deletes ' + shown(T) + ', which was not there before — only if it is still exactly as this change left it',
+      e.op === 'copy' ? base : say('created the file ', P(T), e.op === 'touch' ? ' (touch)' : e.op === 'write' ? ' (with ' + (e.tool || '>') + ')' : ''));
+  }
+  // a file was there, and a copy of it is kept
+  if (!a || (a.was !== 'none' && a.was !== 'file')) {
+    return Object.assign(notBack(base, 'a copy of what was there before is kept at ' + b.bak + ' until this visit ends; what the command left was not read, so it is not put back for you — copy it back by hand if it matters'), { paths, backup });
+  }
+  if (a.was === 'none') {
+    return run(W(os === 'windows' ? psKept(b).concat(psRecreate(b)) : shKept(b).concat(shRecreate(b))), false,
+      'puts ' + shown(T) + ' back from the copy kept of it (' + human(b.size) + ') — only if nothing is there now', base);
+  }
+  if (os === 'windows' ? a.hash && a.hash === b.hash && a.size === b.size && a.wt === b.wt : e.op !== 'touch' && a.crc === b.crc && a.size === b.size) return null;   // the same bytes: no change
+  const sentence = e.op === 'copy' ? append(base, ', replacing the file that was there') : e.op === 'touch' ? say('changed the date of ', P(T), ' (touch)')
+    : e.op === 'mkfile' ? say('emptied ', P(T), ' (New-Item -Force put an empty file in its place)') : base;
+  return run(W(os === 'windows' ? psKept(b).concat(psAsLeft(a), psOverwrite(b)) : shKept(b).concat(shAsLeft(a), shOverwrite(b))), false,
+    'puts back what ' + shown(T) + ' held before (' + human(b.size) + ', from the copy kept of it) — only if it is still exactly as this change left it', sentence);
+}
+function dirOutcome(s, got, os) {
+  const E = got('exists', 'before');
+  if (!E || !E.ok || !WAS.includes(E.was)) return undefined;
+  if (E.was === 'dir') return null;                                                 // it was there already: nothing was made
+  if (E.was !== 'none') return undefined;
+  const e = s.effects[s.effects.length - 1];
+  const r = describe(Object.assign({}, e, { maybe: false, force: false }), { os });  // made by this command, for certain
+  return r ? Object.assign(r, { paths: pathsOf(e, os) }) : undefined;
+}
+// a registry value as a capture said it: {key: 0|1, sig, type?, count?, data?, skip?}
+function regState(o, before) {
+  if (!isObj(o) || (o.key !== 0 && o.key !== 1) || !(o.sig === '-' || (typeof o.sig === 'string' && /^[0-9A-F]{64}$/.test(o.sig)))) return null;
+  const st = { key: o.key, sig: o.sig };
+  if (before && o.sig !== '-') {
+    st.type = typeof o.type === 'string' ? o.type : '';
+    st.count = count(o.count) || 0;
+    if (typeof o.data === 'string' && o.data.length <= VALUE_B64 && o.data.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(o.data)) st.data = o.data;
+    if (typeof o.skip === 'string') st.skip = o.skip;
+  }
+  return st;
+}
+function psRegData(b) {
+  const x = "[Convert]::FromBase64String('" + b.data + "')";
+  switch (b.type) {
+    case 'String': case 'ExpandString': return '[Text.Encoding]::Unicode.GetString(' + x + ')';
+    case 'MultiString': return b.count ? '[string[]]([Text.Encoding]::Unicode.GetString(' + x + ').Split([char]0))' : '[string[]]@()';
+    case 'DWord': return '[BitConverter]::ToInt32(' + x + ',0)';
+    case 'QWord': return '[BitConverter]::ToInt64(' + x + ',0)';
+    case 'Binary': case 'None': return x;
+    default: return null;
+  }
+}
+function regvalOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1], r = s.reg;
+  const base = describe(e, { os });
+  const B = got('value', 'before');
+  if (!base || B === undefined) return undefined;
+  const paths = pathsOf(e, os);
+  if (!B.ok) return Object.assign(withWhy(base, 'its old value could not be read: ' + capWhy(B)), { paths });
+  const b = regState(B, true);
+  if (!b) return Object.assign(withWhy(base, 'its old value could not be read'), { paths });
+  const nm = s.name || '(Default)';
+  const open = [PS_SG].concat(psRegOpen(r, true), ['$n=' + psValue(lit(s.name)), "if ($null -eq $k) { throw ('the registry key ' + " + psValue(lit(r.name)) + " + ' is gone, so it was left as it is') }"]);
+  const setBack = () => (b.sig === '-' ? '$k.DeleteValue($n)' : psRegData(b) && b.data != null && !b.skip ? '$k.SetValue($n,' + psRegData(b) + ",'" + b.type + "')" : null);
+  const cantSet = () => (b.skip === 'long' ? 'its old value is over 4 KB, more than one command can put back' : 'its old value is of a type (' + (b.type || 'unknown') + ') this cannot write back');
+  if (e.op === 'regdel') {
+    if (b.sig === '-') return null;                                                 // there was no such value
+    const set = setBack();
+    if (!set) return Object.assign(withWhy(base, cantSet()), { paths });
+    const cmd = psLine(open.concat(["if ((Sg $k $n) -ne '-') { throw ('the registry value ' + $n + ' is there again, so it was left as it is') }", set, '$k.Close()']));
+    if (!cmd) return Object.assign(withWhy(base, HINT.long()), { paths });
+    return Object.assign(result(base, true, runUndo(os, cmd, false, 'puts the registry value ' + nm + ' back in ' + r.name + ', as it was (' + b.type + ') — only if it has no value now')), { paths });
+  }
+  const A = got('value', 'after');
+  const a = A && A.ok ? regState(A, false) : null;
+  if (!a) return undefined;                                                         // what the command left was not read
+  if (a.sig === b.sig && a.key === b.key) return null;                              // it had that value already
+  const set = setBack();
+  if (!set) return Object.assign(withWhy(base, cantSet()), { paths });
+  const cmd = psLine(open.concat(["if ((Sg $k $n) -ne '" + a.sig + "') { throw ('the registry value ' + $n + ' was changed again after this change, so it was left as it is') }", set,
+    b.key === 0 ? 'if (($k.ValueCount -eq 0) -and ($k.SubKeyCount -eq 0)) { $k.Close(); $h.DeleteSubKey(' + psValue(lit(r.sub)) + ') } else { $k.Close() }' : '$k.Close()']));
+  const sentence = b.sig === '-' ? say('added the registry value ', { code: nm }, ' to ', { code: r.name }, b.key === 0 ? ' (and made the key)' : '') : base;
+  if (!cmd) return Object.assign(notBack(sentence, HINT.long()), { paths });
+  return Object.assign(result(sentence, true, runUndo(os, cmd, b.sig === '-', b.sig === '-'
+    ? 'deletes the registry value ' + nm + ' it added to ' + r.name + (b.key === 0 ? ', and the key if nothing else is in it (keys made above it stay)' : '') + ' — only if it is still what this change set'
+    : 'sets the registry value ' + nm + ' in ' + r.name + ' back to what it was (' + b.type + ') — only if it is still what this change set')), { paths });
+}
+function regkeyOutcome(s, got, os) {
+  const E = got('exists', 'before');
+  if (!E || !E.ok || (E.was !== 'none' && E.was !== 'key')) return undefined;
+  if (E.was === 'key') return null;                                                 // reg add of a key that is there does nothing
+  const e = s.effects[s.effects.length - 1], r = s.reg;
+  // reg add <key> leaves an empty default value in it: that, and nothing else, is what it made
+  const cmd = psLine(psRegOpen(r, false).concat(["if ($null -eq $k) { throw ('the registry key ' + " + psValue(lit(r.name)) + " + ' is gone already') }",
+    "$v=@($k.GetValueNames()); if (($k.SubKeyCount -gt 0) -or ($v.Count -gt 1) -or (($v.Count -eq 1) -and (($v[0] -ne '') -or (''+$k.GetValue('') -ne '')))) { $k.Close(); throw ('the registry key ' + " +
+    psValue(lit(r.name)) + " + ' has values or keys in it now, so it was left as it is') }", '$k.Close()', '$h.DeleteSubKey(' + psValue(lit(r.sub)) + ')']));
+  const sentence = say('created the registry key ', { code: r.name });
+  if (!cmd) return Object.assign(notBack(sentence, HINT.long()), { paths: pathsOf(e, os) });
+  return Object.assign(result(sentence, true, runUndo(os, cmd, true, 'deletes the registry key ' + r.name + ' — only while nothing is in it; keys made above it stay')), { paths: pathsOf(e, os) });
+}
+const START = ['Boot', 'System', 'Automatic', 'Manual', 'Disabled'], SC_START = ['boot', 'system', 'auto', 'demand', 'disabled'];
+const startWord = (x) => (x.start === 2 && x.delayed ? 'Automatic (Delayed Start)' : START[x.start]);
+function startupOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1];
+  const base = describe(e, { os });
+  const B = got('value', 'before');
+  if (!base || B === undefined) return undefined;
+  const st = (o) => (isObj(o) && o.ok && typeof o.name === 'string' && /^[^\u0000-\u001f\\/]{1,256}$/.test(o.name) && Number.isInteger(o.start) && o.start >= 0 && o.start <= 4
+    ? { name: o.name, start: o.start, delayed: o.delayed === 1 ? 1 : 0 } : null);
+  const b = st(B);
+  if (!b) return withWhy(base, 'its old startup type could not be read' + (B.ok ? '' : ': ' + capWhy(B)));
+  const a = st(got('value', 'after'));
+  if (!a) return withWhy(base, 'it started ' + startWord(b) + ' before; what the command left was not read, so it is not set back for you');
+  if (a.start === b.start && a.delayed === b.delayed) return null;
+  const n = psValue(lit(b.name));
+  const cmd = psLine(['$n=' + n, "$k=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SYSTEM\\CurrentControlSet\\Services\\'+$n)",
+    "if ($null -eq $k) { throw ('there is no service ' + $n + ' now, so nothing was changed') }",
+    "if (([int]$k.GetValue('Start',-1) -ne " + a.start + ") -or ([int]$k.GetValue('DelayedAutostart',0) -ne " + a.delayed + ")) { $k.Close(); throw ('the service ' + $n + ' was set to start differently again after this change, so it was left as it is') }",
+    '$k.Close()', '$x=& sc.exe config $n start= ' + (b.start === 2 && b.delayed ? 'delayed-auto' : SC_START[b.start]),
+    "if ($LASTEXITCODE) { throw ('sc.exe could not set it back: ' + (@($x) -join ' ')) }"]);
+  const sentence = append(base, ' (it was ' + startWord(b) + ')');
+  if (!cmd) return notBack(sentence, HINT.long());
+  return result(sentence, true, runUndo(os, cmd, false, 'sets the service ' + b.name + ' to start ' + startWord(b) + ' again — only if it is still set as this change left it'));
+}
+function unitOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1];
+  const base = describe(e, { os });
+  const st = (o) => (isObj(o) && o.ok && /^[a-z-]{1,40}$/.test(str(o.enabled)) && /^[a-z-]{1,40}$/.test(str(o.active)) && o.enabled !== 'unknown' ? { enabled: o.enabled, active: o.active } : null);
+  const b = st(got('value', 'before')), a = st(got('value', 'after'));
+  if (!base || !b || !a || (e.now && (b.active === 'unknown' || a.active === 'unknown'))) return undefined;   // as without: started/stopped as if
+  let verb = '';
+  if (b.enabled !== a.enabled) {
+    verb = e.action === 'enable' || e.action === 'disable' ? (b.enabled === 'enabled' ? 'enable' : b.enabled === 'disabled' ? 'disable' : '')
+      : e.action === 'mask' ? (b.enabled !== 'masked' ? 'unmask' : '') : b.enabled === 'masked' ? 'mask' : '';
+    if (!verb) return notBack(base, 'it was ' + b.enabled + ' before, which no single systemctl command sets back — set it back by hand if it matters');
+  }
+  let go = '';
+  if (e.now && b.active !== a.active) {
+    go = b.active === 'active' ? 'start' : b.active === 'inactive' || b.active === 'failed' ? 'stop' : '';
+    if (!go) return notBack(base, 'it was ' + b.active + ' before, which is not set back from here');
+  }
+  if (!verb && !go) return null;                                                    // it was that way already
+  const uo = e.user ? '--user ' : '';
+  const cmd = shLine(['u=' + sq(e.name), 'e=$(systemctl ' + uo + 'is-enabled "$u" 2>/dev/null)',
+    'if [ "$e" != ' + sq(a.enabled) + ' ]; then echo "the service $u was changed again after this change, so it was left as it is" >&2; exit 1; fi',
+    e.now ? 'x=$(systemctl ' + uo + 'is-active "$u" 2>/dev/null); if [ "$x" != ' + sq(a.active) + ' ]; then echo "the service $u was started or stopped again after this change, so it was left as it is" >&2; exit 1; fi' : '',
+    verb ? 'systemctl ' + uo + verb + ' "$u" || exit 1' : '', go ? 'systemctl ' + uo + go + ' "$u"' : ''].filter((l) => l !== ''), e.sudo);
+  if (!cmd) return notBack(base, vague('quote', '', 'put it back by hand'));
+  return result(base, true, runUndo(os, cmd, false, (verb ? verb + 's ' + e.name + ' again (it was ' + b.enabled + ')' : '') + (verb && go ? ' and ' : '') + (go ? (go === 'start' ? 'starts ' : 'stops ') + e.name + ' (it was ' + b.active + ')' : '') +
+    ' — only if it is still as this change left it'));
+}
+function modeOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1];
+  const base = describe(e, { os });
+  const st = (o) => (isObj(o) && o.ok && typeof o.mode === 'string' && /^[-dlcbps][-rwxsStT]{9}[.+@]?$/.test(o.mode) && count(o.uid) != null && count(o.gid) != null ? { mode: o.mode, uid: count(o.uid), gid: count(o.gid) } : null);
+  const b = st(got('value', 'before')), a = st(got('value', 'after'));
+  if (!base || !b || !a || !modeOct(b.mode)) return undefined;
+  if (b.mode === a.mode && b.uid === a.uid && b.gid === a.gid) return null;
+  const own = b.uid !== a.uid || b.gid !== a.gid, oct = modeOct(b.mode);
+  const cmd = shLine([setTo('p', shValue(s.v)), 'set -- $(ls -ldnL -- "$p" 2>/dev/null)',
+    'if [ "$1 $3 $4" != ' + sq(a.mode + ' ' + a.uid + ' ' + a.gid) + ' ]; then echo "$p was changed again after this change, so it was left as it is" >&2; exit 1; fi',
+    own ? 'chown ' + b.uid + ':' + b.gid + ' -- "$p" || exit 1' : '', 'chmod ' + oct + ' -- "$p"'].filter((l) => l !== ''), s.sudo);
+  const sentence = append(base, e.tool === 'chmod' ? ' (it was ' + oct.replace(/^0(?=\d{3}$)/, '') + ')' : ' (it was owned by ' + b.uid + ':' + b.gid + ')');
+  if (!cmd) return notBack(sentence, vague('quote', '', 'set it back by hand'));
+  return result(sentence, true, runUndo(os, cmd, false, 'sets the ' + (own ? 'owner and permissions' : 'permissions') + ' of ' + shown(s.v) + ' back (' + oct + (own ? ', ' + b.uid + ':' + b.gid : '') + ') — only if they are still as this change left them'));
+}
+function aclOutcome(s, got, os) {
+  const e = s.effects[s.effects.length - 1];
+  const st = (o) => (isObj(o) && o.ok && typeof o.sddl === 'string' && o.sddl.length <= 6000 && /^D:/.test(o.sddl) && typeof o.owner === 'string' && /^S-1-[0-9-]{1,200}$/.test(o.owner) ? { sddl: o.sddl, owner: o.owner } : null);
+  const b = st(got('value', 'before')), a = st(got('value', 'after'));
+  if (!b || !a) return undefined;                                                   // as without: a command it cannot name
+  if (b.sddl === a.sddl && b.owner === a.owner) return null;
+  const sentence = say('changed the permissions of ', P(e.path), ' (icacls)');
+  const set = (cls) => '$n=[Security.AccessControl.' + cls + 'Security]::new(); $n.SetSecurityDescriptorSddlForm(' + psValue(lit(b.sddl)) + ",'Access'); [IO." + (cls === 'Directory' ? 'Directory' : 'File') + ']::SetAccessControl($f,$n)';
+  const cmd = psLine([setTo('$p', psValue(s.v)), '$f=[IO.Path]::GetFullPath($p)', '$a=[IO.File]::GetAttributes($f)',
+    "if ($a -band 16) { $s=[IO.Directory]::GetAccessControl($f,'Access,Owner') } else { $s=[IO.File]::GetAccessControl($f,'Access,Owner') }",
+    "if (($s.GetSecurityDescriptorSddlForm('Access') -ne " + psValue(lit(a.sddl)) + ") -or ($s.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne '" + a.owner + "')) { throw ($f + ' had its permissions changed again after this change, so they were left as they are') }",
+    b.sddl !== a.sddl ? 'if ($a -band 16) { ' + set('Directory') + ' } else { ' + set('File') + ' }' : '',
+    b.owner !== a.owner ? "$x=& icacls.exe $f /setowner ('*" + b.owner + "') /Q; if ($LASTEXITCODE) { throw ('icacls could not set the owner back: ' + (@($x) -join ' ')) }" : ''].filter((l) => l !== ''));
+  if (!cmd) return Object.assign(notBack(sentence, HINT.long()), { paths: pathsOf(e, os) });
+  return Object.assign(result(sentence, true, runUndo(os, cmd, false, 'sets the permissions of ' + shown(s.v) + ' back to what they were' + (b.owner !== a.owner ? ', and its owner' : '') + ' — only if they are still as this change left them')), { paths: pathsOf(e, os) });
+}
+const OUTCOME = { file: fileOutcome, dir: dirOutcome, regval: regvalOutcome, regkey: regkeyOutcome, startup: startupOutcome, unit: unitOutcome, mode: modeOutcome, acl: aclOutcome };
+// fact i, with what was captured -> a result | null (no change: no entry) | undefined (as without captures). The
+// last change to a thing in a command carries its undo; an earlier one to the same thing is put back with it.
+function capturedResult(i, f, cap, os) {
+  const s = cap.plan.byFact.get(i);
+  if (!s || !s.caps.length) return undefined;
+  if (!own(s, 'res')) {
+    const got = (kind, when) => { const k = s.caps.find((x) => x.kind === kind && x.when === when); return k && cap.got.has(k.id) ? cap.got.get(k.id) : undefined; };
+    try { s.res = OUTCOME[s.fam](s, got, os); } catch (_) { s.res = undefined; }
+  }
+  if (i === s.last || s.res === undefined) return s.res;
+  if (s.res === null) return null;
+  if (!(s.res.undo && s.res.undo.kind === 'exec')) return undefined;
+  const e = f.effect || f.acl;
+  const sentence = e.op === 'acl' ? say('changed the permissions of ', P(e.path), ' (icacls)') : describe(e, { os });
+  return sentence ? Object.assign(notBack(sentence, 'the same command changed it again after this — putting back that later change puts back what was there before both'), { paths: pathsOf(e, os) }) : undefined;
+}
+
+// ---- where an entry's change is: paths, for supersede() -----------------------------------------------------------
+// a path as text, its variables in one spelling (Windows %NAME%, ~ as %USERPROFILE%; sh $NAME, ~ as $HOME)
+function canon(v, os) {
+  if (!v || !v.parts || !v.parts.length || v.inside) return null;
+  let s = '';
+  for (const p of v.parts) {
+    if (p.s != null) s += p.s;
+    else if (p.home) s += os === 'windows' ? '%USERPROFILE%' : '$HOME';
+    else if (p.env != null) s += os === 'windows' ? '%' + p.env.toUpperCase() + '%' : '$' + p.env;
+    else return null;
+  }
+  return s || null;
+}
+// effect -> {os, made?, from?, to?, removed?} (lists of paths) | null. `T`: where the change happened, when a
+// capture said it exactly. A destination that may have been a folder is the folder: whatever deletes or moves
+// that, takes the item with it either way.
+function pathsOf(e, os, T) {
+  if (!e || e.why) return null;
+  const out = { made: [], from: [], to: [], removed: [] };
+  const add = (k, v) => { const c = canon(v, os); if (c) out[k].push(c); };
+  const reg = (k, r, name) => { if (r) out[k].push('Registry::' + r.name + (name != null ? '\\' + (name === '' ? '(Default)' : name) : '')); };
+  switch (e.op) {
+    case 'move': if (e.src && !e.src.inside) add('from', e.src.v); if (e.dst) add('to', T || e.dst.v); break;
+    case 'copy': case 'link': if (e.dst) add('made', T || e.dst.v); break;
+    case 'rename': {
+      const par = e.path && e.newName != null ? parentOf(e.path, os) : null;
+      if (par) { add('from', e.path); add('to', isHere(par) ? lit(e.newName) : joinP(par, lit(e.newName), os)); }
+      break;
+    }
+    case 'mkdir': case 'mkfile': case 'mklink': case 'touch': case 'write': case 'perm': case 'acl': add('made', T || e.path); break;
+    case 'del': case 'rmdir': add('removed', T || e.path); break;
+    case 'regkey': case 'regkeyadd': reg('made', regTarget(e)); break;
+    case 'regset': case 'regnew': if (e.name != null) reg('made', regTarget(e), regName(e.name)); break;
+    case 'regdel': if (!e.all && e.name != null) reg('removed', regTarget(e), regName(e.name)); break;
+    case 'regkeydel': reg('removed', regTarget(e)); break;
+    default: return null;
+  }
+  const r = { os };
+  for (const k of ['made', 'from', 'to', 'removed']) if (out[k].length) r[k] = out[k];
+  return Object.keys(r).length > 1 ? r : null;
+}
+
+// ---- cleanup: this visit's copies, and its folders when they are empty ----------------------------------------------
+function psCleanup(visit, dirs) {
+  const list = ["[IO.Path]::Combine([IO.Path]::GetTempPath(),'agent-drive-undo','" + visit + "')"].concat(dirs.map((d) => psValue(lit(d))));
+  return psLine(["$o=[ordered]@{undo='cleanup';ok=$true;removed=0}",
+    'foreach ($v in @(' + list.join(',') + ')) { try { $r=[IO.Path]::GetDirectoryName($v); if ([IO.Directory]::Exists($v) -and -not (([IO.File]::GetAttributes($v) -bor [IO.File]::GetAttributes($r)) -band 1024)) { ' +
+    "foreach ($f in [IO.Directory]::GetFiles($v)) { if ([IO.Path]::GetFileName($f) -cmatch '^k[0-9]+-[0-9a-f]{8}-[0-9a-f]{12}[.]bak$') { [IO.File]::SetAttributes($f,'Normal'); [IO.File]::Delete($f); $o.removed=$o.removed+1 } }; " +
+    'if (@([IO.Directory]::GetFileSystemEntries($v)).Count -eq 0) { [IO.Directory]::Delete($v) }; if (@([IO.Directory]::GetFileSystemEntries($r)).Count -eq 0) { [IO.Directory]::Delete($r) } } } ' +
+    "catch { $o.ok=$false; $o.why=''+$_.Exception.Message } }"].concat(PS_TAIL.slice(1)));
+}
+function shCleanup(visit, dirs, sudo) {
+  return shLine(['r=${TMPDIR:-/tmp}; case "$r" in /*) ;; *) r=/tmp;; esac; case "$r" in *[!A-Za-z0-9/._-]*) r=/tmp;; esac', 'n=0',
+    'for v in "${r%/}/agent-drive-undo-$(id -u)/' + visit + '"' + dirs.map((d) => ' ' + sq(d)).join('') + '; do if [ -d "$v" ] && [ ! -L "$v" ] && [ -O "$v" ]; then ' +
+    'for f in "$v"/k*; do if [ -f "$f" ] && [ ! -L "$f" ]; then case "${f##*/}" in k[0-9]*-*) rm -f -- "$f" && n=$((n + 1));; esac; fi; done; ' +
+    'rmdir -- "$v" 2>/dev/null; rmdir -- "${v%/*}" 2>/dev/null; fi; done',
+    'printf \'{"undo":"cleanup","ok":true,"removed":%s}\\n\' "$n"'], sudo);
+}
+
+// ---- what a later change made moot ---------------------------------------------------------------------------------
+// a path as {root, segs} for comparing: separators and case as the system takes them, . and .. resolved
+function pathKey(p, os) {
+  if (typeof p !== 'string' || !p || p.length > 8192) return null;
+  const reg = /^Registry::/i.test(p), win = reg || os === 'windows', sep = win ? '\\' : '/';
+  let s = reg ? p.slice(10) : win ? p.replace(/\//g, '\\') : p;
+  const m = reg ? /^[^\\]+/.exec(s) : win ? /^([A-Za-z]:(?=\\|$)|\\\\[^\\]+\\[^\\]+|%[^%\\]+%|~)/.exec(s) : /^(\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}|~)/.exec(s);
+  let root = m ? m[0] : '';
+  s = s.slice(root.length);
+  const abs = s.startsWith(sep), segs = [];
+  for (const g of s.split(sep)) {
+    if (!g || g === '.') continue;
+    if (g === '..' && !reg) { if (segs.length && segs[segs.length - 1] !== '..') segs.pop(); else if (!abs && !root) segs.push('..'); continue; }
+    segs.push(win ? g.toLowerCase() : g);
+  }
+  root = (reg ? 'R:' : '') + (win ? root.toLowerCase() : root) + (abs ? sep : root ? '' : '.');
+  return { root, segs };
+}
+const sameP = (a, b) => a.root === b.root && a.segs.length === b.segs.length && a.segs.every((x, i) => x === b.segs[i]);
+const holds = (a, b) => a.root === b.root && a.segs.length < b.segs.length && a.segs.every((x, i) => x === b.segs[i]);   // a is a folder above b
+// supersede(entries) -> [{id, by, why}]: each earlier entry (not put back) a later one (not put back) made moot --
+// the later one deleted or moved away a path that is, or holds, what the earlier one made, changed or moved there;
+// or that holds the place the earlier one would put something back into
+function supersede(list) {
+  try {
+    const es = entriesOf(list);
+    const info = es.map((e) => {
+      const P0 = isObj(e.paths) ? e.paths : null;
+      const os = P0 && (P0.os === 'windows' || P0.os === 'linux') ? P0.os : null;
+      if (!os || e.undone) return null;
+      const keys = (k) => (Array.isArray(P0[k]) ? P0[k] : []).slice(0, 50).map((p) => ({ p: String(p), k: pathKey(p, os) })).filter((x) => x.k);
+      return { os, here: keys('made').concat(keys('to')), place: keys('from').concat(keys('removed')),
+        gone: keys('removed').map((x) => Object.assign({ how: 'deleted' }, x)).concat(keys('from').map((x) => Object.assign({ how: 'moved away' }, x))) };
+    });
+    const out = [];
+    for (let i = 0; i < es.length; i++) {
+      const a = info[i];
+      if (!a) continue;
+      let hit = null;
+      for (let j = i + 1; j < es.length && !hit; j++) {
+        const b = info[j];
+        if (!b || b.os !== a.os) continue;
+        for (const g of b.gone) {
+          const x = a.here.find((h) => sameP(g.k, h.k) || holds(g.k, h.k));
+          const y = x ? null : a.place.find((h) => holds(g.k, h.k));
+          if (x || y) { hit = { by: es[j], g, x: x || y, here: !!x }; break; }
+        }
+      }
+      if (!hit) continue;
+      const L = hit.by, gp = clipMid(oneLine(hit.g.p), 120), xp = clipMid(oneLine(hit.x.p), 120);
+      const why = L.id + ' ' + hit.g.how + ' ' + gp + (hit.here ? (sameP(hit.g.k, hit.x.k) ? '' : ', with ' + xp + ' in it') : ', so ' + xp + ' has no folder to go back to') +
+        (L.reversible && runnable(L) ? ' — put ' + L.id + ' back first' : '');
+      out.push({ id: es[i].id, by: L.id, why });
+    }
+    return out;
+  } catch (_) {
+    return [];
+  }
+}
+
+// ============================================================================================================
 // THE API
 // ============================================================================================================
 function iso(now) {
@@ -2158,12 +2965,22 @@ function fromCommand(cmd, res, ctx, verb) {
   if (text.length > MAX_TEXT) return [result(generic([text]), false, null)];
   let facts;
   try { facts = analyseLine(text, os, verb, res && res.output).facts; } catch (_) { return [result(generic([text]), false, null)]; }
+  // what prepare()'s captures printed, before and after it ran (an exec only: see prepare)
+  let cap = null;
+  if (verb === 'exec' && Array.isArray(ctx.captured) && ctx.captured.length) {
+    try { const got = readCaptured(ctx.captured); if (got.size) cap = { got, plan: capturePlan(facts, os) }; } catch (_) { cap = null; }
+  }
   const out = [], unknowns = [];
   let unknownAt = -1;
-  for (const f of facts) {
-    if (f.unknown != null) { if (unknownAt < 0) unknownAt = out.length; if (!unknowns.includes(f.unknown)) unknowns.push(f.unknown); continue; }
-    let r = null;
-    try { r = describe(f.effect, { os }); } catch (_) { r = null; }
+  for (let i = 0; i < facts.length; i++) {
+    const f = facts[i];
+    let r;
+    if (cap && (f.effect || f.acl)) { try { r = capturedResult(i, f, cap, os); } catch (_) { r = undefined; } }
+    if (r === null) continue;                                                      // read before and after: nothing changed
+    if (r === undefined) {
+      if (f.unknown != null) { if (unknownAt < 0) unknownAt = out.length; if (!unknowns.includes(f.unknown)) unknowns.push(f.unknown); continue; }
+      try { r = describe(f.effect, { os }); if (r) { const p = pathsOf(f.effect, os); if (p) r.paths = p; } } catch (_) { r = null; }
+    }
     if (r) out.push(r);
   }
   if (unknowns.length) out.splice(unknownAt, 0, result(generic(unknowns.filter(Boolean).length ? unknowns.filter(Boolean) : [text]), false, null));
@@ -2227,10 +3044,75 @@ function record(cmd, res, ctx) {
     if (!made.length) return null;
     const seq = typeof c.seq === 'number' && Number.isFinite(c.seq) ? Math.max(0, Math.floor(c.seq)) : 1;
     const at = iso(c.now);
-    const entries = made.map((m, i) => ({ id: 'c' + (seq + i), at, verb, what: m.what, md: m.md, kind, reversible: m.reversible, undo: m.undo }));
+    const entries = made.map((m, i) => {
+      const e = { id: 'c' + (seq + i), at, verb, what: m.what, md: m.md, kind, reversible: m.reversible, undo: m.undo };
+      if (m.paths) e.paths = m.paths;                                             // where it changed something (supersede)
+      if (m.backup) e.backup = m.backup;                                          // the copy its undo puts back (cleanup)
+      return e;
+    });
     return entries.length === 1 ? entries[0] : entries;
   } catch (_) {
     return null;
+  }
+}
+
+// prepare(cmd, ctx) -> null | {captures: [{id, kind, when, os, cmd, what, maxBytes?}]}: what to read or keep BEFORE an
+// exec runs (when 'before') and just after it (when 'after'), so that what it overwrites, deletes or resets can be
+// put back. ctx: {os, seq, now, visit?, maxBytes?}. Runs nothing; null when there is nothing to read first.
+function prepare(cmd, ctx) {
+  try {
+    if (!isObj(cmd) || str(cmd.do) !== 'exec') return null;
+    const c = isObj(ctx) ? ctx : {};
+    const text = str(cmd.cmd != null ? cmd.cmd : cmd.text);
+    if (!text.trim() || text.length > MAX_TEXT) return null;
+    const os = c.os === 'windows' || c.os === 'linux' ? c.os : guessOs(text);
+    const plan = capturePlan(analyseLine(text, os, 'exec').facts, os);
+    const o = { os, visit: visitOf(c), cap: capOf(c) };
+    const captures = [];
+    for (const s of plan.sets) {
+      // a thing is read whole or not at all: a 'before' without its 'after' (or the other way) puts nothing back
+      const built = s.caps.map((k) => { try { return captureCmd(s, k, o); } catch (_) { return null; } });
+      if (!s.caps.length || built.some((l) => !l)) continue;
+      s.caps.forEach((k, j) => {
+        const x = { id: k.id, kind: k.kind, when: k.when, os, cmd: built[j], what: captureWhat(s, k, o) };
+        if (k.kind === 'backup') x.maxBytes = o.cap;
+        captures.push(x);
+      });
+    }
+    return captures.length ? { captures } : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// cleanup(entries, ctx) -> [{os, cmd}]: when the visit ends, the commands that remove its kept copies -- in the visit's
+// folder (ctx.visit, on ctx.os) and in each folder an entry's backup names; only files named as a copy is named, then
+// each folder if it is empty. An entry whose copy is gone can no longer be put back (its undo says so and stops).
+function cleanup(list, ctx) {
+  try {
+    const c = isObj(ctx) ? ctx : {};
+    const visit = visitOf(c), win = new Set(), lnx = new Map([['', { sudo: null, dirs: new Set() }]]);   // this account's first, then each sudo
+    for (const e of Array.isArray(list) ? list.slice(0, 5000) : []) {
+      const b = isObj(e) && isObj(e.backup) && typeof e.backup.path === 'string' ? e.backup : null;
+      if (!b) continue;
+      if (b.os === 'windows') { const m = WIN_BAK.exec(b.path); if (m && win.size < 20) win.add(m[1]); }
+      else if (b.os === 'linux') {
+        const m = LNX_BAK.exec(b.path);
+        if (!m) continue;
+        const su = isObj(b.sudo) && (b.sudo.tool === 'sudo' || b.sudo.tool === 'doas') ? { tool: b.sudo.tool, user: typeof b.sudo.user === 'string' ? b.sudo.user : null } : null;
+        const k = su ? su.tool + ':' + (su.user || '') : '';
+        if (!lnx.has(k)) lnx.set(k, { sudo: su, dirs: new Set() });
+        if (lnx.get(k).dirs.size < 20) lnx.get(k).dirs.add(m[1]);
+      }
+    }
+    const out = [];
+    if (c.os === 'windows' || win.size) { const cmd = psCleanup(visit, [...win]); if (cmd) out.push({ os: 'windows', cmd }); }
+    if (c.os === 'linux' || lnx.size > 1 || lnx.get('').dirs.size) {
+      for (const g of lnx.values()) { const cmd = shCleanup(visit, [...g.dirs], g.sudo); if (cmd) out.push({ os: 'linux', cmd }); }
+    }
+    return out;
+  } catch (_) {
+    return [];
   }
 }
 
@@ -2297,4 +3179,4 @@ function forChat(list) {
   }
 }
 
-module.exports = { record, inverse, summary, forChat };
+module.exports = { record, inverse, summary, forChat, prepare, cleanup, supersede };

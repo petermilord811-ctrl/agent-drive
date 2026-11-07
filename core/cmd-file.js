@@ -39,6 +39,7 @@ const budgetOf = (c) => {
   if (c.do === 'budget') return Math.min(300000, base || 60000) + 15000;   // asking the room for more waits for them
   if (c.do === 'camera' || c.do === 'audio') return Math.min(300000, base || 60000) + 90000;   // asked first, then captured
   if (c.do === 'fetch' || c.do === 'send') return 20 * 60000;      // one command per chunk: a big file is minutes
+  if (c.do === 'undo') return Math.min(300000, base || 60000) + 75000;   // the room's yes, then the undo itself (60 s)
   if (c.do === 'captcha') return (base || 600000) + 8000;          // waits for a PERSON to solve it (10 min default)
   if (c.do === 'access') return 200000;                            // a new Allow card: the person has ~2.5 min to press it
   if (c.do === 'exec') return Math.min(120000, base || 30000) + 15000;

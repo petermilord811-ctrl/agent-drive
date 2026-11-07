@@ -59,6 +59,8 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
 - **Task macros / replay.** ✅ 2026-11-06: the serve records every successful command per milestone
   (`steps.jsonl`); `drive/replay.js save` makes a proven run a skill, `run` replays it, proving each milestone.
   Next: a live replay of a real job, and parameters other than secrets (a different file name, a date).
+  ✅ 2026-11-06: values -- what a job typed is saved as a named value (`amount`, `date`, `url`, …), and
+  `run --set name=value` replays it with another; its proof follows the new text. A live replay of a real job too.
 - **Preview / dry-run.** ✅ 2026-11-06: `mission plan … preview:1` posts the plan to the room as a question and the
   serve acts on nothing until they say yes; `mission ask` asks again (core/mission.js holds the gate).
 - **Milestone checkpoints for long jobs.** ✅ 2026-11-06: `checkpoints:1` (or `checkpoint:true` on a milestone) stops
@@ -68,13 +70,15 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
   an operator's message that names a job brings that skill with it in the inbox (`inbox.latest.skill`).
 - **Change log / undo hints.** ✅ 2026-11-06: core/undo.js reads what each command changed (files moved, renamed,
   made, deleted; services; registry; typed text; apps started; a file `send` put there) and how it goes back; the finish
-  tells the room, `changes` lists it, `undo` puts one back after a yes (or because they asked: "undo c3").
+  tells the room, `changes` lists it, `undo` puts one back after a yes (or because they asked: "undo c3"). Capture before
+  change (2026-11-06): overwrites, deletes, registry values, startup types, modes and ACLs are kept first, so they go back too.
 - **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting
   commands are refused and the room is asked (`budget {more:1}`).
 - **Self-updating skills.** ✅ 2026-11-06: a planned job that finishes proven, that no skill did and that was not a
   replay, is drafted into `skills/_drafts/<name>/` (gitignored); `node drive/replay.js promote <name> --yes` adds a
   reviewed draft to the library -- a recipe stores typed text, so a person reads it first.
 - **Scheduled / triggered runs.** ✅ 2026-11-06 (scheduled): `drive/schedule.js` runs a saved recipe or a command line
-  at a time, every N, or once ([schedules](../reference/schedules.md)); each visit still needs Allow. Triggers: not yet.
+  at a time, every N, or once ([schedules](../reference/schedules.md)); each visit still needs Allow. Triggers ✅ 2026-11-06: `--on` a relay health alert (its webhook), its recovery, a new
+  file in a folder, or a call to the runner -- the event's facts handed to the job as values.
   The original note: A task that fires on a schedule or an event (pairs with the relay's
   health/alert signals).

@@ -61,7 +61,11 @@ file explains them.
   machine (core/undo.js) and tells the room at the finish. Record what you change by CLICKING yourself —
   `changed {what, undo}` ("turned on Dark mode", "Settings > Colors > Light"). When they ask ("undo c3", "put it
   back"), `undo {id}` does it — their words are the yes; otherwise it asks — and a change put back by hand comes
-  back as the how. `changes` lists them.
+  back as the how. `changes` lists them. Overwrites, deletes and re-set settings go back too — what an `exec` is about
+  to change is kept first — but whole folder trees and wildcards do not: `confirm` before those.
+- **Ask for the camera, sound or files on their own** when that is all a job needs: `--camera`, `--audio`, `--files`
+  (or `access {camera:1}` later) — each its own line on the Allow card, and the relay does the work and tells the
+  room, with no "run commands" asked for.
 - **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
   but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
   (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).
@@ -146,9 +150,12 @@ the plan, runs each milestone as one `plan`, proves it, and stops at the first o
 **The serve drafts it for you:** when a planned job finishes with nothing failed, no skill already did it and it
 was not itself a replay, the `finish` answer carries `draft` — the job saved as `skills/_drafts/<name>/`
 (gitignored) with the typed text it stores. Tell the operator, check that text holds nothing private, then
-`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off). A saved job
+`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off). **With other values:**
+what a job typed is saved as a named value (`node drive/replay.js values <recipe>` lists them), and
+`run … --set amount=77.25 --set date=2026-12-01` replays it with those; the checks that read the old text read the new. A saved job
 can run on a schedule — `node drive/schedule.js add --host <n> --recipe skills/<name>/replay.json --at 09:00`, and a
-runner (`node drive/schedule.js run`); see [docs/reference/schedules.md](docs/reference/schedules.md).
+runner (`node drive/schedule.js run`) — or on an event: `--on alert-disk --machine <n>` (the relay's health webhook),
+`--on file:<folder>`, `--on http`; see [docs/reference/schedules.md](docs/reference/schedules.md).
 
 **A new situation changes the plan — out loud, with its reason:**
 
