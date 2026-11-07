@@ -283,6 +283,8 @@ function stepMs(c) {
     case 'camera': case 'audio': ms = clamp(t || 60000, 2000, 300000) + 90000; break;
     // a file is one command per chunk: minutes for a big one (and a send may ask before replacing a file)
     case 'fetch': case 'send': ms = 20 * 60000; break;
+    // the room's yes (60 s by default), then the undo command itself
+    case 'undo': ms = clamp(t || 60000, 2000, 300000) + 75000; break;
     case 'plan': ms = planMs(c.steps, 0); break;
   }
   if (c.expect) ms += 45000;

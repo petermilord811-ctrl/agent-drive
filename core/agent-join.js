@@ -980,8 +980,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
     if (!KEEP_CAPTURES) {
       try { for (const f of JSON.parse(fs.readFileSync(capFile, 'utf8'))) if (typeof f === 'string') captures.add(f); } catch (_) {}
-      if (captures.size) { const n = clearCaptures(); if (n) say('[.] removed ' + n + ' picture(s) an earlier visit left in ' + dir); }
-      process.on('exit', () => { const n = clearCaptures(); if (n) { try { console.error('[.] removed the ' + n + ' picture(s) this visit took (--keep-captures keeps them)'); } catch (_) {} } });
+      if (captures.size) { const n = clearCaptures(); if (n) say('[.] removed ' + n + ' capture(s) (pictures, photos, recordings) an earlier visit left in ' + dir); }
+      process.on('exit', () => { const n = clearCaptures(); if (n) { try { console.error('[.] removed the ' + n + ' capture(s) this visit took -- pictures, photos, recordings (--keep-captures keeps them)'); } catch (_) {} } });
     }
     // The cost ledger (actions, bytes, round trips). Defined HERE -- before sendDrive's first call (the
     // opening drive-status) -- so sendDrive's live metrics and the loop's per-step record share it.
