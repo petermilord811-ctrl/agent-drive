@@ -157,9 +157,15 @@ ok(d[0].host === '10002' && d[0].facts.machine === '10002' && !d[0].facts.name, 
 ok(T.offer(ents.concat([{ id: '11', spec: on('http') }]), { event: 'http', on: 'http', entry: '11' }, NOW, { only: '11' }).map((x) => x.id).join() === '11', 'only: the one entry it is for');
 d = S.due([{ id: '1', host: '10004', spec: { kind: 'at', time: '09:00' }, next: T0 }], T0 + 1000, { zone: () => 0, busy: ['10004'] });
 ok(d.length === 1 && d[0].act === 'queue', 'one visit per machine counts the runs the runner has going, even one whose entry was removed meanwhile');
-ok(T.setArgs({ event: 'alert-offline', machine: '10004', name: 'Front desk', rule: 'offline' }).join(' ') === '--set event=alert-offline --set machine=10004' &&
-   T.setArgs({ event: 'file', file: 'C:\\in\\a b; del x.csv' }).join('|') === '--set|event=file|--set|file=C:\\in\\a b; del x.csv' && !T.setArgs(null).length,
-   'a recipe gets --set name=value, each one argument (a file name with spaces and a ";" is one value)');
+ok(T.setArgs({ event: 'alert-offline', machine: '10004', name: 'Front desk', rule: 'offline' }).join(' ') === '--set event=alert-offline --set machine=10004 --ignore-unknown' &&
+   T.setArgs({ event: 'file', file: 'C:\\in\\a b; del x.csv' }).join('|') === '--set|event=file|--set|file=C:\\in\\a b; del x.csv|--ignore-unknown' && !T.setArgs(null).length,
+   'a recipe gets --set name=value, each one argument (a file name with spaces and a ";" is one value), and leaves the facts it has no value for (--ignore-unknown)');
+{
+  // ...and drive/replay.js really takes them so: a recipe with no value named event/machine/file is not refused
+  const replay = require(path.join(__dirname, '..', 'drive', 'replay.js'));
+  ok(fs.readFileSync(path.join(__dirname, '..', 'drive', 'replay.js'), 'utf8').includes("'--ignore-unknown'") && typeof replay.build === 'function',
+     'drive/replay.js knows --ignore-unknown, which a triggered run passes');
+}
 const env0 = T.envOf(null), env1 = T.envOf({ event: 'alert-offline', machine: '10004', name: 'x" & calc & "' });
 ok(env0.SM_EVENT === '' && env0.SM_MACHINE === '' && env0.SM_FILE === '' && env1.SM_EVENT === 'alert-offline' && env1.SM_MACHINE === '10004' && !('SM_MACHINE_NAME' in env1),
    'a command gets SM_EVENT, SM_MACHINE, SM_FILE -- each set, empty when there is none; never the name a machine gave itself');

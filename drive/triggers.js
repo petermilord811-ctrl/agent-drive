@@ -307,6 +307,9 @@ function offer(entries, ev, nowMs, opts) {
 function setArgs(facts) {
   const out = [];
   if (facts) for (const k of ['event', 'machine', 'file']) if (facts[k]) out.push('--set', k + '=' + facts[k]);
+  // a recipe takes the facts it has values for and leaves the rest: drive/replay.js refuses a name it does not know
+  // unless told -- right for a person typing --set, wrong for an event that offers every fact it has
+  if (out.length) out.push('--ignore-unknown');
   return out;
 }
 const ENV_OF = { event: 'SM_EVENT', machine: 'SM_MACHINE', file: 'SM_FILE' };

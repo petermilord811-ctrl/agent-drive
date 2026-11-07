@@ -29,6 +29,11 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   or a command line runs at a time of day (on chosen days), every N minutes, hours, days or weeks, or once — by a
   runner you start (`node drive/schedule.js run`). Every visit still needs Allow unless the owner pre-authorised
   the agent; a run nobody lets in is recorded and never retried in a loop; missed fires are skipped, not caught up.
+- **Triggered runs** (`--on`): a saved job starts when the relay raises a health alert for a machine (its webhook:
+  `alert-disk`, `recovered-offline` …), when a file lands in a folder, or when the runner is called — the event's
+  facts handed to a recipe as `--set` values (and to a command as `SM_EVENT` / `SM_MACHINE` / `SM_FILE`). The
+  runner listens on 127.0.0.1 behind a secret token (`node drive/schedule.js hook` prints the addresses); a burst of
+  the same event starts one run.
 - **Jobs asked for in plain words** (`core/intake.js`): "connect 10004 and do my sticky notes" is read into the
   machine, the skill that does it, the access to ask for and the command line — `node kit.js intake "…"`, and the
   MCP server's new `intake` tool. An operator's chat message that names a job carries its skill in the inbox

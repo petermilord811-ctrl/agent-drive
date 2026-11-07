@@ -22,7 +22,7 @@ anyone can add — and every contributor's improvement reaches everyone through 
 - **Long jobs stop and ask** — every task has a **budget** of steps and minutes; a plan can be **previewed** to the
   room before it starts and **checkpointed** after each milestone; nothing acts until they say yes.
 - **The library grows itself** — a job finished with every milestone proven is saved as a **draft skill**, which a
-  person reviews and promotes; a saved job can run again **with other values** (`--set amount=77.25`) and **on a schedule** (`drive/schedule.js`).
+  person reviews and promotes; a saved job can run again **with other values** (`--set amount=77.25`) and **on a schedule or a trigger** — a relay alert, a new file, a call (`drive/schedule.js`).
 - **Everything it changed is on record** — moved, made, deleted, typed, started — said to the room at the finish,
   and put back on request (`undo c3`).
 - **Files, a photo, a recording** — files copied from and onto the machine, said in the room; a webcam photo or a
