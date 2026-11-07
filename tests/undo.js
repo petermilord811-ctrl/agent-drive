@@ -1019,7 +1019,10 @@ if (process.platform === 'win32' && spawnSync('powershell', ['-NoProfile', '-Non
   real('windows capture', (tmp) => {
     const run = (cmd) => { const x = spawnSync('cmd.exe', ['/c', cmd], { windowsVerbatimArguments: true, windowsHide: true, encoding: 'utf8', timeout: 60000, cwd: tmp }); return { code: x.status, out: (x.stdout || '') + (x.stderr || '') }; };
     const J = (...p) => path.join(tmp, ...p);
-    const VISIT = visitId('w'), keep = path.join(os.tmpdir(), 'agent-drive-undo', VISIT);
+    // the temp folder by its LONG name: GitHub's Windows runners give TEMP in its 8.3 form (C:\Users\RUNNER~1\...), and a
+    // copy's path is reported as Windows resolves it
+    const TMPL = fs.realpathSync.native(os.tmpdir());
+    const VISIT = visitId('w'), keep = path.join(TMPL, 'agent-drive-undo', VISIT);
     const { act, all } = serveOf(run, 'windows', VISIT);
     const attrs = (p) => (run('attrib "' + p + '"').out.split(/\r?\n/)[0] || '').slice(0, 12);
     try {
@@ -1103,14 +1106,17 @@ if (process.platform === 'win32' && spawnSync('powershell', ['-NoProfile', '-Non
         s = act('icacls "' + J('perm.txt') + '" ' + how);
         const mid = sddl();
         u = run(back(s.last));
-        ok(s.x.code === 0 && mid !== was && s.last.reversible && u.code === 0 && sddl() === was, 'real capture: icacls ' + how + ' -> set back exactly (' + was + ' / ' + mid + ' / ' + sddl() + ')');
+        // every entry exactly as it was; the DACL's AI (auto-inherited) flag aside -- Windows sets it itself when a DACL with
+        // inherited entries is written back (GitHub's runners' temp files start without it; this machine's with it)
+        const noAI = (x) => String(x).replace(/^D:(P?)AI/, 'D:$1');
+        ok(s.x.code === 0 && mid !== was && s.last.reversible && u.code === 0 && noAI(sddl()) === noAI(was), 'real capture: icacls ' + how + ' -> set back exactly, entry for entry (' + was + ' / ' + mid + ' / ' + sddl() + ')');
       }
       // 11. a service's startup type: only READ here (nothing is set)
       const pv = undo.prepare({ do: 'exec', cmd: PS('Set-Service -Name EventLog -StartupType Automatic') }, { os: 'windows' });
       const rv = run(pv.captures[0].cmd), av = (() => { try { return JSON.parse(rv.out.trim().split(/\r?\n/).pop()); } catch (_) { return {}; } })();
       ok(av.ok === true && av.undo === pv.captures[0].id && av.name === 'EventLog' && av.start === 2, 'real capture: a service\'s startup type read (read only) -> ' + rv.out.trim());
       // 12. the visit's folder a junction to elsewhere: refused, nothing copied
-      const V2 = VISIT + '-j', jdir = path.join(os.tmpdir(), 'agent-drive-undo', V2);
+      const V2 = VISIT + '-j', jdir = path.join(TMPL, 'agent-drive-undo', V2);
       fs.mkdirSync(J('elsewhere'));
       run('mklink /J "' + jdir + '" "' + J('elsewhere') + '"');
       try {
