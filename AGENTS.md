@@ -92,6 +92,10 @@ file explains them.
   Skip secrets (`.env`, `*.local.json`) and throwaway `work/` clutter.
 - **Browser blank on Chrome:** one F5/new-tab retry, then Firefox/Edge/default immediately. Request
   **shell** automatically when you need `exec` to launch it — do not wait for “enable run.”
+- **DataAnnotation signup:** use `node kit.js skills dataannotation` /
+  `skills/create-dataannotation-account/` (and `.cursor/rules/dataannotation-signup.mdc`). Hard rules:
+  one Firefox window, locate fields from the current look, replace-not-append, `keys human:0`, verify
+  captcha with a look (never solve it).
 
 ### MUST NOT — ever
 

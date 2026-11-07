@@ -1,0 +1,26 @@
+---
+description: Hard rules for DataAnnotation account creation on remote hosts
+alwaysApply: true
+---
+
+# DataAnnotation signup (remember)
+
+When creating a DataAnnotation.tech worker account (any host, especially 34123):
+
+1. **Use the skill first:** `node kit.js skills dataannotation` →
+   `node skills/create-dataannotation-account/create-dataannotation-account.js ./work --first … --last … --email … --password …`
+   Do not reinvent field clicks by hand unless the script fails.
+
+2. **One window only.** Before any `keys`: list windows named DataAnnotation; close Chrome duplicates; focus the Firefox form. Wrong window = First name stays empty.
+
+3. **Locate fields from the current `look`.** Click each field’s own mid (`lx/ly` from `locate-fields.py`). Never reuse coords from an earlier visit. Order is First → Last → Email (offset by one band was a live miss).
+
+4. **Replace, never append.** Every field: click → Ctrl+A → Backspace → `keys {human:0}` (`secret:1` for passwords). Do not Tab between password boxes without clicking each.
+
+5. **Chrome blank once, then Firefox.** F5/new-tab once; if still blank, `exec firefox '<url>' &`. Request shell automatically. No maximize / F11.
+
+6. **Budget:** prefer `keys human:0`, not `type-text.js` (burns steps). Ask `budget {more:1}` early if near the limit.
+
+7. **CAPTCHA:** never solve it. After `captcha` returns, **look again**. If still unchecked / “Please complete the recaptcha,” ask again or stop. Chat “solved” / “sign off” is not proof.
+
+8. After the visit: check → analyze → learn into the skill (not gotchas alone) → auto-commit/push.

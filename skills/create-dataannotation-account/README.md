@@ -64,6 +64,19 @@ python -I skills/create-dataannotation-account/locate-fields.py work/da_form.png
 Remote bash from a Windows agent host: put the script in a file / base64 pipe — PowerShell eats `$id` in
 one-liner `exec` strings.
 
+## Fixed in the script (do not regress)
+
+| Issue (34123) | Fix in `create-dataannotation-account.js` |
+|---------------|------------------------------------------|
+| Keys hit Chrome while Firefox had the form | `focusFormWindow` kills Chrome DA windows, activates Firefox |
+| First/Last/Email offset by one field | `pickNameFields` from current `locate-fields.py` look only |
+| Appended into existing strings | every `fillField` does Ctrl+A → Backspace → `keys human:0` |
+| Chrome blank DA page | `openInFirefox` + one F5; shell via `access` |
+| `captcha.solved` but still blocked | `waitCaptchaVerified` looks + `verify.py captcha-blocked`, re-asks once |
+| Step budget burned by type-text | `keys human:0` only; no `type-text.js` |
+
+Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and gotchas.
+
 ## Pitfalls
 
 - Duplicate titled windows steal keystrokes — close extras first.
