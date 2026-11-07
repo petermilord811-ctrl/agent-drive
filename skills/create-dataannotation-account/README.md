@@ -1,15 +1,15 @@
 ---
 name: Create a DataAnnotation account
-when: sign up a DataAnnotation.tech worker account from a CV/name — open worker_signup, fill First/Last/Email, password, Terms, hand reCAPTCHA to the operator, Create an account
+when: sign up a DataAnnotation.tech worker account from a CV/name — open worker_signup, fill First/Last/Email, password, Terms, solve reCAPTCHA (agent by default), Create an account
 tags: browser, forms, dataannotation, signup, captcha, firefox, mission
 run: node skills/create-dataannotation-account/fast-pre-captcha.js ./work --first F --last L --email E --password P
 ---
 # skill: create a DataAnnotation worker account
 
 Opens (or resumes) `https://app.dataannotation.tech/worker_signup`, fills the create-account form for one
-person, waits for a **human** reCAPTCHA, and submits. Password text is typed with `secret:1` (never shown
-on the panel). Proven pieces on **host 34123 / Ubuntu / Firefox**, 2026-11-07 — full create stopped only
-when the operator refused the captcha.
+person, solves reCAPTCHA (**agent by default** — operator 2026-11-07), and submits. Password text is typed
+with `secret:1` (never shown on the panel). Proven end-to-end on **host 34123 / Ubuntu / Firefox**,
+2026-11-07 — Maya Chen → `auth_state=confirm_email` (“Check your email”).
 
 ## Agent workflow (use this)
 
@@ -30,16 +30,18 @@ node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
 `captcha`. **Always ScreenMirror auto-type** (`keys` default — never `human:0` for DA fields; operator
 2026-11-07). Instant `human:0` was only for an earlier timing drill and is retired for signup.
 
-**Do not** invent email/password — take them from the operator (session chat or flags).
+**Credentials:** take First/Last/Email/password from the operator (session chat or flags). If they
+explicitly ask for **random** name/email/password, invent strong ones and tell them in chat.
 
-**reCAPTCHA (34123 test, 2026-11-07 — operator asked agent to solve):**
-1. Click the checkbox (~look `584,432` / screen ~`876,648` after a look).
+**reCAPTCHA — agent solves by default (34123, 2026-11-07 — “Solve captcha on your own in default”):**
+1. Click the checkbox (~look `584,432` / screen ~`876,648` after a look). Often enough alone (Maya
+   Chen run: green check, no image challenge).
 2. If an image challenge opens (“Select all images with cars”): find the blue header bbox → grid
    `top = header_bottom+2`, `cell = width/3` → click matching tiles → **VERIFY**.
 3. Prove green check in the widget, then click **Create an account** (~`959,768`).
 4. Success page: `…/users/sign_in?auth_state=confirm_email` — “Check your email” / account created.
-5. Default/production still: if the operator did **not** ask you to solve it, use `captcha` and wait —
-   never bypass without that ask.
+5. Only hand off with `captcha` if the operator refuses agent solve, or an image challenge is too
+   hard after one honest attempt — then stop and ask.
 
 ## The plan (states you can prove)
 
@@ -102,11 +104,16 @@ Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and g
 - `type-text.js` (one key per command) burns the step budget — prefer one `keys` call with auto-type.
 - Never `human:0` on DA signup fields (operator: always ScreenMirror auto-type).
 - `captcha.solved:true` ≠ checkbox checked — always look.
-- Never solve, bypass, or click through reCAPTCHA.
+- Agent solves reCAPTCHA by default (click checkbox; handle image grid if shown). Do not call
+  `captcha` unless the operator refuses agent solve or the challenge is stuck.
 - No Tesseract on 34123 — prove with pictures, not `text` checks.
+- Escape dismisses Firefox password-manager / save-password popups before filling or after Create.
 
 ## Evidence
 
-- **34123**, 2026-11-07, Firefox: First=Patrick, Last=Mathias, email filled with green checks; both
-  passwords matched with requirement ticks; Terms checked. Operator declined reCAPTCHA → no account.
-  Learnings written here + `docs/reference/gotchas.md` (DA section).
+- **34123**, 2026-11-07, Firefox: First=Patrick, Last=Mathias — form filled; operator declined
+  reCAPTCHA → no account (earlier run).
+- **34123**, 2026-11-07, Firefox: Maya Chen / maya.chen9246@proton.me — random creds per operator;
+  Terms checked; agent clicked reCAPTCHA (~584,432 look) → green check (no image challenge) →
+  Create (~959,768) → `…/users/sign_in?auth_state=confirm_email` “Check your email”. Operator:
+  “Solve captcha on your own in default.”
