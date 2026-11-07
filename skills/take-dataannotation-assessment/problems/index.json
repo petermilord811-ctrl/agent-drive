@@ -1,0 +1,284 @@
+{
+  "version": 2,
+  "updated": "2026-11-07",
+  "banks": [
+    {
+      "slug": "generalist",
+      "file": "problems-generalist.md",
+      "status": "stub",
+      "assessmentId": "generalist",
+      "roles": [
+        "Generalist"
+      ]
+    },
+    {
+      "slug": "coding",
+      "file": "problems-coding.md",
+      "status": "stub",
+      "assessmentId": "coding",
+      "roles": [
+        "Software Engineer",
+        "Frontend Engineer",
+        "DevOps Engineer",
+        "Backend Engineer",
+        "Full Stack Engineer"
+      ]
+    },
+    {
+      "slug": "data-ml",
+      "file": "problems-data-ml.md",
+      "status": "stub",
+      "assessmentId": "data-ml",
+      "roles": [
+        "Data Scientist",
+        "Machine Learning Engineer"
+      ]
+    },
+    {
+      "slug": "cybersecurity",
+      "file": "problems-cybersecurity.md",
+      "status": "stub",
+      "assessmentId": "cybersecurity",
+      "roles": [
+        "Cybersecurity Expert",
+        "Penetration Tester",
+        "Incident Responder",
+        "Application Security Engineer"
+      ]
+    },
+    {
+      "slug": "finance",
+      "file": "problems-finance.md",
+      "status": "stub",
+      "assessmentId": "finance",
+      "roles": [
+        "Finance Expert",
+        "Quantitative Analyst",
+        "Portfolio Manager",
+        "Investment Banker",
+        "Private Equity Associate",
+        "Credit Analyst",
+        "Wealth Manager",
+        "Equity Research Analyst",
+        "Actuary",
+        "Venture Capitalist",
+        "Insurance Underwriter",
+        "Trader",
+        "Treasury Analyst",
+        "Management Consultant"
+      ]
+    },
+    {
+      "slug": "accounting",
+      "file": "problems-accounting.md",
+      "status": "stub",
+      "assessmentId": "accounting",
+      "roles": [
+        "Tax Accountant",
+        "Corporate Accountant",
+        "Accountant",
+        "Auditor",
+        "Public Accountant",
+        "FP&A Analyst",
+        "Financial Reporting Manager"
+      ]
+    },
+    {
+      "slug": "economics",
+      "file": "problems-economics.md",
+      "status": "stub",
+      "assessmentId": "economics",
+      "roles": [
+        "Economist",
+        "Research Economist",
+        "Applied Economist",
+        "Quantitative Economist"
+      ]
+    },
+    {
+      "slug": "legal",
+      "file": "problems-legal.md",
+      "status": "stub",
+      "assessmentId": "legal",
+      "roles": [
+        "Legal Expert",
+        "Attorney",
+        "Paralegal",
+        "Litigation Attorney",
+        "Corporate Attorney",
+        "Compliance Officer",
+        "Contract Manager",
+        "IP Attorney"
+      ]
+    },
+    {
+      "slug": "medical",
+      "file": "problems-medical.md",
+      "status": "stub",
+      "assessmentId": "medical",
+      "roles": [
+        "Health/Medical Expert",
+        "Radiologist",
+        "Sonographer",
+        "Imaging Specialist",
+        "Physician",
+        "Nurse",
+        "Surgical Clinician",
+        "Surgical Medicine Expert",
+        "Surgeon",
+        "Internal Medicine Clinician",
+        "Internist",
+        "Internal Medicine Physician",
+        "Dermatologist",
+        "Gynecologist",
+        "Obstetrician",
+        "Cardiologist",
+        "Interventional Cardiologist",
+        "Cardiac Electrophysiologist",
+        "Registered Nurse"
+      ]
+    },
+    {
+      "slug": "healthcare-ops",
+      "file": "problems-healthcare-ops.md",
+      "status": "stub",
+      "assessmentId": "healthcare-ops",
+      "roles": [
+        "Healthcare Operations Manager",
+        "Healthcare Compliance Specialist",
+        "Medical Coder",
+        "Revenue Cycle Specialist",
+        "Managed Care Analyst",
+        "Clinical Documentation Specialist"
+      ]
+    },
+    {
+      "slug": "engineering-mechanical",
+      "file": "problems-engineering-mechanical.md",
+      "status": "stub",
+      "assessmentId": "engineering-mechanical",
+      "roles": [
+        "Mechanical Engineer",
+        "Mechanical Design Engineer",
+        "Validation Engineer",
+        "Automation Technician",
+        "Mechanical Designer",
+        "Senior Mechanical Design Engineer"
+      ]
+    },
+    {
+      "slug": "engineering-civil",
+      "file": "problems-engineering-civil.md",
+      "status": "stub",
+      "assessmentId": "engineering-civil",
+      "roles": [
+        "Civil Engineer",
+        "Civil Design Engineer"
+      ]
+    },
+    {
+      "slug": "engineering-electrical",
+      "file": "problems-engineering-electrical.md",
+      "status": "stub",
+      "assessmentId": "engineering-electrical",
+      "roles": [
+        "Electrical Engineer",
+        "Embedded Systems Developer",
+        "Hardware Engineer",
+        "Electronics Engineer"
+      ]
+    },
+    {
+      "slug": "stem",
+      "file": "problems-stem.md",
+      "status": "stub",
+      "assessmentId": "stem",
+      "roles": [
+        "Chemist",
+        "Physicist",
+        "Mathematician",
+        "Biologist",
+        "Experimental Biologist",
+        "Drug Discovery Scientist",
+        "Computational Biologist"
+      ]
+    },
+    {
+      "slug": "languages",
+      "file": "problems-languages.md",
+      "status": "stub",
+      "assessmentId": "languages",
+      "roles": [
+        "Chinese Specialist",
+        "Thai Specialist",
+        "Russian Specialist",
+        "Polish Specialist",
+        "Hebrew Specialist"
+      ]
+    },
+    {
+      "slug": "design",
+      "file": "problems-design.md",
+      "status": "stub",
+      "assessmentId": "design",
+      "roles": [
+        "Designer"
+      ]
+    },
+    {
+      "slug": "project-based",
+      "file": "problems-project-based.md",
+      "status": "stub",
+      "assessmentId": "project-based",
+      "roles": [
+        "Cybersecurity Projects",
+        "Robotics Projects",
+        "Nuclear Engineering Projects",
+        "Chemical Engineering Projects",
+        "Process Engineering Projects",
+        "Architectural Engineering Projects",
+        "Ophthalmology Projects",
+        "Machine Learning Engineering Projects"
+      ]
+    },
+    {
+      "slug": "biology",
+      "file": "problems-biology.md",
+      "status": "stub",
+      "assessmentId": "stem",
+      "roles": [
+        "Biologist",
+        "Experimental Biologist",
+        "Computational Biologist"
+      ]
+    },
+    {
+      "slug": "chemistry",
+      "file": "problems-chemistry.md",
+      "status": "stub",
+      "assessmentId": "stem",
+      "roles": [
+        "Chemist",
+        "Drug Discovery Scientist"
+      ]
+    },
+    {
+      "slug": "physics",
+      "file": "problems-physics.md",
+      "status": "stub",
+      "assessmentId": "stem",
+      "roles": [
+        "Physicist"
+      ]
+    },
+    {
+      "slug": "math",
+      "file": "problems-math.md",
+      "status": "stub",
+      "assessmentId": "stem",
+      "roles": [
+        "Mathematician"
+      ]
+    }
+  ]
+}

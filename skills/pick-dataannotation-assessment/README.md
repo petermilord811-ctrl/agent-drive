@@ -42,7 +42,7 @@ Output JSON: `pick.role`, `pick.assessment`, `pick.category`, `alternatives[]`.
 4. Open that card; confirm category matches `pick.category`.
 5. Start / continue into the assessment UI.
 6. Crop proof → achieve → hand off to [`take-dataannotation-assessment`](../take-dataannotation-assessment/README.md)
-   (capture/re-catch `problems-{slug}.md`, then answer).
+   (capture/re-catch `skills/.../problems/problems-{slug}.md`, then answer).
 
 ## Matching rules
 

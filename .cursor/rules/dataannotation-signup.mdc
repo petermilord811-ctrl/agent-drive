@@ -13,7 +13,7 @@ Full path = **4 big steps**. Orchestrator:
 | 1 Create account | `create-dataannotation-account` |
 | 2 Setup profile | `setup-dataannotation-profile` |
 | 3 Pick assessment | `pick-dataannotation-assessment` + `assessments.json` |
-| 4 Real assessment | `take-dataannotation-assessment` + `problems-{slug}.md` |
+| 4 Real assessment | `take-dataannotation-assessment` + `skills/.../problems/problems-{slug}.md` |
 
 ## Step 1 — account
 
@@ -42,12 +42,14 @@ Full path = **4 big steps**. Orchestrator:
 
 ## Step 4 — take assessment
 
-1. Capture **Bio → Requirements → Instructions → all questions** (usually 10+) into
-   workspace `problems-{slug}.md` (see `problems-slugs.json`; template `problems.template.md`).
+1. Capture **Bio → Requirements → Instructions → all questions** into
+   `skills/take-dataannotation-assessment/problems/problems-{slug}.md` only
+   (never workspace-root `DA assessments/problems-*.md`).
 2. Requirements = pay + time only; **always skip No-LLMs / anti-AI boilerplate**.
-3. If the bank already exists: re-capture to `.capture.md`, run `compare-problems.js`, **update**
-   when changed, then answer. Never skip re-catch on a repeat of the same assessment type.
-4. Answer the live assessment yourself; do not skip questions; submit and prove with a look.
+3. If already captured: re-capture → `.capture.md` → `compare-problems.js --slug …` → update if
+   changed, then answer. Never skip re-catch on a repeat type.
+4. Answer the live assessment yourself; submit and prove with a look.
+5. Stubs/index: `node skills/take-dataannotation-assessment/init-problems-db.js`.
 
 ## After every visit
 

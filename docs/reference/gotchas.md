@@ -179,8 +179,10 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   — account → profile → pick assessment → take assessment. Sub-skills:
   `create-dataannotation-account`, `setup-dataannotation-profile`, `pick-dataannotation-assessment`,
   `take-dataannotation-assessment`. Role DB: `assessments.json`. Password page: always ask chat vs
-  self-type. Step 4: save/re-catch `../problems-{slug}.md` (Bio/Requirements/Instructions/questions;
-  skip No-LLMs text); `compare-problems.js` before answering a repeat type.
+  self-type. Step 4 bank lives only under
+  `skills/take-dataannotation-assessment/problems/problems-{slug}.md` (ignore workspace-root
+  `DA assessments/problems-*.md`). Re-catch + `compare-problems.js --slug …` before answering a
+  repeat type; skip No-LLMs text in banks.
 - **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:

@@ -1,12 +1,12 @@
 {
-  "version": 1,
+  "version": 2,
   "updated": "2026-11-07",
-  "bankDir": "..",
-  "note": "bankDir is relative to agent-drive/ → workspace root problems-{slug}.md. Legacy filenames preserved (program, datascience, mechnical).",
+  "bankDir": "skills/take-dataannotation-assessment/problems",
+  "note": "Agent-drive owned bank. Paths are relative to agent-drive root. Do NOT use workspace-root DA assessments/problems-*.md.",
   "byAssessmentId": {
     "generalist": "generalist",
-    "coding": "program",
-    "data-ml": "datascience",
+    "coding": "coding",
+    "data-ml": "data-ml",
     "cybersecurity": "cybersecurity",
     "finance": "finance",
     "accounting": "accounting",
@@ -14,13 +14,13 @@
     "legal": "legal",
     "medical": "medical",
     "healthcare-ops": "healthcare-ops",
-    "engineering-mechanical": "mechnical",
-    "engineering-civil": "civil",
-    "engineering-electrical": "electrical",
+    "engineering-mechanical": "engineering-mechanical",
+    "engineering-civil": "engineering-civil",
+    "engineering-electrical": "engineering-electrical",
     "stem": "stem",
     "languages": "languages",
     "design": "design",
-    "project-based": "projects"
+    "project-based": "project-based"
   },
   "stemByRoleHint": {
     "Chemist": "chemistry",
@@ -31,6 +31,7 @@
     "Drug Discovery Scientist": "chemistry",
     "Computational Biologist": "biology"
   },
+  "extraSlugs": ["biology", "chemistry", "physics", "math"],
   "filename": "problems-{slug}.md",
   "captureFilename": "problems-{slug}.capture.md"
 }

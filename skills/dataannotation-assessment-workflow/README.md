@@ -1,6 +1,6 @@
 ---
 name: DataAnnotation assessment workflow
-when: full DataAnnotation.tech worker path — create account → setup profile → pick assessment role → take assessment (capture problems-{type}.md, re-catch/diff, answer); also when operator says DA workflow, full assessment, onboard, or browse roles after signup
+when: full DataAnnotation.tech worker path — create account → setup profile → pick assessment role → take assessment (capture skills/.../problems/problems-{type}.md, re-catch/diff, answer); also when operator says DA workflow, full assessment, onboard, or browse roles after signup
 tags: browser, forms, dataannotation, assessment, onboarding, profile, resume, problems, firefox, mission
 run: node skills/dataannotation-assessment-workflow/pick-assessment.js --resume path/to/resume.txt
 ---
@@ -34,7 +34,7 @@ Before starting (session chat or flags):
     { "t": "1 Create account", "done": "confirm_email or signed-in onboarding" },
     { "t": "2 Setup profile", "done": "Availability done; left learn-about-you / ready for projects" },
     { "t": "3 Pick assessment", "done": "Chosen role card opened / assessment started for best match" },
-    { "t": "4 Real assessment", "done": "problems-{slug}.md current; assessment submitted" }
+    { "t": "4 Real assessment", "done": "skills/.../problems/problems-{slug}.md current; assessment submitted" }
   ]
 }
 ```
@@ -90,12 +90,12 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
 ## Step 4 — Real assessment (summary)
 
 1. **Capture** Bio → Requirements (pay/time; **skip No-LLMs text**) → Instructions → all
-   questions (usually 10+) into `../problems-{slug}.md` (workspace root).
-2. If that file **already exists**: capture again to `.capture.md`, run
-   `compare-problems.js`, **update** the bank when changed, then answer.
-3. **Answer** the live assessment yourself (do not skip items); submit; prove with a look.
+   questions into `skills/take-dataannotation-assessment/problems/problems-{slug}.md`
+   (agent-drive bank only — not workspace-root `DA assessments/problems-*.md`).
+2. If already captured: re-catch → `.capture.md` → `compare-problems.js --slug …` → update if needed.
+3. **Answer** the live assessment; submit; prove with a look.
 
-Details + template + slug map: `skills/take-dataannotation-assessment/README.md`.
+Details: `skills/take-dataannotation-assessment/` (`init-problems-db.js`, `problems/README.md`).
 
 ## Pitfalls
 

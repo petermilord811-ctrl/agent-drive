@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @tool Compare a fresh assessment capture to an existing problems-{slug}.md bank
-// @run  node skills/take-dataannotation-assessment/compare-problems.js --slug medical --existing ../problems-medical.md --new ../problems-medical.capture.md
+// @tool Compare a fresh assessment capture to this skill's problems/{problems-{slug}.md} bank
+// @run  node skills/take-dataannotation-assessment/compare-problems.js --slug medical
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -11,12 +11,20 @@ function arg(name, fallback) {
   return fallback;
 }
 
+const skillDir = __dirname;
+const bankDir = path.join(skillDir, 'problems');
 const slug = arg('slug', '');
-const existingPath = arg('existing', slug ? path.join('..', `problems-${slug}.md`) : '');
-const newPath = arg('new', slug ? path.join('..', `problems-${slug}.capture.md`) : '');
+const existingPath = arg(
+  'existing',
+  slug ? path.join(bankDir, `problems-${slug}.md`) : ''
+);
+const newPath = arg(
+  'new',
+  slug ? path.join(bankDir, `problems-${slug}.capture.md`) : ''
+);
 
 if (!existingPath || !newPath) {
-  console.error('need --existing <bank.md> --new <capture.md> (and preferably --slug)');
+  console.error('need --slug <slug> (or --existing and --new under skills/.../problems/)');
   process.exit(2);
 }
 
@@ -39,8 +47,7 @@ function sectionMap(md) {
   for (const part of parts) {
     const m = part.match(/^##\s+(.+?)\s*\n/);
     if (!m) continue;
-    const key = m[1].trim().toLowerCase();
-    map[key] = hash(norm(part));
+    map[m[1].trim().toLowerCase()] = hash(norm(part));
   }
   return map;
 }
@@ -52,18 +59,27 @@ function questionKeys(map) {
 }
 
 const existingRaw = fs.existsSync(existingPath) ? fs.readFileSync(existingPath, 'utf8') : null;
+if (!fs.existsSync(newPath)) {
+  console.error('capture not found: ' + newPath);
+  process.exit(2);
+}
 const newRaw = fs.readFileSync(newPath, 'utf8');
 
 if (!existingRaw) {
-  const out = {
-    slug: slug || null,
-    changed: true,
-    reason: 'no existing bank — save capture as problems-{slug}.md',
-    existing: null,
-    neu: path.resolve(newPath),
-    action: 'create',
-  };
-  process.stdout.write(JSON.stringify(out, null, 2) + '\n');
+  process.stdout.write(
+    JSON.stringify(
+      {
+        slug: slug || null,
+        changed: true,
+        reason: 'no existing bank — save capture as problems-{slug}.md in skills/.../problems/',
+        existing: null,
+        neu: path.resolve(newPath),
+        action: 'create',
+      },
+      null,
+      2
+    ) + '\n'
+  );
   process.exit(0);
 }
 
@@ -83,18 +99,16 @@ for (const k of keys) {
   }
 }
 
-const qA = questionKeys(mapA);
-const qB = questionKeys(mapB);
-
 const out = {
   slug: slug || null,
+  bankDir: path.resolve(bankDir),
   changed: !sameWhole,
   existing: path.resolve(existingPath),
   neu: path.resolve(newPath),
   hashExisting: hash(a),
   hashNew: hash(b),
-  questionCountExisting: qA.length,
-  questionCountNew: qB.length,
+  questionCountExisting: questionKeys(mapA).length,
+  questionCountNew: questionKeys(mapB).length,
   sectionDiffs,
   action: sameWhole ? 'keep' : 'update-bank-from-capture',
 };
