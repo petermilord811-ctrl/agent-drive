@@ -114,7 +114,7 @@ it explain each verb.
 | `launch` | `app` `args` `cwd` `wait` `focus` `dry` `look` | start an app by name, path or URL, as the signed-in user, and find its window (needs shell) | `start`, `open-app` |
 | `controls` | `title` `id` `max` `depth` `budget` | the controls of a window by NAME (UI Automation / AT-SPI): name, type, rect, cx/cy to click -- never a value; password fields flagged (needs shell) | `ui`, `accessibility` |
 | `terminal` | `open` `input` `keys` `signal` `close` `wait` `until` | the Terminal panel shell, shared with everyone watching: type a line or keys, read what it prints (needs the terminal consent) | `term`, `console` |
-| `access` | `shell` `control` `terminal` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
+| `access` | `shell` `control` `terminal` `camera` `audio` `files` | ask the operator for MORE access mid-visit -- a new Allow card; nothing changes unless they press Allow | `ask-access`, `request-access` |
 | `exec` | `cmd` `text` | run one command on the host (needs --shell) | `run`, `shell`, `command`→`cmd`, `line`→`cmd` |
 | `changes` | `all` | what this task changed on the machine (all:1 -- this visit), each with whether and how it can be put back |  |
 | `undo` | `id` `dry` | put one change back: a command after the room's yes (or because they asked: "undo c3"); a change put back by hand comes back as the how; dry:1 shows the command only | `change`→`id`, `ref`→`id`, `which`→`id` |
@@ -302,10 +302,13 @@ ends. Still not reversible: whole folder trees, files named by wildcards or unkn
 ended processes, Terminal lines. A change a LATER one made moot (a folder made, then deleted with what was in it) is
 marked `gone` in `changes`, left out of the finish, and `undo` says which change removed it.
 
-## Files, a webcam photo, a sound recording (needs `--shell`)
+## Files, a webcam photo, a sound recording
 
-Each runs on the host through `exec` — one command per step, built by [core/desk.js](../../core/desk.js) — so it needs
-the visit's shell consent. What is copied, put, photographed or recorded is said in the session chat as it happens.
+**Through the relay, with consents of their own:** a visit started with `--files`, `--camera` or `--audio` (or given them
+later with `access {files|camera|audio:1}`) asks for each on its own line of the Allow card. The RELAY then does the copy
+or the capture itself (`agent-take` / `agent-put`, in parts with a sha256) and says so in the machine's chat — no shell
+needed; answers carry `via:"relay"`. The relay reads up to 6 MB and puts up to 4 MB, and a recording is 1–6 s.
+**Otherwise through `exec`** (the shell consent): one command per step, built by [core/desk.js](../../core/desk.js). What is copied, put, photographed or recorded is said in the session chat as it happens.
 
 | verb | what it does |
 |---|---|

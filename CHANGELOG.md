@@ -43,6 +43,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   file unless `overwrite:1`, which asks the room. A photo or up to 7 s of what the machine is playing (never a
   microphone) is asked of the room every time — only a clear yes allows it, never the standing yes or silence. The
   MCP `camera` tool returns the photo inline.
+- **The camera, sound and files as consents of their own** (`--camera`, `--audio`, `--files`; `access` mid-visit; the
+  MCP `connect` fields): each is its own line on ScreenMirror's Allow card, and the RELAY takes the photo, records
+  or copies the file itself and says so in the machine's chat (`agent-take` / `agent-put`) — no "run commands"
+  needed. A photo or a recording is still asked of the room each time. Needs a relay at viewer 2.229.0 or later.
 - **The change record and undo** (`core/undo.js`): what each command changed on the machine — files moved,
   renamed, copied, made or deleted, services, registry values, processes, files written, typed text (never the
   text), apps started, a file `send` put there, and what the driver declares with `changed` — with how it is put

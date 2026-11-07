@@ -207,7 +207,13 @@ const WANT_SHELL = has('shell');
 // A TERMINAL IS A FOURTH ASK (--terminal), named on the card in its own words: the Terminal panel's shell, shared
 // with everyone watching -- never implied by --shell (one command, one result) or by the keyboard and mouse.
 const WANT_TERM = has('terminal');
+// THE CAMERA, WHAT IT PLAYS, ITS FILES (--camera / --audio / --files): three more asks, each its own line on the card. The
+// RELAY does the capture or the copy itself (agent-take / agent-put) and says so in the machine's chat -- so a visit with
+// none of the shell can still take a photo, and the room always hears it. A photo or a recording is still asked of the
+// room each time (camera / audio verbs).
+const WANT_CAMERA = has('camera'), WANT_AUDIO = has('audio'), WANT_FILES = has('files');
 let grantControl = WANT_CONTROL, grantShell = WANT_SHELL, grantTerm = WANT_TERM;
+let grantCamera = WANT_CAMERA, grantAudio = WANT_AUDIO, grantFiles = WANT_FILES;
 const OPEN_URL = String(flag('open', '') || '');
 const CLICK = String(flag('click', '') || '');
 const SCROLL = String(flag('scroll', '') || '');   // "notches[@x,y]" -- negative scrolls the page DOWN
@@ -630,7 +636,7 @@ const NAK_WHY = {
   denied: 'somebody refused it',
 };
 async function dialAndJoin(relays, onCode, reconnecting, want) {
-  const asks = want || { control: grantControl, shell: grantShell, term: grantTerm };
+  const asks = want || { control: grantControl, shell: grantShell, term: grantTerm, camera: grantCamera, audio: grantAudio, files: grantFiles };
   let lastWhy = 'could not reach any relay';
   let lastCode = 1;   // the header's exit codes: 1 a transport failure, 2 the relay / nobody let us in, 3 a person said no
   // A mutable QUEUE, not a fixed list: a relay that doesn't have the host can POINT US at its federation
@@ -647,7 +653,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const w = await openRelay(relay).catch((e) => { lastWhy = e.message; say('[x] ' + e.message); return null; });
     if (!w) continue;
     say('[.] asking to join machine ' + HOST + ' (agent tag "' + AGENT + '"; the relay names the visit)');
-    w.send({ type: 'join-begin', key: KEY, host: HOST, agent: AGENT, task: TASK, control: !!asks.control, shell: !!asks.shell, term: !!asks.term });
+    w.send({ type: 'join-begin', key: KEY, host: HOST, agent: AGENT, task: TASK, control: !!asks.control, shell: !!asks.shell, term: !!asks.term,
+             camera: !!asks.camera || undefined, audio: !!asks.audio || undefined, files: !!asks.files || undefined });
     // The code, then the wait. The code is printed because it is what a person compares against the
     // card on their screen -- an agent that does not show it is asking them to approve on faith.
     const first = await w.waitFor((m) => m.type === 'join-code' || m.type === 'join-nak', 20000);
@@ -1588,6 +1595,48 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       return { ok: true, buf: Buffer.concat(parts), total, full };
     };
     const humanBytes = (n) => (n < 1024 ? n + ' bytes' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+    // THE RELAY'S OWN TAKE AND PUT -- the camera / audio / files consents (--camera, --audio, --files, or access): the RELAY
+    // captures or copies on the host, posts the line in the machine's chat itself, and hands the bytes over in parts with a
+    // sha256 (agent-took), or takes them in parts, each answered (agent-put-done). Without the consent the relay refuses it.
+    const RELAY_PUT_MAX = 4 * 1048576, RELAY_PART = 192 * 1024;
+    const relayTake = async (kind, o, ms) => {
+      const rid = ++reqSeq;
+      try { ws.send(Object.assign({ type: 'agent-take', reqId: rid, kind }, o || {})); } catch (e) { return { ok: false, why: e.message }; }
+      const parts = []; let meta = null, got = 0;
+      const deadline = Date.now() + (ms || 120000);
+      for (;;) {
+        const m = await raceStop(ws.waitFor((x) => x.type === 'agent-took' && x.reqId === rid, Math.max(1, deadline - Date.now())));
+        if (!m) return { ok: false, why: stopped || 'the relay did not answer in time' };
+        if (!m.ok) return { ok: false, why: String(m.error || 'the relay refused it'), needs: m.needs || undefined, busy: m.busy ? 1 : undefined };
+        meta = meta || m;
+        const i = Math.max(0, Number(m.part) || 0), b = Buffer.from(String(m.b64 || ''), 'base64');
+        if (!parts[i]) got++;
+        parts[i] = b; wire += b.length; trips++;
+        const of = Math.max(1, Number(m.of) || 1);
+        if (got >= of) {
+          const buf = Buffer.concat(parts.slice(0, of));
+          if (meta.sha256 && crypto.createHash('sha256').update(buf).digest('hex') !== String(meta.sha256)) return { ok: false, why: 'what arrived does not match what the relay read (sha256)' };
+          return { ok: true, buf, mime: meta.mime, name: meta.name, seconds: meta.seconds };
+        }
+      }
+    };
+    const relayPut = async (p, buf, overwrite) => {
+      const rid = ++reqSeq, of = Math.max(1, Math.ceil(buf.length / RELAY_PART));
+      let last = null;
+      for (let i = 0; i < of; i++) {
+        if (stopped) { try { ws.send({ type: 'agent-put', reqId: rid, cancel: 1 }); } catch (_) {} return { ok: false, why: stopped }; }
+        const part = buf.slice(i * RELAY_PART, (i + 1) * RELAY_PART);
+        const msg = { type: 'agent-put', reqId: rid, part: i, of, b64: part.toString('base64') };
+        if (i === 0) { msg.path = p; if (overwrite) msg.overwrite = 1; }
+        try { ws.send(msg); } catch (e) { return { ok: false, why: e.message }; }
+        wire += part.length; trips++;
+        const m = await raceStop(ws.waitFor((x) => x.type === 'agent-put-done' && x.reqId === rid, 60000));
+        if (!m) return { ok: false, why: stopped || 'the relay did not answer in time' };
+        if (!m.ok) return { ok: false, why: String(m.error || 'the relay refused it'), exists: !!m.exists, full: m.full, needs: m.needs || undefined };
+        last = m;
+      }
+      return { ok: true, size: Number(last.size) || buf.length, full: last.full || p, replaced: !!last.replaced, sha256: last.sha256 };
+    };
     const roomNote = (text) => { try { ws.send({ type: 'chat', text }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} };
     const leaf = (p) => String(p || '').split(/[\\/]/).pop() || String(p || '');
     const saveLocal = (out, buf) => { const f = path.resolve(String(out)); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); return f; };
@@ -2298,11 +2347,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // card in front of the operator naming them, and -- only if a person presses Allow -- the visit moves onto
           // that grant (the work folder, the mission, the panel all carry on) and the old one is released. A no, or
           // nobody, leaves the visit exactly as it was. Access still never grows without a person pressing Allow.
-          const want = { control: grantControl || !!cmd.control, shell: grantShell || !!cmd.shell, term: grantTerm || !!cmd.terminal };
-          if (want.control === grantControl && want.shell === grantShell && want.term === grantTerm) reply({ ok: true, already: true, control: grantControl, shell: grantShell, terminal: grantTerm });
+          const want = { control: grantControl || !!cmd.control, shell: grantShell || !!cmd.shell, term: grantTerm || !!cmd.terminal,
+                         camera: grantCamera || !!cmd.camera, audio: grantAudio || !!cmd.audio, files: grantFiles || !!cmd.files };
+          const held = () => ({ control: grantControl, shell: grantShell, terminal: grantTerm, camera: grantCamera, audio: grantAudio, files: grantFiles });
+          if (want.control === grantControl && want.shell === grantShell && want.term === grantTerm && want.camera === grantCamera && want.audio === grantAudio && want.files === grantFiles) reply(Object.assign({ ok: true, already: true }, held()));
           else {
             const why = String(cmd.why || '').slice(0, 200);
-            const what = [want.shell && !grantShell ? 'run commands on this machine' : '', want.term && !grantTerm ? 'use the Terminal (it shows in the Terminal panel)' : '', want.control && !grantControl ? 'use the keyboard and mouse' : ''].filter(Boolean).join(' and ');
+            const what = [want.shell && !grantShell ? 'run commands on this machine' : '', want.term && !grantTerm ? 'use the Terminal (it shows in the Terminal panel)' : '', want.control && !grantControl ? 'use the keyboard and mouse' : '',
+                          want.camera && !grantCamera ? 'take photos with its camera' : '', want.audio && !grantAudio ? 'record what it is playing' : '',
+                          want.files && !grantFiles ? 'copy files to and from it' : ''].filter(Boolean).join(' and ');
             const ask = '🔑 **May I also ' + what + '?**' + (why ? ' ' + why : '') + ' A new Allow card is on its way — nothing changes unless you press Allow.';
             try { stopTyping(); ws.send({ type: 'chat', text: ask }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: ask, mine: true, sent: true }) + '\n'); } catch (_) {}
             signoffAsked = false;
@@ -2317,7 +2370,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             if (!d.ok) {
               const refused = d.code === 3 && d.retry === false;
               driveStatus(refused ? 'Carrying on with the access I have' : 'No new access');
-              reply({ ok: false, why: refused ? 'the operator said no -- carry on with the access you have' : 'not allowed: ' + d.why, refused, control: grantControl, shell: grantShell });
+              reply(Object.assign({ ok: false, why: refused ? 'the operator said no -- carry on with the access you have' : 'not allowed: ' + d.why, refused }, held()));
             } else {
               const old = ws;
               ws = d.ws; selfName = d.user; ws.onDead = wake; lastGoodRelay = d.relay || lastGoodRelay;
@@ -2325,6 +2378,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               attachWatch(ws); attachTaps(ws);
               frame = null; img = null; before = null;          // the held picture belonged to the old socket
               grantControl = want.control; grantShell = want.shell; grantTerm = want.term;
+              grantCamera = want.camera; grantAudio = want.audio; grantFiles = want.files;
               // the OLD grant goes: closing its socket releases it (a join-leave would leave it attached to the host)
               try { old.onDead = null; old.close(); } catch (_) {}
               try { fs.writeFileSync(path.join(dir, 'ready.json'), JSON.stringify({ w: SW, h: SH, host: HOST, at: Date.now(), relay: lastGoodRelay, control: grantControl, shell: grantShell })); } catch (_) {}
@@ -2332,7 +2386,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               // the old grant's release clears the watchers' panel; put it back once the relay has done so
               await sleep(500);
               try { sendDrive(); } catch (_) {}
-              reply({ ok: true, control: grantControl, shell: grantShell, terminal: grantTerm });
+              reply(Object.assign({ ok: true }, held()));
             }
           }
         } else if (cmd.do === 'windows' || cmd.do === 'focus' || cmd.do === 'launch' || cmd.do === 'controls') {
@@ -2457,7 +2511,53 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // each one, and a photo or a recording is asked for every time -- a yes only, never silence.
           const say = (t) => { if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus(t); };
           const why = cmd.why != null ? ' ' + String(cmd.why).slice(0, 300) : '';
-          if (!grantShell) reply({ ok: false, why: 'this runs a command on the host, and this visit was not granted that -- ask: {"do":"access","shell":1,"why":"..."}', needs: 'shell' });
+          // THROUGH THE RELAY when the visit holds that consent (the camera / audio / files line on the Allow card): the relay
+          // does it and tells the room; THROUGH EXEC when it holds the run-commands one; else refused, naming what to ask for
+          const scope = cmd.do === 'camera' ? 'camera' : cmd.do === 'audio' ? 'audio' : 'files';
+          const viaRelay = (scope === 'camera' && grantCamera) || (scope === 'audio' && grantAudio) || (scope === 'files' && grantFiles);
+          if (viaRelay) {
+            if (cmd.do === 'fetch') {
+              say('Copying a file from this machine');
+              const t = await relayTake('file', { path: String(cmd.path) }, 300000);
+              if (!t.ok) reply({ ok: false, why: t.why, needs: t.needs, busy: t.busy });
+              else { const out = saveLocal(cmd.out, t.buf); reply({ ok: true, from: String(cmd.path), file: out, size: t.buf.length, via: 'relay' }); }
+            } else if (cmd.do === 'send') {
+              let data = null;
+              try { data = fs.readFileSync(String(cmd.file)); } catch (e) { reply({ ok: false, why: 'cannot read ' + cmd.file + ' here: ' + e.message }); }
+              if (data && data.length > RELAY_PUT_MAX) reply({ ok: false, why: leaf(cmd.file) + ' is ' + humanBytes(data.length) + ' -- the relay puts up to ' + humanBytes(RELAY_PUT_MAX) + ' on a machine' });
+              else if (data) {
+                let go = true;
+                if (cmd.overwrite) {
+                  const a = await askRoom('📄 **May I replace ' + String(cmd.to) + '** on this machine with ' + leaf(cmd.file) + ' (' + humanBytes(data.length) + ')?' + why, { ms: Number(cmd.timeout) || 60000 });
+                  if (a.verdict !== 'approved') { go = false; reply({ ok: false, why: 'the room did not say yes to replacing ' + String(cmd.to) + ' -- nothing was written', verdict: a.verdict, replies: a.replies }); }
+                }
+                if (go) {
+                  say('Putting ' + leaf(cmd.file) + ' on this machine');
+                  const pr = await relayPut(String(cmd.to), data, !!cmd.overwrite);
+                  if (!pr.ok) reply(pr.exists ? { ok: false, exists: true, why: 'there is already a file at ' + (pr.full || cmd.to) + ' -- nothing was written. overwrite:1 asks the room before replacing it, or send it under another name' }
+                                              : { ok: false, why: pr.why, needs: pr.needs });
+                  else reply({ ok: true, to: pr.full, size: data.length, replaced: pr.replaced, via: 'relay' });
+                }
+              }
+            } else {
+              const cam = cmd.do === 'camera', secs = Math.max(1, Math.min(6, Math.round(Number(cmd.seconds) || 5)));
+              const q = cam ? '📷 **May I take one photo with this machine\'s camera**' + (cmd.device ? ' (' + String(cmd.device).slice(0, 60) + ')' : '') + '?' + why + ' Only a yes allows it.'
+                            : '🔊 **May I record ' + secs + ' seconds of what this machine is playing** (its sound output — not the microphone)?' + why + ' Only a yes allows it.';
+              const a = await askRoom(q, { ms: Number(cmd.timeout) || 60000, standing: false });
+              if (a.verdict !== 'approved') reply({ ok: false, why: a.verdict === 'cancelled' ? 'the room said no' : 'nobody said yes -- a ' + (cam ? 'photo' : 'recording') + ' is never taken without one', verdict: a.verdict, replies: a.replies });
+              else {
+                say(cam ? 'Taking a photo with the camera' : 'Recording what this machine is playing');
+                const t = await relayTake(cam ? 'camera' : 'audio', cam ? (cmd.device ? { device: String(cmd.device) } : {}) : { seconds: secs }, 120000);
+                if (!t.ok) reply({ ok: false, why: t.why, needs: t.needs, busy: t.busy });
+                else {
+                  const out = saveLocal(cmd.out, t.buf);
+                  capture(out, cmd.keep);   // like a screenshot: it leaves with the visit unless kept
+                  reply(Object.assign({ ok: true, file: out, size: t.buf.length, mime: t.mime, via: 'relay' }, cam ? {} : { seconds: t.seconds }));
+                }
+              }
+            }
+          }
+          else if (!grantShell) reply({ ok: false, why: 'this needs the ' + scope + ' consent (or the run-commands one), and this visit has neither -- ask: {"do":"access","' + scope + '":1,"why":"..."}', needs: scope });
           else if (cmd.do === 'fetch') {
             say('Copying a file from this machine');
             const st = await deskOp('stat', { path: String(cmd.path) });

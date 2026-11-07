@@ -61,6 +61,9 @@ file explains them.
   back"), `undo {id}` does it — their words are the yes; otherwise it asks — and a change put back by hand comes
   back as the how. `changes` lists them. Overwrites, deletes and re-set settings go back too — what an `exec` is about
   to change is kept first — but whole folder trees and wildcards do not: `confirm` before those.
+- **Ask for the camera, sound or files on their own** when that is all a job needs: `--camera`, `--audio`, `--files`
+  (or `access {camera:1}` later) — each its own line on the Allow card, and the relay does the work and tells the
+  room, with no "run commands" asked for.
 - **A photo or a recording only on a yes.** `camera` and `audio` ask the room themselves, every time, and nothing
   but a clear yes allows them — the standing yes does not, and silence never does. Say why in `why`. Files
   (`fetch`, `send`) are said in the room as they move; `send` never writes over a file unless you ask (`overwrite:1`).
