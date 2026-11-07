@@ -30,8 +30,16 @@ node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
 `captcha`. **Always ScreenMirror auto-type** (`keys` default — never `human:0` for DA fields; operator
 2026-11-07). Instant `human:0` was only for an earlier timing drill and is retired for signup.
 
-**Do not** invent email/password — take them from the operator (session chat or flags). **Do not** click
-reCAPTCHA yourself — `captcha` then **look again**.
+**Do not** invent email/password — take them from the operator (session chat or flags).
+
+**reCAPTCHA (34123 test, 2026-11-07 — operator asked agent to solve):**
+1. Click the checkbox (~look `584,432` / screen ~`876,648` after a look).
+2. If an image challenge opens (“Select all images with cars”): find the blue header bbox → grid
+   `top = header_bottom+2`, `cell = width/3` → click matching tiles → **VERIFY**.
+3. Prove green check in the widget, then click **Create an account** (~`959,768`).
+4. Success page: `…/users/sign_in?auth_state=confirm_email` — “Check your email” / account created.
+5. Default/production still: if the operator did **not** ask you to solve it, use `captcha` and wait —
+   never bypass without that ask.
 
 ## The plan (states you can prove)
 

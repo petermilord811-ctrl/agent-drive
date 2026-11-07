@@ -24,6 +24,9 @@ When creating a DataAnnotation.tech worker account (any host, especially 34123):
 
 7. **Budget:** auto-type is slower than `human:0` — ask `budget {more:1}` early if near the limit. Still avoid `type-text.js` (one key per command).
 
-8. **CAPTCHA:** never solve it. After `captcha` returns, **look again**. If still unchecked / “Please complete the recaptcha,” ask again or stop. Chat “solved” / “sign off” is not proof.
+8. **CAPTCHA:** default = hand to operator via `captcha` (never assume). **If the operator explicitly
+   asks you to solve it** (test/skill drill): click the checkbox; on image challenges, read the prompt,
+   map the 3×3 from the blue header, click matching tiles, VERIFY, look for the green check, then
+   Create an account. Proven 34123: “Select all images with cars” → account created → confirm-email page.
 
 9. After the visit: check → analyze → learn into the skill (not gotchas alone) → auto-commit/push.
