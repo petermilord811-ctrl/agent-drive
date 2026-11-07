@@ -2,12 +2,11 @@
 // @tool Fast DA signup through passwords+Terms — STOP before captcha (timing drill / MCP)
 // @run  node skills/create-dataannotation-account/fast-pre-captcha.js ./work --first F --last L --email E --password P
 //
-// Learned 34123 MCP (2026-11-07) — wall from open→pre-captcha can be ~15–25 s when:
-//  - Firefox focused; open worker_signup; Continue with Email (lx≈640,ly≈400 on 1280 look)
-//  - First name already focused → Tab between fields (no locate-fields)
-//  - keys human:0; Escape before password (Firefox manager popup)
-//  - Confirm password via Tab; Terms lx≈530,ly≈481; ONE end look; never touch captcha
-// Failures this path avoids: Chrome duplicates, field-band offset, append, type-text budget.
+// Learned 34123 MCP (2026-11-07) — open→pre-captcha plan alone ~9 s (iter2); wall <30 s typical:
+//  - Use SCREEN x/y in a blind plan (lx/ly REFUSED until a look) — Email CTA (960,600), Terms (795,722)
+//  - Firefox focused; open worker_signup; Continue with Email; Tab between fields
+//  - keys human:0; Escape before password (Firefox manager popup); ONE end look; never touch captcha
+// Failures this path avoids: Chrome duplicates, field-band offset, append, type-text, lx-without-look.
 const path = require('path');
 const { exchange } = require('../../core/cmd-file.js');
 
@@ -63,16 +62,15 @@ try {
 lap('start');
 focusFf();
 lap('focus');
-act({ do: 'open', url, wait: 1500, human: 0, intent: 'Open worker_signup' });
-lap('open');
-act({ do: 'click', lx: 640, ly: 400, intent: 'Continue with Email' });
-act({ do: 'pause', ms: 900 });
-lap('email-cta');
-
+// One host plan: screen pixels (1920x1080). Do not use lx/ly here — no look yet.
 act({
   do: 'plan',
-  intent: 'Name email continue',
+  intent: 'Open → Email CTA → name → passwords → Terms (stop before captcha)',
+  timeout: 90000,
   steps: [
+    { do: 'open', url, wait: 1500, human: 0 },
+    { do: 'click', x: 960, y: 600, intent: 'Continue with Email' },
+    { do: 'pause', ms: 800 },
     { do: 'keys', text: first, human: 0, show: 1 },
     { do: 'press', code: 'Tab' },
     { do: 'keys', text: last, human: 0, show: 1 },
@@ -80,24 +78,16 @@ act({
     { do: 'keys', text: email, human: 0, show: 1 },
     { do: 'press', code: 'Enter' },
     { do: 'pause', ms: 1500 },
-  ],
-});
-lap('name-step');
-
-act({
-  do: 'plan',
-  intent: 'Passwords + Terms (no captcha)',
-  steps: [
     { do: 'press', code: 'Escape' },
     { do: 'pause', ms: 150 },
     { do: 'keys', text: password, human: 0, secret: 1 },
     { do: 'press', code: 'Tab' },
     { do: 'keys', text: password, human: 0, secret: 1 },
     { do: 'pause', ms: 300 },
-    { do: 'click', lx: 530, ly: 481, intent: 'Check Terms' },
+    { do: 'click', x: 795, y: 722, intent: 'Check Terms' },
   ],
 });
-lap('passwords-terms');
+lap('plan-pre-captcha');
 
 const shot = path.join(dir, 'fast_pre_captcha.png');
 act({ do: 'look', out: shot, intent: 'Prove pre-captcha (do not touch captcha)' });

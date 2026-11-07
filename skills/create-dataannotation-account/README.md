@@ -25,9 +25,9 @@ node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
 # Or env: DA_FIRST DA_LAST DA_EMAIL DA_PASSWORD
 ```
 
-**MCP fast path (34123, proven):** after `Continue with Email`, First name is focused → `keys human:0` +
-`Tab` for Last/Email → Enter → Escape (Firefox pw popup) → password + Tab + confirm → Terms
-`(lx:530,ly:481)` → **stop**. Do not call `captcha`. Landing CTA ≈ `(640,400)` on a 1280 look.
+**MCP fast path (34123, proven ~9 s plan):** one `plan` with **screen** coords (not `lx/ly` until after a
+`look`): Email CTA `(960,600)` → Tab name/email → Enter → Escape → passwords → Terms `(795,722)` →
+**stop**. Do not call `captcha`. Iter2 fill plan **8796 ms**; target wall open→pre-captcha **<60 s**.
 
 **Do not** invent email/password — take them from the operator (session chat or flags). **Do not** click
 reCAPTCHA yourself — `captcha` then **look again**.
