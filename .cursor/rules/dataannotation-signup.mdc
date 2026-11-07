@@ -12,8 +12,8 @@ Full path = **4 big steps**. Orchestrator:
 |------|--------|
 | 1 Create account | `create-dataannotation-account` |
 | 2 Setup profile | `setup-dataannotation-profile` |
-| 3 Pick assessment | `pick-dataannotation-assessment` + `assessments.json` |
-| 4 Real assessment | `take-dataannotation-assessment` + `skills/.../problems/problems-{slug}.md` |
+| 3 Pick assessment | `pick-dataannotation-assessment` + `assessments.json` (**103 roles**) |
+| 4 Real assessment | `take-dataannotation-assessment` + `problems/problems-{role-slug}.md` |
 
 ## Step 1 — account
 
@@ -38,18 +38,20 @@ Full path = **4 big steps**. Orchestrator:
 
 1. Score resume: `node skills/dataannotation-assessment-workflow/pick-assessment.js --resume <txt>`
 2. Open the scored **role** (search), not the first grid card.
-3. Catalog DB: `skills/dataannotation-assessment-workflow/assessments.json` — update when roles change.
+3. Catalog must match Browse **All (103)** — one bank file per role card.
 
-## Step 4 — take assessment
+## Step 4 — take assessment / problem bank
 
-1. Capture **Bio → Requirements → Instructions → all questions** into
-   `skills/take-dataannotation-assessment/problems/problems-{slug}.md` only
-   (never workspace-root `DA assessments/problems-*.md`).
-2. Requirements = pay + time only; **always skip No-LLMs / anti-AI boilerplate**.
-3. If already captured: re-capture → `.capture.md` → `compare-problems.js --slug …` → update if
-   changed, then answer. Never skip re-catch on a repeat type.
-4. Answer the live assessment yourself; submit and prove with a look.
-5. Stubs/index: `node skills/take-dataannotation-assessment/init-problems-db.js`.
+1. Bank only under `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md`
+   (never workspace-root `DA assessments/problems-*.md`). **103** stubs via `init-problems-db.js`.
+2. **Clicks:** never guess. Fresh `look` → `locate-click.py continue` (or `find` + click card **body**,
+   not search-box text). Live miss: Continue guessed `y≈375`, real mid **`834,312`** (~60px low);
+   serve still said `ok`. See `CLICK.md`.
+3. **Bio loop:** overview Bio + sidebar pay only — **do not** press Start assessment (one attempt).
+   Overview pay beats grid pay when they disagree (Generalist grid `$50` vs overview `$20`).
+4. Full capture: Bio → Requirements (skip No-LLMs) → Instructions → all questions; re-catch +
+   `compare-problems.js --slug …` on repeats.
+5. Answer only after bank is current; submit and prove with a look.
 
 ## After every visit
 

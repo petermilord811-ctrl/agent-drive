@@ -179,10 +179,15 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   — account → profile → pick assessment → take assessment. Sub-skills:
   `create-dataannotation-account`, `setup-dataannotation-profile`, `pick-dataannotation-assessment`,
   `take-dataannotation-assessment`. Role DB: `assessments.json`. Password page: always ask chat vs
-  self-type. Step 4 bank lives only under
-  `skills/take-dataannotation-assessment/problems/problems-{slug}.md` (ignore workspace-root
-  `DA assessments/problems-*.md`). Re-catch + `compare-problems.js --slug …` before answering a
-  repeat type; skip No-LLMs text in banks.
+  self-type. Step 4 bank = **103 per-role** files under
+  `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md` (matches Browse
+  **All (103)**; ignore workspace-root `DA assessments/problems-*.md`). Re-catch +
+  `compare-problems.js --slug …` before answering a repeat; skip No-LLMs text in banks.
+- **Roles UI clicks (34123, 2026-11-07):** never guess `lx/ly`. SE `Continue` guessed ~`y=375`
+  missed; real mid **`834,312`** (~60px low) — serve still `ok`. Use
+  `locate-click.py continue` on the current look (`CLICK.md`). `find` often fails on Continue and
+  can hit the **search box** title — click the **card body** below search. Bio loop: no Start
+  assessment (one attempt). Sidebar overview pay wins over grid pay when they differ.
 - **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:

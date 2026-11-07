@@ -27,6 +27,13 @@ python -I skills/take-dataannotation-assessment/locate-click.py <look.png> role 
 |--------|----------|--------|
 | SE `Continue` | `834,312` | opened assessment intro (“Start assessment”) |
 | SE card (via `find` “Software”) | serve `at` | opened role overview |
+| Generalist / Data Scientist | click **card body** ~look `(400,420–450)`, not `find` on the name | opened overview |
+
+## Also learned (bio loop)
+
+- After typing a role into Search, `find "<Role>"` often matches the **search field**, not the card.
+- Grid pay can disagree with overview sidebar (Generalist: grid `$50` vs overview **`$20`**) — trust overview.
+- **Start assessment = one attempt** — bio loop never presses it.
 
 ## Bank
 
