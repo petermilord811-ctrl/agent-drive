@@ -5,6 +5,10 @@
 // move the other way. REAL round trips where the machine can run them: on Windows each undo runs the way the host
 // runs an exec (cmd.exe /c) against files in a temp folder -- moved, then put back, then refused when the old place
 // is taken; sh the same where there is one (Linux, or Git's sh on Windows). The temp folders are removed.
+// CAPTURE BEFORE CHANGE: what prepare() reads first for each kind of change, and what record() makes of the answers
+// (put back, refused, no change, why not); supersede() and cleanup(). For real: the serve's part played here --
+// captures, command, captures, record, undo -- for overwrites, deletes, creations, copies and moves over a file, the
+// registry (in a test key of its own, removed), icacls, a refused junction or link, the cap, and cleanup.
 //   node tests/undo.js
 'use strict';
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -31,7 +35,9 @@ const inner = (cmd) => { const m = /^powershell -NoProfile -NonInteractive -Comm
 // ---- what a journal entry is --------------------------------------------------------------------------------
 {
   const e = W(r`move C:\a.txt D:\Archive`)[0];
-  ok(e && JSON.stringify(Object.keys(e)) === JSON.stringify(['id', 'at', 'verb', 'what', 'md', 'kind', 'reversible', 'undo']), 'an entry is {id, at, verb, what, md, kind, reversible, undo}');
+  ok(e && JSON.stringify(Object.keys(e)) === JSON.stringify(['id', 'at', 'verb', 'what', 'md', 'kind', 'reversible', 'undo', 'paths']), 'an entry is {id, at, verb, what, md, kind, reversible, undo, paths}');
+  ok(JSON.stringify(e.paths) === JSON.stringify({ os: 'windows', from: [r`C:\a.txt`], to: [r`D:\Archive`] }), 'paths: where it acted -> ' + JSON.stringify(e.paths));
+  ok(!('paths' in rec({ do: 'keys', text: 'x' }, 'windows')) && !('paths' in rec({ do: 'changed', what: 'x' }, 'windows')) && !('paths' in W('git pull')[0]), 'typed text, a declared change, a command it cannot name: no paths');
   ok(e.id === 'c1' && e.at === new Date(NOW).toISOString() && e.verb === 'exec' && e.kind === 'exec' && e.reversible === true, 'id c<seq>, at from ctx.now, verb, kind');
   ok(e.undo && e.undo.kind === 'exec' && e.undo.os === 'windows' && typeof e.undo.cmd === 'string' && e.undo.risky === false && /moves it back/.test(e.undo.note), 'a move\'s undo: {kind:exec, os, cmd, risky:false, note}');
   const many = W(r`md C:\x C:\y C:\z`, { seq: 7 });
@@ -544,6 +550,334 @@ const inner = (cmd) => { const m = /^powershell -NoProfile -NonInteractive -Comm
 }
 
 // ============================================================================================================
+// CAPTURE BEFORE CHANGE, offline: what prepare() reads first, and what record() makes of the answers
+// ============================================================================================================
+const prep = (c, osName, ctx) => undo.prepare({ do: 'exec', cmd: c }, Object.assign({ os: osName, now: NOW, seq: 1, visit: 'v1' }, ctx || {}));
+const kindsOf = (p) => (p ? p.captures.map((k) => k.kind + '/' + k.when).join(',') : 'null');
+// a capture's answer as the host prints it: noise, then the one JSON line
+const answer = (k, o) => ({ id: k.id, ok: !(o && o.ok === false), output: 'Microsoft Windows [Version 10]\r\n' + JSON.stringify(Object.assign({ undo: k.id, ok: true }, o)) + '\r\n' });
+const withCaps = (c, osName, captured, ctx) => list(undo.record({ do: 'exec', cmd: c }, { ok: true }, Object.assign({ os: osName, now: NOW, seq: 1, visit: 'v1', captured }, ctx || {})));
+const H64 = (ch) => ch.repeat(64);
+const safeInCmd = (cmd) => { const sc = inner(cmd); return sc != null && !/["%\r\n\u0000]/.test(sc) && cmd.length <= 8000; };
+{
+  // ---- what is read first, for what
+  const want = [
+    ['windows', PS(r`Set-Content -Path C:\x\a.txt -Value hi`), 'backup/before,stamp/after'],
+    ['windows', r`echo hi > C:\x\a.txt`, 'backup/before,stamp/after'],
+    ['windows', PS(r`'x' | Out-File C:\x\a.txt; Add-Content C:\x\b.txt more; Clear-Content C:\x\c.txt`), 'backup/before,stamp/after,backup/before,stamp/after,backup/before,stamp/after'],
+    ['windows', r`del C:\x\a.txt`, 'backup/before'],
+    ['windows', PS(r`Remove-Item -Recurse -Force C:\x\a`), 'backup/before'],
+    ['windows', r`copy /Y C:\a.txt C:\b.txt`, 'backup/before,stamp/after'],
+    ['windows', PS(r`Copy-Item -Force C:\a.txt D:\dir`), 'backup/before,stamp/after'],
+    ['windows', r`move /Y C:\a.txt C:\b.txt`, 'backup/before'],
+    ['windows', PS(r`New-Item -Force -ItemType File C:\x\f.txt`), 'backup/before,stamp/after'],
+    ['windows', PS(r`New-Item -Force -ItemType Directory C:\x\d`), 'exists/before'],
+    ['windows', r`reg add HKCU\Software\X /v N /d 1 /f`, 'value/before,value/after'],
+    ['windows', PS(r`Set-ItemProperty -Path HKCU:\Software\X -Name N -Value 1`), 'value/before,value/after'],
+    ['windows', PS(r`New-ItemProperty -Path HKCU:\Software\X -Name N -Value 1 -Force`), 'value/before,value/after'],
+    ['windows', r`reg delete HKLM\Software\X /v N /f /reg:64`, 'value/before'],
+    ['windows', PS(r`Remove-ItemProperty -Path HKCU:\Software\X -Name N`), 'value/before'],
+    ['windows', r`reg add HKCU\Software\X`, 'exists/before'],
+    ['windows', PS('Set-Service -Name Spooler -StartupType Disabled'), 'value/before,value/after'],
+    ['windows', 'sc config Spooler start= disabled', 'value/before,value/after'],
+    ['windows', r`icacls C:\x\a.txt /grant *S-1-1-0:R`, 'value/before,value/after'],
+    ['windows', r`echo a > C:\x\f.txt & echo b >> C:\x\f.txt`, 'backup/before,stamp/after'],
+    ['linux', 'echo hi > /srv/a.txt', 'backup/before,stamp/after'],
+    ['linux', "sed -i 's/a/b/' /etc/x.conf; truncate -s 0 /srv/a.log", 'backup/before,stamp/after,backup/before,stamp/after'],
+    ['linux', 'rm /srv/a.txt', 'backup/before'],
+    ['linux', 'cp a.txt b.txt', 'backup/before,stamp/after'],
+    ['linux', 'mv a.txt b.txt', 'backup/before'],
+    ['linux', 'touch /srv/a', 'backup/before,stamp/after'],
+    ['linux', 'mkdir -p /srv/a/b', 'exists/before'],
+    ['linux', 'chmod 600 /srv/a; chown www:www /srv/b', 'value/before,value/after,value/before,value/after'],
+    ['linux', 'systemctl enable --now nginx', 'value/before,value/after'],
+    ['linux', 'sudo systemctl disable nginx; sudo tee /etc/motd', 'value/before,value/after,backup/before,stamp/after'],
+  ];
+  for (const [o, c, k] of want) ok(kindsOf(prep(c, o)) === k, 'prepare ' + o + ': ' + c + ' -> ' + kindsOf(prep(c, o)) + ' (want ' + k + ')');
+  for (const [o, c] of [['windows', 'dir C:\\'], ['windows', r`md C:\y`], ['windows', r`rd /s /q C:\y`], ['windows', r`del /s C:\x\a.tmp`], ['windows', PS(r`Remove-Item C:\x\*.txt`)],
+    ['windows', PS(r`Get-ChildItem C:\x | Remove-Item`)], ['windows', PS(r`Set-Content -Path $f -Value 1`)], ['windows', r`icacls C:\x /T /grant *S-1-1-0:R`], ['windows', r`icacls C:\x\*.txt /grant *S-1-1-0:R`],
+    ['windows', r`reg delete HKCU\Software\X /va /f`], ['windows', r`reg delete HKCU\Software\X /f`], ['windows', 'net stop Spooler'], ['windows', PS(r`'x' | Out-File C:\n.txt -NoClobber`)],
+    ['windows', PS(r`New-Item -ItemType File C:\x\new.txt`)], ['windows', 'taskkill /IM notepad.exe'], ['linux', 'rm -rf $(pwd)/x'], ['linux', 'chmod -R 755 /srv'], ['linux', 'mkdir /srv/new'],
+    ['linux', 'mv *.txt /dst'], ['linux', 'sudo cp a ~/b'], ['linux', 'sudo rm "$HOME/x"'], ['linux', 'git pull'], ['linux', 'systemctl restart nginx'], ['linux', 'cat /etc/hosts']])
+    ok(prep(c, o) === null, 'nothing to read first: ' + c);
+  ok(undo.prepare({ do: 'terminal', input: 'echo hi > /srv/a' }, { os: 'linux' }) === null && undo.prepare({ do: 'keys', text: 'x' }, {}) === null, 'a Terminal line and typing: nothing prepared');
+  // the shape of a capture
+  let p = prep(PS(r`Set-Content -Path C:\x\a.txt -Value hi`), 'windows');
+  const k0 = p.captures[0];
+  ok(JSON.stringify(Object.keys(k0)) === JSON.stringify(['id', 'kind', 'when', 'os', 'cmd', 'what', 'maxBytes']) && JSON.stringify(Object.keys(p.captures[1])) === JSON.stringify(['id', 'kind', 'when', 'os', 'cmd', 'what']),
+    'a capture is {id, kind, when, os, cmd, what, maxBytes?}');
+  ok(p.captures.every((k) => /^k\d+-[0-9a-f]{8}$/.test(k.id)) && k0.os === 'windows' && k0.maxBytes === 16 * 1024 * 1024, 'ids k<n>-<8 hex>; the cap 16 MB unless set');
+  ok(/^keep a copy of C:\\x\\a\.txt, if it is a file of at most 16 MB, before the command changes it$/.test(k0.what) && /^read what is at C:\\x\\a\.txt after the command/.test(p.captures[1].what), 'what each does, in a sentence -> ' + k0.what);
+  ok(JSON.stringify(prep(PS(r`Set-Content -Path C:\x\a.txt -Value hi`), 'windows')) === JSON.stringify(p), 'the same command, the same captures (record() finds them again by id)');
+  ok(prep('echo a > /x/a', 'linux').captures[0].id !== prep('echo a > /x/b', 'linux').captures[0].id, 'an id names what it reads: another file, another id');
+  ok(prep('echo a > /x/a', 'linux', { maxBytes: 1000 }).captures[0].maxBytes === 1000 && prep('echo a > /x/a', 'linux', { maxBytes: 1e12 }).captures[0].maxBytes === 64 * 1024 * 1024 &&
+     prep('echo a > /x/a', 'linux', { maxBytes: -5 }).captures[0].maxBytes === 0 && prep('echo a > /x/a', 'linux', { maxBytes: 'x' }).captures[0].maxBytes === 16 * 1024 * 1024, 'ctx.maxBytes moves the cap, never past 64 MB');
+  ok(prep('echo a > /x/a', 'linux', { visit: 'abc-1' }).captures[0].cmd.includes('/abc-1') && prep('echo a > /x/a', 'linux', { visit: 'a/../b' }).captures[0].cmd.includes('/visit') &&
+     prep('echo a > /x/a', 'linux', { visit: "x'; rm -rf /" }).captures[0].cmd.includes('/visit'), 'ctx.visit names the folder; anything but [A-Za-z0-9_-] is not used');
+  // every Windows capture: one line, nothing in it cmd.exe would act on; every one inside 8,000 characters
+  let unsafe = 0, longest = 0;
+  for (const [o, c] of want) for (const k of prep(c, o).captures) { longest = Math.max(longest, k.cmd.length); if (o === 'windows' ? !safeInCmd(k.cmd) : /[\r\n\u0000]/.test(k.cmd)) unsafe++; }
+  ok(unsafe === 0 && longest <= 8000, 'every capture is one line, safe inside cmd.exe\'s quotes (' + unsafe + ' not), the longest ' + longest + ' characters');
+  const nasty = prep(ENC('Set-Content -LiteralPath ' + psq('C:\\d\\Bob’s 100% "x" & y.txt') + ' -Value 1'), 'windows');
+  ok(nasty && nasty.captures.every((k) => safeInCmd(k.cmd)) && inner(nasty.captures[0].cmd).includes("Bob’’s 100' + [char]37 + ' ' + [char]34 + 'x' + [char]34 + ' & y.txt"), 'a name with ’ % " &: quoted as every undo is');
+  ok(prep(PS('Set-Content -LiteralPath C:\\' + 'x'.repeat(7900) + ' -Value 1'), 'windows') === null, 'a capture that would not fit one command line is not offered');
+  // never throws, and every capture has its shape
+  let threw = 0, shapes = 0;
+  const alphabet = ['a', ' ', '/', '\\', 'C:\\', '"', "'", '’', '`', '$', '%', '&', '|', ';', '(', ')', '{', '}', '*', '>', '>>', '\n', '~', '-', 'echo x > ', 'del ', 'rm ', 'cp a ', 'Set-Content ',
+    'reg add HKCU\\X /v N /f ', 'icacls ', '/grant ', 'chmod 600 ', 'mkdir -p ', 'sc config s start= auto ', 'systemctl enable ', 'touch ', 'mv a ', 'sudo ', '$env:', '%TEMP%', 'é', '\u0000'];
+  let seed = 4242;
+  const rnd = (n) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+  for (let i = 0; i < 1500; i++) {
+    let s = '';
+    for (let j = 0, n = 1 + rnd(10); j < n; j++) s += alphabet[rnd(alphabet.length)];
+    for (const o of ['windows', 'linux', '']) {
+      try {
+        const q = undo.prepare({ do: 'exec', cmd: s }, { os: o, visit: 'v' });
+        for (const k of q ? q.captures : []) {
+          if (!/^k\d+-[0-9a-f]{8}$/.test(k.id) || typeof k.cmd !== 'string' || !k.cmd || k.cmd.length > 8000 || typeof k.what !== 'string') shapes++;
+          if (k.os === 'windows' && !safeInCmd(k.cmd)) shapes++;
+        }
+        // and record() with answers of every wrong shape
+        const junk = (q ? q.captures : []).map((k, j) => ({ id: k.id, ok: rnd(2) === 0, output: [null, '', '{', JSON.stringify({ undo: k.id, ok: true, was: 'file', size: -1, in: 1, at: 5, sig: 7 }), JSON.stringify({ undo: k.id }), JSON.stringify({ undo: k.id, ok: true, was: 'file', size: 3, hash: 'x', bak: '../../etc/passwd', crc: '1', at: { was: 'file' } })][(j + i) % 6] }));
+        for (const x of list(undo.record({ do: 'exec', cmd: s }, { ok: true }, { os: o, captured: junk.concat([5, null, { id: 'k1-00000000' }]) }))) {
+          if (typeof x.what !== 'string' || typeof x.reversible !== 'boolean') shapes++;
+          if (x.undo && x.undo.kind === 'exec' && x.undo.os === 'windows' && /^powershell /.test(x.undo.cmd) && !safeInCmd(x.undo.cmd)) shapes++;
+        }
+      } catch (e) { threw++; if (threw < 4) console.error('  threw on ' + JSON.stringify(s) + ': ' + e.stack); }
+    }
+  }
+  ok(threw === 0 && shapes === 0, 'prepare and record with any captured answer never throw, and keep their shapes (' + threw + ' threw, ' + shapes + ' misshapen)');
+}
+{
+  // ---- record() with the answers: a file -------------------------------------------------------------------------
+  const WBAK = (k, o) => answer(k, Object.assign({ in: 0, full: 'C:\\x\\a.txt', was: 'file', size: 8, attr: 33, ct: '133000000000000000', wt: '133000000000000001',
+    bak: 'C:\\Windows\\Temp\\agent-drive-undo\\v1\\' + k.id + '-0123456789ab.bak', hash: H64('A') }, o));
+  const LEFT = { was: 'file', size: 9, attr: 32, ct: '133000000000000000', wt: '133000000000000009', hash: H64('B') };
+  const stamp = (k, at, inn) => answer(k, { full: 'C:\\x\\a.txt', at, inn });
+  let c = PS(r`Set-Content -Path C:\x\a.txt -Value hi`);
+  let p = prep(c, 'windows');
+  let e = withCaps(c, 'windows', [WBAK(p.captures[0]), stamp(p.captures[1], LEFT)]);
+  let sc = inner(back(e[0]));
+  ok(e.length === 1 && e[0].what === r`wrote C:\x\a.txt (with Set-Content: what was in it is replaced)` && e[0].reversible && !e[0].undo.risky, 'an overwrite, read before and after: it can be put back -> ' + e[0].what);
+  ok(sc.includes(H64('A')) && sc.includes(H64('B')) && sc.includes('($i.Length -ne 9)') && sc.includes("$w=[IO.File]::Open($t,'Open','Write','None')") && sc.includes('FromFileTimeUtc(133000000000000001)') &&
+     sc.includes('[IO.FileAttributes]33') && sc.indexOf(H64('A')) < sc.indexOf(H64('B')) && sc.indexOf(H64('B')) < sc.indexOf('SetLength(0)'), 'the restore: the copy checked against its hash, the file against what was left, then the same bytes written, its time and attributes back');
+  ok(/^puts back what C:\\x\\a\.txt held before \(8 bytes, from the copy kept of it\) — only if it is still exactly as this change left it$/.test(e[0].undo.note) && safeInCmd(back(e[0])), 'its note -> ' + e[0].undo.note);
+  ok(JSON.stringify(e[0].backup) === JSON.stringify({ os: 'windows', path: 'C:\\Windows\\Temp\\agent-drive-undo\\v1\\' + p.captures[0].id + '-0123456789ab.bak', bytes: 8 }) &&
+     JSON.stringify(e[0].paths) === JSON.stringify({ os: 'windows', made: [r`C:\x\a.txt`] }), 'backup: where the copy is (for cleanup); paths: where it changed');
+  ok(JSON.stringify(withCaps(c, 'windows', [])) === JSON.stringify(W(c)) && JSON.stringify(withCaps(c, 'windows', [{ id: 'k9-00000000', ok: true, output: '{}' }])) === JSON.stringify(W(c)), 'no answers, or none of its own: as without');
+  // the 'after' read missing: the copy is kept, said where, but nothing is put back for you
+  e = withCaps(c, 'windows', [WBAK(p.captures[0])]);
+  ok(!e[0].reversible && e[0].undo.kind === 'hint' && e[0].undo.text.includes('a copy of what was there before is kept at C:\\Windows\\Temp\\agent-drive-undo\\v1\\') && /what the command left was not read/.test(e[0].undo.text) && e[0].backup, 'no after read: not put back for you; where the copy is -> ' + e[0].undo.text);
+  // the same bytes after as before: no change at all
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [WBAK(p.captures[0]), stamp(p.captures[1], { was: 'file', size: 8, attr: 33, ct: '133000000000000000', wt: '133000000000000001', hash: H64('A') })] }) === null,
+    'the same bytes and time after as before: no change, no entry');
+  // nothing was there: it CREATED the file -- deleted, only if still as made
+  c = r`echo hi > C:\x\new.txt`;
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [answer(p.captures[0], { in: 0, was: 'none' }), stamp(p.captures[1], LEFT)]);
+  ok(e[0].what === r`created the file C:\x\new.txt (with >)` && e[0].reversible && e[0].undo.risky && inner(back(e[0])).endsWith('[IO.File]::Delete($t)') && inner(back(e[0])).includes(H64('B')) && !e[0].backup,
+    'nothing was there: "created the file", its undo deletes it only if unchanged -> ' + e[0].what);
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [answer(p.captures[0], { in: 0, was: 'none' }), stamp(p.captures[1], { was: 'none' })] }) === null, 'nothing there before or after: no entry');
+  // a delete: made again from the copy, only if nothing is there
+  c = r`del C:\x\a.txt`;
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [WBAK(p.captures[0])]);
+  sc = inner(back(e[0]));
+  ok(e[0].what === r`deleted C:\x\a.txt` && e[0].reversible && !e[0].undo.risky && sc.includes("is there again") && sc.includes("'CreateNew'") && sc.includes('SetCreationTimeUtc') && /only if nothing is there now$/.test(e[0].undo.note),
+    'a delete: made again from its copy (CreateNew, times, attributes), never over anything');
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [answer(p.captures[0], { in: 0, was: 'none' })] }) === null, 'a delete of nothing: no entry');
+  // what is never copied, and why
+  const why = (o) => { const x = withCaps(c, 'windows', [answer(p.captures[0], o)])[0]; return x.reversible ? 'REVERSIBLE' : x.undo.text; };
+  ok(/^del does not use the Recycle Bin — .* \(no copy was kept: it was 40 MB, over the 16 MB a copy is kept of\)$/.test(why({ in: 0, was: 'file', size: 40 * 1048576, attr: 32, ct: '1', wt: '1', skip: 'big', cap: 16 * 1048576 })), 'too big: said, with the cap -> ' + why({ in: 0, was: 'file', size: 40 * 1048576, attr: 32, ct: '1', wt: '1', skip: 'big', cap: 16777216 }));
+  ok(/no copy was kept: it was a folder, and a folder is never copied/.test(why({ in: 0, was: 'dir' })) && /no copy was kept: it was a link/.test(why({ in: 0, was: 'link' })), 'a folder, a link: never copied, said');
+  ok(/not this account’s alone/.test(why({ in: 0, was: 'file', size: 3, attr: 32, ct: '1', wt: '1', skip: 'unsafe' })) && /already fill the 256 MB/.test(why({ in: 0, was: 'file', size: 3, attr: 32, ct: '1', wt: '1', skip: 'full' })), 'an unsafe folder, a full visit: said');
+  ok(/no copy of it was kept: Access to the path is denied\.\)$/.test(why({ ok: false, why: 'Access to the path is denied.' })), 'a capture that failed: its why');
+  ok(/no copy of it was kept: its answer could not be read \(powershell is not recognized\)\)$/.test(withCaps(c, 'windows', [{ id: p.captures[0].id, ok: false, output: 'powershell is not recognized\r\n' }])[0].undo.text), 'an answer with no JSON: what it said instead');
+  ok(/no copy of it was kept: its answer could not be read\)$/.test(why({ in: 0, was: 'file', size: 3, attr: 32, ct: '1', wt: '1', bak: 'C:\\elsewhere\\x.bak', hash: 'zz' }).replace('REVERSIBLE', '')) || why({ in: 0, was: 'file', size: 3, attr: 32, ct: '1', wt: '1', bak: 'C:\\elsewhere\\x.bak', hash: H64('A') }) !== 'REVERSIBLE',
+    'a kept copy not in a copies folder, or with no hash, is not put back from');
+  // a copy INTO a folder, over a file there: the answer says which (in:1), and that is what is put back
+  c = PS(r`Copy-Item -Force C:\src\a.txt D:\dir`);
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [WBAK(p.captures[0], { in: 1, full: r`D:\dir\a.txt` }), stamp(p.captures[1], { was: 'dir' }, LEFT)]);
+  ok(e[0].what === r`copied C:\src\a.txt to D:\dir, replacing the file that was there` && e[0].reversible && inner(back(e[0])).includes(r`$t='D:\dir\a.txt'`) && JSON.stringify(e[0].paths.made) === JSON.stringify([r`D:\dir\a.txt`]),
+    'a copy into a folder, over a file: put back exactly there -> ' + e[0].what);
+  // a move that replaced a file: moved back, then the replaced one put back
+  c = r`move /Y C:\a.txt C:\b.txt`;
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [WBAK(p.captures[0], { full: r`C:\b.txt` })]);
+  sc = inner(back(e[0]));
+  ok(e[0].what === r`moved C:\a.txt to C:\b.txt, replacing the file that was there` && e[0].reversible && sc.indexOf('Move-Item -LiteralPath $t -Destination $back') < sc.indexOf("'CreateNew'") && sc.indexOf(H64('A')) < sc.indexOf('Move-Item'),
+    'a move over a file: the copy checked first, the move moved back, then the file it replaced put back');
+  ok(JSON.stringify(withCaps(c, 'windows', [answer(p.captures[0], { in: 0, was: 'none' })]).map((x) => [x.what, back(x)])) === JSON.stringify(W(c).map((x) => [x.what, back(x)])), 'a move that replaced nothing: its own undo');
+  // two changes to one file in one command: the last carries the undo, the first is put back with it
+  c = r`echo a > C:\x\f.txt & echo b >> C:\x\f.txt`;
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [WBAK(p.captures[0]), stamp(p.captures[1], LEFT)]);
+  ok(e.length === 2 && !e[0].reversible && /the same command changed it again after this/.test(e[0].undo.text) && e[1].what === r`added to the end of C:\x\f.txt` && e[1].reversible, 'two changes to one file: the last puts back both');
+  // Linux: the same, with sh and cksum
+  const LBAK = (k, o) => answer(k, Object.assign({ was: 'file', in: 0, size: 8, crc: '123', mode: '-rwsr-x--T', uid: 1000, gid: 100, bak: '/tmp/agent-drive-undo-1000/v1/' + k.id + '-AbCdEf123456' }, o));
+  c = "echo hi > '/srv/it'\\''s.txt'";
+  p = prep(c, 'linux');
+  e = withCaps(c, 'linux', [LBAK(p.captures[0]), answer(p.captures[1], { at: { was: 'file', crc: '456', size: '9' }, inn: null })]);
+  ok(e[0].reversible && back(e[0]) === "t='/srv/it'\\''s.txt'; b='/tmp/agent-drive-undo-1000/v1/" + p.captures[0].id + "-AbCdEf123456'; " +
+     '[ -f "$b" ] || { echo "the copy kept of it ($b) is gone, so nothing was put back" >&2; exit 1; }; [ "$(cksum < "$b")" = \'123 8\' ] || { echo "the copy kept of it ($b) is not what was kept, so nothing was put back" >&2; exit 1; }; ' +
+     'if [ -L "$t" ] || [ ! -f "$t" ] || [ "$(cksum < "$t")" != \'456 9\' ]; then echo "$t was changed again after this change, so it was left as it is" >&2; exit 1; fi; cat < "$b" > "$t" && touch -r "$b" "$t" && chmod 5750 -- "$t"',
+     'sh: the copy checked by cksum, the file against what was left, then put back with its mode (-rwsr-x--T is 5750) -> ' + back(e[0]));
+  c = 'sudo rm /etc/x.conf';
+  p = prep(c, 'linux');
+  e = withCaps(c, 'linux', [LBAK(p.captures[0])]);
+  ok(e[0].reversible && back(e[0]).startsWith("sudo -n sh -c '") && back(e[0]).includes('set -C') && back(e[0]).includes("chown 1000:100 -- \"$t\"") && e[0].backup.sudo && e[0].backup.sudo.tool === 'sudo', 'sudo rm: made again under sudo, owner too; its copy noted as made under sudo');
+  ok(p.captures[0].cmd.startsWith("sudo -n sh -c '"), 'and the capture ran under sudo as well');
+  c = 'touch /srv/a';
+  p = prep(c, 'linux');
+  e = withCaps(c, 'linux', [LBAK(p.captures[0]), answer(p.captures[1], { at: { was: 'file', crc: '123', size: '8' }, inn: null })]);
+  ok(e[0].what === 'changed the date of /srv/a (touch)' && e[0].reversible, 'touch of a file that was there: only its date -- put back');
+  e = withCaps(c, 'linux', [answer(p.captures[0], { was: 'none', in: 0 }), answer(p.captures[1], { at: { was: 'file', crc: '4294967295', size: '0' }, inn: null })]);
+  ok(e[0].what === 'created the file /srv/a (touch)' && e[0].undo.risky && back(e[0]).endsWith('rm -f -- "$t"'), 'touch where nothing was: it made the file');
+}
+{
+  // ---- record() with the answers: the registry, services, units, permissions ---------------------------------------
+  let c = r`reg add HKCU\Software\X /v N /t REG_DWORD /d 5 /f`;
+  let p = prep(c, 'windows');
+  ok(/^read the registry value N in HKEY_CURRENT_USER\\Software\\X before the command changes it$/.test(p.captures[0].what) && p.captures.every((k) => safeInCmd(k.cmd)), 'a registry value: read before and after -> ' + p.captures[0].what);
+  const val = (k, o) => answer(k, Object.assign({ key: 1, sig: H64('C'), type: 'DWord', count: 0, data: 'AQAAAA==' }, o));
+  let e = withCaps(c, 'windows', [val(p.captures[0]), val(p.captures[1], { sig: H64('D') })]);
+  let sc = inner(back(e[0]));
+  ok(e[0].what === r`set the registry value N in HKCU\Software\X` && e[0].reversible && !e[0].undo.risky && sc.includes("if ((Sg $k $n) -ne '" + H64('D') + "')") && sc.includes("$k.SetValue($n,[BitConverter]::ToInt32([Convert]::FromBase64String('AQAAAA=='),0),'DWord')"),
+    'set: back to its old type and data, only if it is still what was set');
+  e = withCaps(c, 'windows', [val(p.captures[0], { key: 0, sig: '-' }), val(p.captures[1], { sig: H64('D') })]);
+  sc = inner(back(e[0]));
+  ok(e[0].what === r`added the registry value N to HKEY_CURRENT_USER\Software\X (and made the key)` && e[0].undo.risky && sc.includes('$k.DeleteValue($n)') && sc.includes("$h.DeleteSubKey('Software\\X')"),
+    'added, with the key: deleted again, and the key if nothing else is in it -> ' + e[0].what);
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [val(p.captures[0]), val(p.captures[1])] }) === null, 'set to the value it had: no entry');
+  for (const [type, data, n, expr] of [['String', 'aABpAA==', 0, "[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aABpAA=='))"], ['ExpandString', 'JQA=', 0, "[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('JQA='))"],
+    ['MultiString', 'YQAAAGIA', 2, "[string[]]([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('YQAAAGIA')).Split([char]0))"], ['MultiString', '', 0, '[string[]]@()'],
+    ['QWord', 'AQAAAAAAAAA=', 0, "[BitConverter]::ToInt64([Convert]::FromBase64String('AQAAAAAAAAA='),0)"], ['Binary', 'AP8=', 0, "[Convert]::FromBase64String('AP8=')"]]) {
+    e = withCaps(c, 'windows', [val(p.captures[0], { type, data, count: n }), val(p.captures[1], { sig: H64('D') })]);
+    ok(inner(back(e[0])).includes('$k.SetValue($n,' + expr + ",'" + type + "')"), 'a ' + type + ' value goes back as itself');
+  }
+  ok(/a type \(Unknown\) this cannot write back/.test(withCaps(c, 'windows', [val(p.captures[0], { type: 'Unknown' }), val(p.captures[1], { sig: H64('D') })])[0].undo.text) &&
+     /over 4 KB/.test(withCaps(c, 'windows', [val(p.captures[0], { data: undefined, skip: 'long' }), val(p.captures[1], { sig: H64('D') })])[0].undo.text), 'a type it cannot write, a value over 4 KB: said');
+  ok(!withCaps(c, 'windows', [val(p.captures[0])])[0].reversible, 'no after read: not set back for you');
+  c = PS(r`Remove-ItemProperty -Path HKCU:\Software\X -Name N`);
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [val(p.captures[0])]);
+  ok(e[0].what === r`deleted the registry value N in HKCU:\Software\X` && e[0].reversible && inner(back(e[0])).includes("if ((Sg $k $n) -ne '-')") && /only if it has no value now$/.test(e[0].undo.note), 'a deleted value: put back, only if there is none now');
+  c = r`reg add HKCU\Software\New`;
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [answer(p.captures[0], { was: 'none' })]);
+  ok(e[0].what === r`created the registry key HKEY_CURRENT_USER\Software\New` && e[0].reversible && /only while nothing is in it/.test(e[0].undo.note), 'reg add of a new key: deleted again while empty');
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [answer(p.captures[0], { was: 'key' })] }) === null, 'reg add of a key that was there: no entry');
+  c = 'sc config Spooler start= disabled';
+  p = prep(c, 'windows');
+  e = withCaps(c, 'windows', [answer(p.captures[0], { name: 'Spooler', start: 2, delayed: 1 }), answer(p.captures[1], { name: 'Spooler', start: 4, delayed: 0 })]);
+  sc = inner(back(e[0]));
+  ok(e[0].what === 'set the service Spooler to start disabled (it was Automatic (Delayed Start))' && e[0].reversible && sc.includes('& sc.exe config $n start= delayed-auto') && sc.includes("-ne 4) -or ([int]$k.GetValue('DelayedAutostart',0) -ne 0)"),
+    'a startup type: set back with sc.exe, only if still as left -> ' + e[0].what);
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'windows', captured: [answer(p.captures[0], { name: 'Spooler', start: 4 }), answer(p.captures[1], { name: 'Spooler', start: 4 })] }) === null, 'a startup type set to what it was: no entry');
+  c = 'systemctl enable --now nginx';
+  p = prep(c, 'linux');
+  const unit = (k, en, act) => answer(k, { enabled: en, active: act });
+  e = withCaps(c, 'linux', [unit(p.captures[0], 'disabled', 'inactive'), unit(p.captures[1], 'enabled', 'active')]);
+  ok(e[0].reversible && back(e[0]) === "u='nginx'; e=$(systemctl is-enabled \"$u\" 2>/dev/null); if [ \"$e\" != 'enabled' ]; then echo \"the service $u was changed again after this change, so it was left as it is\" >&2; exit 1; fi; " +
+     "x=$(systemctl is-active \"$u\" 2>/dev/null); if [ \"$x\" != 'active' ]; then echo \"the service $u was started or stopped again after this change, so it was left as it is\" >&2; exit 1; fi; systemctl disable \"$u\" || exit 1; systemctl stop \"$u\"",
+     'systemctl enable --now: disabled and stopped again, only if still as left -> ' + back(e[0]));
+  e = withCaps(c, 'linux', [unit(p.captures[0], 'disabled', 'active'), unit(p.captures[1], 'enabled', 'active')]);
+  ok(back(e[0]).endsWith('systemctl disable "$u" || exit 1') && /^disables nginx again \(it was disabled\)/.test(e[0].undo.note), 'it was running already: only disabled again, not stopped');
+  ok(undo.record({ do: 'exec', cmd: c }, { ok: true }, { os: 'linux', captured: [unit(p.captures[0], 'enabled', 'active'), unit(p.captures[1], 'enabled', 'active')] }) === null, 'enabled and running already: no entry');
+  ok(JSON.stringify(withCaps(c, 'linux', [unit(p.captures[0], 'unknown', 'unknown'), unit(p.captures[1], 'enabled', 'active')]).map(back)) === JSON.stringify(L(c).map(back)), 'a state it could not read: the undo as without');
+  ok(/it was static before/.test(withCaps('systemctl disable x', 'linux', prep('systemctl disable x', 'linux').captures.map((k, j) => unit(k, j ? 'disabled' : 'static', 'active')))[0].undo.text), 'a state no single command sets back: said');
+  c = 'chmod 600 /srv/run.sh';
+  p = prep(c, 'linux');
+  const mode = (k, m, u) => answer(k, { mode: m, uid: String(u), gid: '100' });
+  e = withCaps(c, 'linux', [mode(p.captures[0], '-rwxr-xr-x', 1000), mode(p.captures[1], '-rw-------', 1000)]);
+  ok(e[0].what === 'changed the permissions of /srv/run.sh to 600 (it was 755)' && back(e[0]).endsWith("chmod 0755 -- \"$p\"") && back(e[0]).includes("'-rw------- 1000 100'") && !back(e[0]).includes('chown'), 'chmod: set back, only if still as left');
+  c = 'chown www /srv/run.sh';
+  p = prep(c, 'linux');
+  e = withCaps(c, 'linux', [mode(p.captures[0], '-rwsr-xr-x', 0), mode(p.captures[1], '-rwxr-xr-x', 33)]);
+  ok(back(e[0]).includes('chown 0:100 -- "$p" || exit 1; chmod 4755 -- "$p"'), 'chown: owner back, then the mode (chown clears setuid)');
+  c = r`icacls C:\x\a.txt /grant *S-1-1-0:R`;
+  p = prep(c, 'windows');
+  const acl = (k, sddl, owner) => answer(k, { full: r`C:\x\a.txt`, dir: 0, sddl, owner });
+  e = withCaps(c, 'windows', [acl(p.captures[0], 'D:AI(A;ID;FA;;;SY)', 'S-1-5-32-544'), acl(p.captures[1], 'D:AI(A;;FR;;;WD)(A;ID;FA;;;SY)', 'S-1-5-32-544')]);
+  sc = inner(back(e[0]));
+  ok(e.length === 1 && e[0].what === r`changed the permissions of C:\x\a.txt (icacls)` && e[0].reversible && sc.includes("$n.SetSecurityDescriptorSddlForm('D:AI(A;ID;FA;;;SY)','Access')") && !sc.includes('setowner'), 'icacls: the DACL set back, only if still as left');
+  ok(JSON.stringify(withCaps(c, 'windows', [])) === JSON.stringify(W(c)) && /^ran a command: icacls/.test(W(c)[0].what), 'icacls without answers: the plain entry it always was');
+}
+// ============================================================================================================
+// WHAT A LATER CHANGE MADE MOOT: supersede()
+// ============================================================================================================
+{
+  const at = (c, osName, seq) => list(rec({ do: 'exec', cmd: c }, osName, null, { seq }));
+  const pairs = (s) => JSON.stringify(s.map((x) => [x.id, x.by]));
+  // the live run on Linux: a folder made (c1), a file put in it (c3, as the serve records a send), the folder deleted (c5)
+  const l1 = at('mkdir /tmp/x', 'linux', 1)[0], l3 = at("cp -- '/tmp/agent-drive-sent' '/tmp/x/b.bin'", 'linux', 3)[0], l5 = at('rm -r /tmp/x', 'linux', 5)[0];
+  Object.assign(l3, { verb: 'send', what: 'put b.bin on this machine at /tmp/x/b.bin' });
+  let s = undo.supersede([l1, l3, l5]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c5'], ['c3', 'c5']]), 'Linux: c1 (the folder) and c3 (the file in it) are moot after c5 deleted the folder -> ' + pairs(s));
+  ok(s[0].why === 'c5 deleted /tmp/x' && s[1].why === 'c5 deleted /tmp/x, with /tmp/x/b.bin in it', 'and why -> ' + JSON.stringify(s.map((x) => x.why)));
+  ok(JSON.stringify(l1.paths) === JSON.stringify({ os: 'linux', made: ['/tmp/x'] }) && JSON.stringify(l3.paths) === JSON.stringify({ os: 'linux', made: ['/tmp/x/b.bin'] }) && JSON.stringify(l5.paths) === JSON.stringify({ os: 'linux', removed: ['/tmp/x'] }), 'the paths it read them from');
+  // Windows: the same, as the serve sends it (md, New-Item for the file, rd /s or Remove-Item -Recurse; any case, either slash)
+  const w1 = at(r`md C:\Work\x`, 'windows', 1)[0], w3 = at('powershell -NoProfile -Command "New-Item -ItemType File -Path \'C:\\Work\\x\\b.bin\'"', 'windows', 3)[0];
+  for (const del of [r`rd /s /q C:\Work\x`, PS('Remove-Item -Recurse -Force c:/work/X')]) {
+    s = undo.supersede([w1, w3, at(del, 'windows', 5)[0]]);
+    ok(pairs(s) === JSON.stringify([['c1', 'c5'], ['c3', 'c5']]) && /^c5 deleted /.test(s[1].why), 'Windows (' + del + '): c1 and c3 moot after c5 -> ' + pairs(s) + ' ' + (s[1] && s[1].why));
+  }
+  // a later change put back is no longer in the way; one that can be put back says so
+  const l5u = Object.assign({}, l5, { undone: '2026-11-06T10:00:00.000Z' });
+  ok(undo.supersede([l1, l3, l5u]).length === 0, 'once c5 is put back, c1 and c3 are not moot');
+  const lmv = at('mv /tmp/x /tmp/y', 'linux', 5)[0];
+  s = undo.supersede([l1, l3, lmv]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c5'], ['c3', 'c5']]) && s[0].why === 'c5 moved away /tmp/x — put c5 back first', 'moved away: moot too, and c5 can be put back first -> ' + (s[0] && s[0].why));
+  // moves and renames: what a later delete or move takes away
+  s = undo.supersede([at(r`move C:\a.txt D:\b.txt`, 'windows', 1)[0], at(r`del D:\b.txt`, 'windows', 2)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2']]), 'a move, then its destination deleted');
+  s = undo.supersede([at('mv /home/u/a.txt /home/u/b.txt', 'linux', 1)[0], at('mv /home/u/b.txt /srv/c.txt', 'linux', 2)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2']]) && /— put c2 back first$/.test(s[0].why), 'a move, then moved on: put the later one back first');
+  s = undo.supersede([at(PS(r`Rename-Item C:\d\old.txt new.txt`), 'windows', 1)[0], at(r`rd /s /q C:\d`, 'windows', 2)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2']]), 'a rename inside a folder, then the folder deleted');
+  // where an undo would put something back: its folder gone
+  s = undo.supersede([at('mv /tmp/x/a.txt /home/a.txt', 'linux', 1)[0], at('rm -rf /tmp/x', 'linux', 2)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2']]) && s[0].why === 'c2 deleted /tmp/x, so /tmp/x/a.txt has no folder to go back to', 'moved out of a folder that was then deleted -> ' + (s[0] && s[0].why));
+  s = undo.supersede([at('rm /tmp/x/a.txt', 'linux', 1)[0], at('rm -rf /tmp/x', 'linux', 2)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2']]), 'deleted from a folder that was then deleted');
+  // the registry: a key made, a value added to it, then the key deleted
+  s = undo.supersede([at(PS(r`New-Item -Path HKCU:\Software\X`), 'windows', 1)[0], at(PS(r`New-ItemProperty -Path HKCU:\Software\X -Name Foo -Value 1`), 'windows', 2)[0], at(r`reg delete HKEY_CURRENT_USER\Software\X /f`, 'windows', 3)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c3'], ['c2', 'c3']]), 'a registry key and a value in it, then the key deleted -> ' + pairs(s));
+  // never more than that
+  const none = [
+    [at('mkdir /tmp/xy', 'linux', 1)[0], at('rm -r /tmp/x', 'linux', 2)[0]],                         // a name that only starts the same
+    [at('mkdir /tmp/X', 'linux', 1)[0], at('rm -r /tmp/x', 'linux', 2)[0]],                           // Linux: case matters
+    [at('rm /tmp/a', 'linux', 1)[0], at('rm /tmp/a', 'linux', 2)[0]],                                 // the same place deleted again: its folder is there
+    [at('rm -r /tmp/x', 'linux', 1)[0], at('mkdir /tmp/x', 'linux', 2)[0]],                           // the other way round
+    [at(r`md C:\x`, 'windows', 1)[0], at('rm -r /x', 'linux', 2)[0]],                                  // another system
+    [at('mkdir "$HOME/x"', 'linux', 1)[0], at('rm -r /home/u/x', 'linux', 2)[0]],                     // through a variable and written out: never meet
+    [at(PS(r`New-ItemProperty -Path HKCU:\Software\X -Name Foo -Value 1`), 'windows', 1)[0], at(r`reg delete HKCU\Software\X /v Bar /f`, 'windows', 2)[0]],
+  ];
+  for (const [a, b] of none) ok(undo.supersede([a, b]).length === 0, 'not moot: ' + a.what + ' / ' + b.what);
+  s = undo.supersede([at(r`md C:\Work\X`, 'windows', 1)[0], at(r`rd /s /q c:/work/x/`, 'windows', 2)[0], at('mkdir /a/b', 'linux', 3)[0], at('rm -r /a/./c/../b', 'linux', 4)[0]]);
+  ok(pairs(s) === JSON.stringify([['c1', 'c2'], ['c3', 'c4']]), 'Windows: any case, either slash, a trailing one; . and .. resolved');
+  let threw = 0;
+  for (const bad of [null, 5, 'x', [null, 5, {}], [{ id: 'c1', what: 'x', paths: { os: 'linux', made: [5, null, '', '/'.repeat(9000)] } }, { id: 'c2', what: 'y', paths: { os: 'linux', removed: ['/'] } }],
+    [{ id: 'c1', what: 'x', paths: { os: 'mac', made: ['/a'] } }, { id: 'c2', what: 'y', paths: { os: 'mac', removed: ['/a'] } }], [{ id: 'c1', what: 'x', paths: 'x' }]]) {
+    try { const r0 = undo.supersede(bad); if (!Array.isArray(r0)) threw++; } catch (_) { threw++; }
+  }
+  ok(threw === 0 && undo.supersede([{ id: 'c1', what: 'x', paths: { os: 'linux', made: ['/a/b'] } }, { id: 'c2', what: 'y', paths: { os: 'linux', removed: ['/'] } }]).length === 1, 'supersede never throws; deleting / holds everything');
+}
+// ============================================================================================================
+// cleanup(): the commands that remove a visit's copies
+// ============================================================================================================
+{
+  ok(JSON.stringify(undo.cleanup([], {})) === '[]' && JSON.stringify(undo.cleanup(null, null)) === '[]', 'no system and no copies: nothing to run');
+  let cl = undo.cleanup([], { os: 'windows', visit: 'v1' });
+  ok(cl.length === 1 && cl[0].os === 'windows' && safeInCmd(cl[0].cmd) && inner(cl[0].cmd).includes("'agent-drive-undo','v1'") && inner(cl[0].cmd).includes("-cmatch '^k[0-9]+-[0-9a-f]{8}-[0-9a-f]{12}[.]bak$'"), 'Windows: the visit\'s folder, only files named as copies');
+  cl = undo.cleanup([{ id: 'c1', what: 'x', backup: { os: 'windows', path: 'D:\\T\\agent-drive-undo\\v0\\k1-0123abcd-0123456789ab.bak' } }, { id: 'c2', what: 'y', backup: { os: 'windows', path: 'C:\\Windows\\System32\\x.dll' } }], { os: 'windows', visit: 'v1' });
+  ok(cl.length === 1 && inner(cl[0].cmd).includes(r`'D:\T\agent-drive-undo\v0'`) && !inner(cl[0].cmd).includes('System32'), 'and the folders entries name -- never one that is not a copies folder');
+  cl = undo.cleanup([{ id: 'c1', what: 'x', backup: { os: 'linux', path: '/tmp/agent-drive-undo-0/v1/k1-0123abcd-AbCdEf123456', sudo: { tool: 'sudo', user: null } } }], { os: 'linux', visit: 'v1' });
+  ok(cl.length === 2 && cl.every((x) => x.os === 'linux') && !cl[0].cmd.startsWith('sudo') && cl[1].cmd.startsWith("sudo -n sh -c '") && cl[1].cmd.includes('/tmp/agent-drive-undo-0/v1'), 'Linux: this account\'s folder, and again under sudo for copies made under sudo');
+}
+
+// ============================================================================================================
 // REAL ROUND TRIPS: run the change, then its undo, the way the host runs an exec
 // ============================================================================================================
 const T0 = Date.now();
@@ -656,6 +990,290 @@ if (spawnSync(SH, ['-c', 'exit 7'], { timeout: 30000 }).status === 7) {
     }
   });
 } else console.log('  (skip: no sh here -- the sh undos were not run for real)');
+
+// ============================================================================================================
+// REAL CAPTURES: the serve's part played here -- each 'before' capture, the command, each 'after' capture, record()
+// with what they printed -- then the undo, all the way the host runs an exec, against a temp folder. The copies go
+// in this test's own visit folder, which cleanup() removes (checked); a registry test key is made and removed.
+// ============================================================================================================
+const visitId = (tag) => 'undo-test-' + tag + '-' + process.pid + '-' + Math.random().toString(36).slice(2, 8);
+function serveOf(run, osName, visit) {
+  const all = [];
+  const act = (cmd, o) => {
+    o = o || {};
+    const c = { do: 'exec', cmd };
+    const ctx = Object.assign({ os: osName, now: Date.now(), seq: all.length + 1, visit }, o.ctx || {});
+    const p = undo.prepare(c, ctx), caps = p ? p.captures : [], captured = [];
+    for (const k of caps.filter((x) => x.when === 'before')) { const y = run(k.cmd); captured.push({ id: k.id, ok: y.code === 0, output: y.out }); }
+    const x = run(cmd);
+    if (!o.noAfter) for (const k of caps.filter((y) => y.when === 'after')) { const y = run(k.cmd); captured.push({ id: k.id, ok: y.code === 0, output: y.out }); }
+    const e = list(undo.record(c, { ok: x.code === 0 }, Object.assign({}, ctx, { captured })));
+    all.push(...e);
+    return { x, e, last: e[e.length - 1] || {}, captured, caps };
+  };
+  return { act, all };
+}
+const mtimeOf = (p) => { try { return fs.statSync(p).mtimeMs; } catch (_) { return NaN; } };
+const OLD = new Date(Date.UTC(2020, 0, 2, 3, 4, 5));
+if (process.platform === 'win32' && spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', 'exit 7'], { windowsHide: true, timeout: 30000 }).status === 7) {
+  real('windows capture', (tmp) => {
+    const run = (cmd) => { const x = spawnSync('cmd.exe', ['/c', cmd], { windowsVerbatimArguments: true, windowsHide: true, encoding: 'utf8', timeout: 60000, cwd: tmp }); return { code: x.status, out: (x.stdout || '') + (x.stderr || '') }; };
+    const J = (...p) => path.join(tmp, ...p);
+    const VISIT = visitId('w'), keep = path.join(os.tmpdir(), 'agent-drive-undo', VISIT);
+    const { act, all } = serveOf(run, 'windows', VISIT);
+    const attrs = (p) => (run('attrib "' + p + '"').out.split(/\r?\n/)[0] || '').slice(0, 12);
+    try {
+      // 1. Set-Content over a file named with everything that breaks quoting: a copy kept, put back with its time
+      const name = 'Bob’s [1] it\'s 100% & ^ ! $x `y` ; (z) {w} é 日本.txt';
+      fs.writeFileSync(J(name), 'the original'); fs.utimesSync(J(name), OLD, OLD);
+      let s = act(ENC('Set-Content -LiteralPath ' + psq(J(name)) + " -Value 'the agent wrote this'"));
+      ok(s.x.code === 0 && /^the agent/.test(read(J(name))) && s.caps.length === 2 && s.last.reversible && s.last.backup && has(s.last.backup.path) && path.dirname(s.last.backup.path).toLowerCase() === keep.toLowerCase(),
+        'real capture: Set-Content over a file -- a copy kept in the visit\'s folder (' + (s.last.backup && s.last.backup.path) + ')');
+      let u = run(back(s.last));
+      ok(u.code === 0 && read(J(name)) === 'the original' && mtimeOf(J(name)) === OLD.getTime(), 'real capture: put back from the copy, its time too (' + u.out.trim().slice(0, 200) + ')');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /was changed again after this change/.test(u.out) && read(J(name)) === 'the original', 'real capture: run again, it refuses -- the file is not what the change left any more');
+      // 2. changed again by someone after the change: refused, untouched
+      fs.writeFileSync(J('b.txt'), 'b original');
+      s = act(PS("Set-Content -LiteralPath '" + J('b.txt') + "' -Value agent"));
+      fs.writeFileSync(J('b.txt'), 'the person edited it after');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /changed again after this change/.test(u.out) && read(J('b.txt')) === 'the person edited it after', 'real capture: changed again since -> refused, touched nothing');
+      // 3. the copy changed in its folder: refused, nothing written
+      fs.writeFileSync(J('c.txt'), 'c original');
+      s = act(PS("Set-Content -LiteralPath '" + J('c.txt') + "' -Value agent"));
+      fs.writeFileSync(s.last.backup.path, 'swapped');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /is not what was kept/.test(u.out) && /^agent/.test(read(J('c.txt'))), 'real capture: a copy changed after it was kept -> refused, nothing written');
+      // 4. del of a hidden, read-only file: made again with its content, time and attributes; never over a new one
+      fs.writeFileSync(J('d.txt'), 'delete me'); fs.utimesSync(J('d.txt'), OLD, OLD); run('attrib +r +h "' + J('d.txt') + '"');
+      s = act('del /f /a "' + J('d.txt') + '"');
+      ok(s.x.code === 0 && !has(J('d.txt')) && s.last.what === 'deleted ' + J('d.txt') && s.last.reversible && !s.last.undo.risky, 'real capture: del of a hidden read-only file -- it can be put back');
+      u = run(back(s.last));
+      ok(u.code === 0 && read(J('d.txt')) === 'delete me' && mtimeOf(J('d.txt')) === OLD.getTime() && /R/.test(attrs(J('d.txt'))) && /H/.test(attrs(J('d.txt'))), 'real capture: made again -- content, time, hidden and read-only (' + attrs(J('d.txt')) + ')');
+      s = act('del /f /a "' + J('d.txt') + '"');
+      fs.writeFileSync(J('d.txt'), 'a new one');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /is there again/.test(u.out) && read(J('d.txt')) === 'a new one', 'real capture: something there again -> the copy is not put over it');
+      // 5. > where nothing was: deleted again -- only while it is as made
+      s = act('echo made> "' + J('new.txt') + '"');
+      ok(s.last.what === 'created the file ' + J('new.txt') + ' (with >)' && s.last.undo.risky, 'real capture: > made a new file -> ' + s.last.what);
+      u = run(back(s.last));
+      ok(u.code === 0 && !has(J('new.txt')), 'real capture: the file it made, deleted again');
+      s = act('echo made> "' + J('new2.txt') + '"');
+      fs.appendFileSync(J('new2.txt'), 'and more');
+      u = run(back(s.last));
+      ok(u.code !== 0 && has(J('new2.txt')), 'real capture: written to since -> not deleted');
+      // 6. copy /Y over a file, and Copy-Item into a folder over the file of that name there
+      fs.writeFileSync(J('src.txt'), 'source'); fs.writeFileSync(J('dst.txt'), 'dst original');
+      s = act('copy /Y "' + J('src.txt') + '" "' + J('dst.txt') + '"');
+      ok(s.x.code === 0 && read(J('dst.txt')) === 'source' && /, replacing the file that was there$/.test(s.last.what), 'real capture: copy /Y over a file -> ' + s.last.what);
+      u = run(back(s.last));
+      ok(u.code === 0 && read(J('dst.txt')) === 'dst original' && read(J('src.txt')) === 'source', 'real capture: the file it replaced, put back');
+      fs.mkdirSync(J('folder')); fs.writeFileSync(J('folder', 'src.txt'), 'in the folder');
+      s = act(PS("Copy-Item -Force -LiteralPath '" + J('src.txt') + "' -Destination '" + J('folder') + "'"));
+      ok(read(J('folder', 'src.txt')) === 'source' && s.last.reversible && s.last.paths.made[0] === J('folder', 'src.txt'), 'real capture: Copy-Item into a folder -- the file inside it, exactly');
+      u = run(back(s.last));
+      ok(u.code === 0 && read(J('folder', 'src.txt')) === 'in the folder', 'real capture: put back inside the folder');
+      // 7. move /Y over a file: moved back, and the file it replaced put back
+      fs.writeFileSync(J('m1.txt'), 'moved one'); fs.writeFileSync(J('m2.txt'), 'replaced one');
+      s = act('move /Y "' + J('m1.txt') + '" "' + J('m2.txt') + '"');
+      ok(s.x.code === 0 && !has(J('m1.txt')) && read(J('m2.txt')) === 'moved one' && /replacing the file that was there/.test(s.last.what), 'real capture: move /Y over a file');
+      u = run(back(s.last));
+      ok(u.code === 0 && read(J('m1.txt')) === 'moved one' && read(J('m2.txt')) === 'replaced one', 'real capture: moved back, and the replaced file put back (' + u.out.trim().slice(0, 160) + ')');
+      // 8. over the cap; a folder: nothing kept, and said
+      fs.writeFileSync(J('big.txt'), '0123456789');
+      s = act(PS("Set-Content -LiteralPath '" + J('big.txt') + "' -Value x"), { ctx: { maxBytes: 4 } });
+      ok(!s.last.reversible && /no copy was kept: it was 10 bytes, over the 4 bytes a copy is kept of/.test(s.last.undo.text) && !s.last.backup, 'real capture: over the cap -> ' + s.last.undo.text);
+      fs.mkdirSync(J('tree')); fs.writeFileSync(J('tree', 'a'), 'a');
+      s = act(PS("Remove-Item -Recurse -Force -LiteralPath '" + J('tree') + "'"));
+      ok(!has(J('tree')) && !s.last.reversible && /a folder is never copied/.test(s.last.undo.text), 'real capture: a folder deleted -> never copied, said');
+      // 9. New-Item -Force of a folder: none when it was there; one, for certain, when it was not
+      s = act(PS("New-Item -Force -ItemType Directory -Path '" + J('folder') + "' | Out-Null"));
+      ok(s.x.code === 0 && s.e.length === 0, 'real capture: New-Item -Force of a folder that was there -> no change, no entry');
+      s = act(PS("New-Item -Force -ItemType Directory -Path '" + J('fresh') + "' | Out-Null"));
+      ok(s.e.length === 1 && s.last.reversible && !/may have been there/.test(s.last.undo.note), 'real capture: of a new one -> made, no doubt in it');
+      u = run(back(s.last));
+      ok(u.code === 0 && !has(J('fresh')), 'real capture: and removed again');
+      // 10. icacls /grant and /inheritance:r: the permissions set back exactly
+      fs.writeFileSync(J('perm.txt'), 'p');
+      const sddl = () => run(PS("[IO.File]::GetAccessControl('" + J('perm.txt') + "','Access').GetSecurityDescriptorSddlForm('Access')")).out.trim();
+      const was = sddl();
+      for (const how of ['/grant *S-1-1-0:R', '/inheritance:r', '/deny *S-1-1-0:W']) {
+        s = act('icacls "' + J('perm.txt') + '" ' + how);
+        const mid = sddl();
+        u = run(back(s.last));
+        ok(s.x.code === 0 && mid !== was && s.last.reversible && u.code === 0 && sddl() === was, 'real capture: icacls ' + how + ' -> set back exactly (' + was + ' / ' + mid + ' / ' + sddl() + ')');
+      }
+      // 11. a service's startup type: only READ here (nothing is set)
+      const pv = undo.prepare({ do: 'exec', cmd: PS('Set-Service -Name EventLog -StartupType Automatic') }, { os: 'windows' });
+      const rv = run(pv.captures[0].cmd), av = (() => { try { return JSON.parse(rv.out.trim().split(/\r?\n/).pop()); } catch (_) { return {}; } })();
+      ok(av.ok === true && av.undo === pv.captures[0].id && av.name === 'EventLog' && av.start === 2, 'real capture: a service\'s startup type read (read only) -> ' + rv.out.trim());
+      // 12. the visit's folder a junction to elsewhere: refused, nothing copied
+      const V2 = VISIT + '-j', jdir = path.join(os.tmpdir(), 'agent-drive-undo', V2);
+      fs.mkdirSync(J('elsewhere'));
+      run('mklink /J "' + jdir + '" "' + J('elsewhere') + '"');
+      try {
+        fs.writeFileSync(J('j.txt'), 'j');
+        s = act(PS("Set-Content -LiteralPath '" + J('j.txt') + "' -Value x"), { ctx: { visit: V2 } });
+        ok(!s.last.reversible && /not this account’s alone/.test(s.last.undo.text) && fs.readdirSync(J('elsewhere')).length === 0, 'real capture: the visit\'s folder a junction -> refused, nothing copied');
+      } finally { run('rmdir "' + jdir + '"'); }
+      // 13. the registry, in a key of this test's own
+      const KEY = 'HKCU\\Software\\agent-drive-test-' + Math.random().toString(36).slice(2, 10);
+      const q = (v) => run('reg query "' + KEY + '" ' + (v === '' ? '/ve' : '/v ' + v)).out.split(/\r?\n/).filter((l) => /REG_/.test(l)).join('|').trim();
+      try {
+        run('reg add "' + KEY + '" /v S /t REG_SZ /d old /f');
+        s = act('reg add "' + KEY + '" /v S /t REG_SZ /d new /f');
+        u = run(back(s.last));
+        ok(s.x.code === 0 && s.last.reversible && u.code === 0 && /REG_SZ\s+old$/.test(q('S')), 'real capture: reg add over a value -> set back (' + q('S') + ')');
+        s = act('reg add "' + KEY + '" /v D /t REG_DWORD /d 5 /f');
+        u = run(back(s.last));
+        ok(/^added the registry value D/.test(s.last.what) && u.code === 0 && q('D') === '', 'real capture: reg add of a new value -> deleted again');
+        s = act('reg add "' + KEY + '\\Sub" /v N /d 1 /f');
+        u = run(back(s.last));
+        ok(/\(and made the key\)$/.test(s.last.what) && u.code === 0 && run('reg query "' + KEY + '\\Sub"').code !== 0, 'real capture: a value in a key it made -> both gone again');
+        run('reg add "' + KEY + '" /ve /d dflt /f');
+        s = act('reg add "' + KEY + '" /ve /d agent /f');
+        u = run(back(s.last));
+        ok(u.code === 0 && /REG_SZ\s+dflt$/.test(q('')), 'real capture: the default value -> set back (' + q('') + ')');
+        // every type, deleted and put back as it was
+        run(ENC("$k='Registry::" + KEY.replace('HKCU', 'HKEY_CURRENT_USER') + "'; New-ItemProperty -Path $k -Name M -PropertyType MultiString -Value @('a','','b') | Out-Null; " +
+          "New-ItemProperty -Path $k -Name Q -PropertyType QWord -Value 81985529216486895 | Out-Null; New-ItemProperty -Path $k -Name B -PropertyType Binary -Value ([byte[]](0,255,7)) | Out-Null; " +
+          "New-ItemProperty -Path $k -Name E -PropertyType ExpandString -Value '%TEMP%\\x' | Out-Null; New-ItemProperty -Path $k -Name Z -PropertyType String -Value '' | Out-Null; " +
+          "New-ItemProperty -Path $k -Name N2 -PropertyType DWord -Value -2 | Out-Null"));
+        for (const v of ['M', 'Q', 'B', 'E', 'Z', 'N2']) {
+          const before = q(v);
+          s = act('reg delete "' + KEY + '" /v ' + v + ' /f');
+          const gone = q(v);
+          u = run(back(s.last));
+          ok(before && !gone && s.last.reversible && u.code === 0 && q(v) === before, 'real capture: a deleted value put back as it was: ' + before);
+        }
+        s = act(PS("Remove-ItemProperty -Path 'Registry::" + KEY.replace('HKCU', 'HKEY_CURRENT_USER') + "' -Name S"));
+        u = run(back(s.last));
+        ok(s.last.reversible && u.code === 0 && /REG_SZ\s+old$/.test(q('S')), 'real capture: Remove-ItemProperty -> put back');
+        s = act('reg add "' + KEY + '" /v S /t REG_SZ /d agent /f');
+        run('reg add "' + KEY + '" /v S /t REG_SZ /d person /f');
+        u = run(back(s.last));
+        ok(u.code !== 0 && /changed again/.test(u.out) && /person$/.test(q('S')), 'real capture: a value changed again since -> refused, left as it is');
+        s = act('reg add "' + KEY + '\\Made"');
+        u = run(back(s.last));
+        ok(s.last.reversible && u.code === 0 && run('reg query "' + KEY + '\\Made"').code !== 0, 'real capture: reg add of a new key -> deleted again (' + u.out.trim().slice(0, 120) + ')');
+        s = act('reg add "' + KEY + '\\Made"');
+        run('reg add "' + KEY + '\\Made" /v Since /d 1 /f');
+        u = run(back(s.last));
+        ok(u.code !== 0 && /has values or keys in it now/.test(u.out) && run('reg query "' + KEY + '\\Made" /v Since').code === 0, 'real capture: a value put in it since -> the key is left as it is');
+      } finally { run('reg delete "' + KEY + '" /f'); }
+      ok(run('reg query "' + KEY + '"').code !== 0, 'real capture: the test registry key is gone');
+      // 14. cleanup: the copies and the visit's folder go; an undo after it says the copy is gone
+      const withCopy = all.find((x) => x.backup && x.reversible);
+      const cl = undo.cleanup(all, { os: 'windows', visit: VISIT });
+      const cx = cl.map((c) => run(c.cmd));
+      ok(cl.length === 1 && cx.every((x) => x.code === 0 && /"removed":[1-9]\d*/.test(x.out)) && !has(keep), 'real capture: cleanup removed the copies and the folder (' + cx.map((x) => x.out.trim()).join(' ') + ')');
+      fs.writeFileSync(J('b.txt'), 'b');
+      u = withCopy ? run(back(withCopy)) : { code: 0, out: '' };
+      ok(u.code !== 0 && /the copy kept of it is gone/.test(u.out), 'real capture: after cleanup an undo from a copy stops, and says why');
+    } finally {
+      try { fs.rmSync(keep, { recursive: true, force: true }); } catch (_) {}
+      try { fs.rmdirSync(path.dirname(keep)); } catch (_) {}
+    }
+  });
+} else console.log('  (skip: no PowerShell here -- the Windows captures were not run for real)');
+
+if (spawnSync(SH, ['-c', 'exit 7'], { timeout: 30000 }).status === 7) {
+  real('sh capture', (tmp) => {
+    // relative paths, from the same folder each time, as the host's exec runs
+    const run = (cmd) => { const x = spawnSync(SH, ['-c', cmd], { encoding: 'utf8', timeout: 30000, cwd: tmp }); return { code: x.status, out: (x.stdout || '') + (x.stderr || '') }; };
+    const J = (...p) => path.join(tmp, ...p);
+    const WIN = process.platform === 'win32';
+    const VISIT = visitId('s');
+    const { act, all } = serveOf(run, 'linux', VISIT);
+    const shHas = (p) => run('[ -e ' + sq(p) + ' ]').code === 0;
+    const keep = '"${TMPDIR:-/tmp}/agent-drive-undo-$(id -u)/' + VISIT + '"';
+    try {
+      const name = "it's \"$x\" `y` & ; (z) é.txt", fname = WIN ? name.replace(/["*?]/g, '_') : name;
+      fs.writeFileSync(J(fname), 'the original\n'); if (!WIN) fs.chmodSync(J(fname), 0o640); fs.utimesSync(J(fname), OLD, OLD);
+      let s = act('echo agent > ' + sq(fname));
+      ok(s.x.code === 0 && read(J(fname)) === 'agent\n' && s.caps.length === 2 && s.last.reversible && s.last.backup && shHas(s.last.backup.path), 'real sh capture: > over a file -- a copy kept (' + (s.last.backup && s.last.backup.path) + ')');
+      let u = run(back(s.last));
+      ok(u.code === 0 && read(J(fname)) === 'the original\n' && Math.abs(mtimeOf(J(fname)) - OLD.getTime()) < 2000 && (WIN || (fs.statSync(J(fname)).mode & 0o777) === 0o640), 'real sh capture: put back, its time and mode too (' + u.out.trim().slice(0, 160) + ')');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /changed again/.test(u.out) && read(J(fname)) === 'the original\n', 'real sh capture: run again -> refused');
+      // changed since; the copy changed
+      fs.writeFileSync(J('b.txt'), 'b original\n');
+      s = act("printf 'agent' >> b.txt");
+      fs.writeFileSync(J('b.txt'), 'the person edited it\n');
+      u = run(back(s.last));
+      ok(s.last.reversible && u.code !== 0 && read(J('b.txt')) === 'the person edited it\n', 'real sh capture: >> then changed again -> refused, untouched');
+      fs.writeFileSync(J('c.txt'), 'c original\n');
+      s = act('echo agent > c.txt');
+      run('printf swapped > ' + sq(s.last.backup.path));
+      u = run(back(s.last));
+      ok(u.code !== 0 && /is not what was kept/.test(u.out) && read(J('c.txt')) === 'agent\n', 'real sh capture: the copy changed -> refused, nothing written');
+      // rm: made again with its mode and time; never over a new one
+      fs.writeFileSync(J('d.txt'), 'delete me\n'); if (!WIN) fs.chmodSync(J('d.txt'), 0o604); fs.utimesSync(J('d.txt'), OLD, OLD);
+      s = act('rm d.txt');
+      u = run(back(s.last));
+      ok(s.x.code === 0 && s.last.reversible && u.code === 0 && read(J('d.txt')) === 'delete me\n' && Math.abs(mtimeOf(J('d.txt')) - OLD.getTime()) < 2000 && (WIN || (fs.statSync(J('d.txt')).mode & 0o777) === 0o604), 'real sh capture: rm, made again -- content, time, mode');
+      s = act('rm d.txt');
+      fs.writeFileSync(J('d.txt'), 'a new one');
+      u = run(back(s.last));
+      ok(u.code !== 0 && /is there again/.test(u.out) && read(J('d.txt')) === 'a new one', 'real sh capture: something there again -> not put over it');
+      // > where nothing was; cp over a file; cp into a folder; mv over a file
+      s = act('echo made > new.txt');
+      u = run(back(s.last));
+      ok(s.last.what === 'created the file new.txt (with >)' && u.code === 0 && !has(J('new.txt')), 'real sh capture: a file > made, deleted again');
+      fs.writeFileSync(J('src.txt'), 'source'); fs.writeFileSync(J('dst.txt'), 'dst original');
+      s = act('cp src.txt dst.txt');
+      u = run(back(s.last));
+      ok(/replacing the file that was there$/.test(s.last.what) && u.code === 0 && read(J('dst.txt')) === 'dst original', 'real sh capture: cp over a file, put back');
+      fs.mkdirSync(J('dir')); fs.writeFileSync(J('dir', 'src.txt'), 'in dir');
+      s = act('cp src.txt dir');
+      u = run(back(s.last));
+      ok(s.last.paths.made[0] === 'dir/src.txt' && u.code === 0 && read(J('dir', 'src.txt')) === 'in dir', 'real sh capture: cp into a folder over a file, put back there');
+      fs.writeFileSync(J('m1.txt'), 'moved one'); fs.writeFileSync(J('m2.txt'), 'replaced one');
+      s = act('mv m1.txt m2.txt');
+      u = run(back(s.last));
+      ok(s.x.code === 0 && /replacing the file that was there/.test(s.last.what) && u.code === 0 && read(J('m1.txt')) === 'moved one' && read(J('m2.txt')) === 'replaced one', 'real sh capture: mv over a file -- moved back, the replaced file put back');
+      // the cap; a folder; mkdir -p; touch; chmod
+      fs.writeFileSync(J('big.txt'), '0123456789');
+      s = act('echo x > big.txt', { ctx: { maxBytes: 4 } });
+      ok(!s.last.reversible && /over the 4 bytes a copy is kept of/.test(s.last.undo.text), 'real sh capture: over the cap -> said');
+      fs.mkdirSync(J('tree')); fs.writeFileSync(J('tree', 'a'), 'a');
+      s = act('rm -r tree');
+      ok(!s.last.reversible && /a folder is never copied/.test(s.last.undo.text), 'real sh capture: rm -r of a folder -> never copied, said');
+      s = act('mkdir -p dir');
+      ok(s.x.code === 0 && s.e.length === 0, 'real sh capture: mkdir -p of a folder that was there -> no entry');
+      s = act('mkdir -p fresh');
+      u = run(back(s.last));
+      ok(s.e.length === 1 && u.code === 0 && !has(J('fresh')), 'real sh capture: mkdir -p of a new one -> removed again');
+      fs.writeFileSync(J('t.txt'), 'touch me'); fs.utimesSync(J('t.txt'), OLD, OLD);
+      s = act('touch t.txt');
+      u = run(back(s.last));
+      ok(s.last.what === 'changed the date of t.txt (touch)' && u.code === 0 && Math.abs(mtimeOf(J('t.txt')) - OLD.getTime()) < 2000 && read(J('t.txt')) === 'touch me', 'real sh capture: touch -> its date put back');
+      fs.writeFileSync(J('p.txt'), 'p'); fs.chmodSync(J('p.txt'), 0o644);
+      s = act('chmod 444 p.txt');
+      u = run(back(s.last));
+      ok(s.last.reversible && u.code === 0 && (fs.statSync(J('p.txt')).mode & 0o222) !== 0 && (WIN || (fs.statSync(J('p.txt')).mode & 0o777) === 0o644), 'real sh capture: chmod -> set back (' + u.out.trim().slice(0, 120) + ')');
+      if (!WIN) {   // a planted link where the visit's folder goes: refused (Git's sh on Windows copies instead of linking)
+        const V2 = VISIT + '-l';
+        fs.mkdirSync(J('elsewhere'));
+        run('r=${TMPDIR:-/tmp}; mkdir -p "$r/agent-drive-undo-$(id -u)" && ln -s ' + sq(J('elsewhere')) + ' "$r/agent-drive-undo-$(id -u)/' + V2 + '"');
+        try {
+          fs.writeFileSync(J('j.txt'), 'j');
+          s = act('echo x > j.txt', { ctx: { visit: V2 } });
+          ok(!s.last.reversible && /not this account’s alone/.test(s.last.undo.text) && fs.readdirSync(J('elsewhere')).length === 0, 'real sh capture: the visit\'s folder a link -> refused, nothing copied');
+        } finally { run('rm -f "${TMPDIR:-/tmp}/agent-drive-undo-$(id -u)/' + V2 + '"'); }
+      }
+      // cleanup
+      const withCopy = all.find((x) => x.backup && x.reversible);
+      const cl = undo.cleanup(all, { os: 'linux', visit: VISIT });
+      const cx = cl.map((c) => run(c.cmd));
+      ok(cl.length === 1 && cx.every((x) => x.code === 0 && /"removed":[1-9]\d*/.test(x.out)) && run('[ -d ' + keep + ' ]').code !== 0, 'real sh capture: cleanup removed the copies and the folder (' + cx.map((x) => x.out.trim()).join(' ') + ')');
+      u = withCopy ? run(back(withCopy)) : { code: 0, out: '' };
+      ok(u.code !== 0 && /the copy kept of it .* is gone/.test(u.out), 'real sh capture: after cleanup an undo from a copy stops, and says why');
+    } finally { run('rm -rf ' + keep + '; rmdir "${TMPDIR:-/tmp}/agent-drive-undo-$(id -u)" 2>/dev/null; true'); }
+  });
+} else console.log('  (skip: no sh here -- the sh captures were not run for real)');
 if (Date.now() - T0 > 20000) console.log('  (the real round trips took ' + Math.round((Date.now() - T0) / 1000) + ' s)');
 
 console.log((fail ? 'FAIL' : 'ok') + ' undo: ' + pass + '/' + (pass + fail));
