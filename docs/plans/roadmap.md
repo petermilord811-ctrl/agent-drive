@@ -59,6 +59,8 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
 - **Task macros / replay.** ✅ 2026-11-06: the serve records every successful command per milestone
   (`steps.jsonl`); `drive/replay.js save` makes a proven run a skill, `run` replays it, proving each milestone.
   Next: a live replay of a real job, and parameters other than secrets (a different file name, a date).
+  ✅ 2026-11-06: values -- what a job typed is saved as a named value (`amount`, `date`, `url`, …), and
+  `run --set name=value` replays it with another; its proof follows the new text. A live replay of a real job too.
 - **Preview / dry-run.** ✅ 2026-11-06: `mission plan … preview:1` posts the plan to the room as a question and the
   serve acts on nothing until they say yes; `mission ask` asks again (core/mission.js holds the gate).
 - **Milestone checkpoints for long jobs.** ✅ 2026-11-06: `checkpoints:1` (or `checkpoint:true` on a milestone) stops

@@ -144,7 +144,9 @@ the plan, runs each milestone as one `plan`, proves it, and stops at the first o
 **The serve drafts it for you:** when a planned job finishes with nothing failed, no skill already did it and it
 was not itself a replay, the `finish` answer carries `draft` — the job saved as `skills/_drafts/<name>/`
 (gitignored) with the typed text it stores. Tell the operator, check that text holds nothing private, then
-`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off). A saved job
+`node drive/replay.js promote <name> --yes` puts it in the library (`--no-drafts` turns drafting off). **With other values:**
+what a job typed is saved as a named value (`node drive/replay.js values <recipe>` lists them), and
+`run … --set amount=77.25 --set date=2026-12-01` replays it with those; the checks that read the old text read the new. A saved job
 can run on a schedule — `node drive/schedule.js add --host <n> --recipe skills/<name>/replay.json --at 09:00`, and a
 runner (`node drive/schedule.js run`); see [docs/reference/schedules.md](docs/reference/schedules.md).
 

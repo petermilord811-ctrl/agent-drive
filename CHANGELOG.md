@@ -43,6 +43,9 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   text), apps started, a file `send` put there, and what the driver declares with `changed` — with how it is put
   back. The finish of a task tells the room; `changes` lists it; `undo {id}` puts one back after a yes, or because
   they asked ("undo c3"); one that deletes what was made is never taken on silence.
+- **Replay with values**: what a saved job typed (an amount, a date, a URL, a file name) is a named value with the
+  original as its default — `node drive/replay.js values <recipe>` lists them, `run --set name=value` replays the job
+  with another, and the checks that read the old text read the new. Recipes are v2; old ones run as before.
 
 ## 1.0.0 — 2026-11-06
 
