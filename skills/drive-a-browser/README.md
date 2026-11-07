@@ -30,6 +30,9 @@ tags: browser, navigation, read
 - **Signup / multi-field forms:** locate each field from the current `look` (mid of that field’s band);
   `Ctrl+A` (+ clear) before typing so you replace, never append. Verify with another `look` before Continue.
 - **`captcha` reply is not proof:** after `solved:true`, `look` again; re-ask if the widget is still empty.
+- **DataAnnotation worker signup:** use
+  [create-dataannotation-account](../create-dataannotation-account/README.md)
+  (`node kit.js skills dataannotation`) — do not reinvent field offsets.
 
 ## Launching a different browser / app
 Browse the KDE launcher's **categories** (its search drops injected keys), or open **Konsole** and run

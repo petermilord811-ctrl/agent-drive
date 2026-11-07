@@ -38,7 +38,8 @@ file explains them.
     wrong reads, slow paths, recovery steps, operator questions): **check** what actually happened,
     **analyze** cause → fix, **learn** into the skill / [docs/reference/gotchas.md](docs/reference/gotchas.md)
     / `AGENTS.md` / data the next run loads — **without being asked**. Waiting for "learn it" is a miss.
-    A new kind of task → a skill (`skills/<slug>/`). Snags noted mid-run still get this full pass at the end.
+    A new kind of task → a **skill folder** (`skills/<slug>/README.md` + `run:` tool when steps repeat) —
+    gotchas alone are not enough. Snags noted mid-run still get this full pass at the end.
 
 ### MUST — always
 

@@ -170,6 +170,8 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   miss — dismiss the toast first, then click the icon (orange/purple blob ~look x 129 on a 900-wide look).
 
 ## More from a live run (host 34123, 2026-11-07) — DataAnnotation worker_signup
+- **Skill:** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
+  (`node kit.js skills dataannotation`). Prefer its `run:` over rediscovering the form by hand.
 - **Several windows can share the same title.** `xdotool search --name DataAnnotation` returned two
   Chrome windows + one Firefox form; keys/`human:0` typed into the wrong one so First name stayed empty
   while Last/Email looked fine. **List matching windows, kill/close the extras, `windowactivate` the live
