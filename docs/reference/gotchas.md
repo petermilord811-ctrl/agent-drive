@@ -168,3 +168,22 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **No Tesseract on 34123** — `clickText` often fails; click by `lx/ly` or screen pixels.
 - **Desktop toasts can cover the taskbar** (e.g. Gmail "Enable notifications") so Firefox icon clicks
   miss — dismiss the toast first, then click the icon (orange/purple blob ~look x 129 on a 900-wide look).
+
+## More from a live run (host 34123, 2026-11-07) — DataAnnotation worker_signup
+- **Several windows can share the same title.** `xdotool search --name DataAnnotation` returned two
+  Chrome windows + one Firefox form; keys/`human:0` typed into the wrong one so First name stayed empty
+  while Last/Email looked fine. **List matching windows, kill/close the extras, `windowactivate` the live
+  form window, then look+click.** Do this before any field fill when the site was opened more than once.
+- **Form fields are easy to miss by a few look-pixels (“always offset”).** Don't guess from a prior visit.
+  After `look`, find the light input bands (or crop the form) and click each field's **own mid_y** —
+  First / Last / Email are separate bands stacked; one band down = wrong field (operator: typed Last into
+  First, Email into Last). Prefer `lx/ly` from the current picture.
+- **Never append into a half-filled field.** If the box already has text (or might), `chord ControlLeft KeyA`
+  then `Backspace` (or type-over the selection) before `keys`. Tab-after-type can leave Create password
+  empty and Confirm filled → “Passwords must match.” Click **each** password box explicitly, clear, type
+  the same secret twice (`keys … secret:1 human:0`), then look for green checks / no mismatch error.
+- **`captcha` “solved” ≠ the checkbox is checked.** Any non-refusal chat reply (e.g. “now sign off”) returns
+  `solved:true`. **Look again** — if “I'm not a robot” is still empty or the page says “Please complete the
+  recaptcha,” ask again (or stop if they refuse). Never click the captcha yourself.
+- **Agent host on Windows PowerShell mangles `$…` inside remote `exec` strings.** Put the remote bash in a
+  local file and send it as base64 (`echo … | base64 -d | bash`), or avoid shell variables in one-liners.

@@ -25,6 +25,11 @@ tags: browser, navigation, read
   fails, **instantly** use Firefox / Edge / system default. Prefer `exec` `firefox '<url>' &` when
   shell is available. Always request/enable **shell** automatically when launching a browser that way.
 - Keyboard needs window focus; mouse always lands.
+- **Duplicate windows with the same title** (e.g. Chrome + Firefox both “DataAnnotation”): close extras and
+  focus the live form window before typing — otherwise keys land nowhere useful.
+- **Signup / multi-field forms:** locate each field from the current `look` (mid of that field’s band);
+  `Ctrl+A` (+ clear) before typing so you replace, never append. Verify with another `look` before Continue.
+- **`captcha` reply is not proof:** after `solved:true`, `look` again; re-ask if the widget is still empty.
 
 ## Launching a different browser / app
 Browse the KDE launcher's **categories** (its search drops injected keys), or open **Konsole** and run
