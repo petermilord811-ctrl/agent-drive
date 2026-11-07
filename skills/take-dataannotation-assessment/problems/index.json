@@ -1,284 +1,1022 @@
 {
-  "version": 2,
+  "version": 3,
   "updated": "2026-11-07",
+  "expectedRoles": 103,
+  "total": 103,
   "banks": [
     {
       "slug": "generalist",
       "file": "problems-generalist.md",
       "status": "stub",
+      "role": "Generalist",
       "assessmentId": "generalist",
-      "roles": [
-        "Generalist"
-      ]
+      "assessment": "Generalist Assessment",
+      "category": "General"
     },
     {
-      "slug": "coding",
-      "file": "problems-coding.md",
+      "slug": "software-engineer",
+      "file": "problems-software-engineer.md",
       "status": "stub",
+      "role": "Software Engineer",
       "assessmentId": "coding",
-      "roles": [
-        "Software Engineer",
-        "Frontend Engineer",
-        "DevOps Engineer",
-        "Backend Engineer",
-        "Full Stack Engineer"
-      ]
+      "assessment": "Coding Assessment",
+      "category": "Coding"
     },
     {
-      "slug": "data-ml",
-      "file": "problems-data-ml.md",
+      "slug": "frontend-engineer",
+      "file": "problems-frontend-engineer.md",
       "status": "stub",
+      "role": "Frontend Engineer",
+      "assessmentId": "coding",
+      "assessment": "Coding Assessment",
+      "category": "Coding"
+    },
+    {
+      "slug": "devops-engineer",
+      "file": "problems-devops-engineer.md",
+      "status": "stub",
+      "role": "DevOps Engineer",
+      "assessmentId": "coding",
+      "assessment": "Coding Assessment",
+      "category": "Coding"
+    },
+    {
+      "slug": "backend-engineer",
+      "file": "problems-backend-engineer.md",
+      "status": "stub",
+      "role": "Backend Engineer",
+      "assessmentId": "coding",
+      "assessment": "Coding Assessment",
+      "category": "Coding"
+    },
+    {
+      "slug": "full-stack-engineer",
+      "file": "problems-full-stack-engineer.md",
+      "status": "stub",
+      "role": "Full Stack Engineer",
+      "assessmentId": "coding",
+      "assessment": "Coding Assessment",
+      "category": "Coding"
+    },
+    {
+      "slug": "data-scientist",
+      "file": "problems-data-scientist.md",
+      "status": "stub",
+      "role": "Data Scientist",
       "assessmentId": "data-ml",
-      "roles": [
-        "Data Scientist",
-        "Machine Learning Engineer"
-      ]
+      "assessment": "Data & ML Assessment",
+      "category": "Data & ML"
     },
     {
-      "slug": "cybersecurity",
-      "file": "problems-cybersecurity.md",
+      "slug": "machine-learning-engineer",
+      "file": "problems-machine-learning-engineer.md",
       "status": "stub",
+      "role": "Machine Learning Engineer",
+      "assessmentId": "data-ml",
+      "assessment": "Data & ML Assessment",
+      "category": "Data & ML"
+    },
+    {
+      "slug": "cybersecurity-expert",
+      "file": "problems-cybersecurity-expert.md",
+      "status": "stub",
+      "role": "Cybersecurity Expert",
       "assessmentId": "cybersecurity",
-      "roles": [
-        "Cybersecurity Expert",
-        "Penetration Tester",
-        "Incident Responder",
-        "Application Security Engineer"
-      ]
+      "assessment": "Cybersecurity Assessment",
+      "category": "Cybersecurity"
     },
     {
-      "slug": "finance",
-      "file": "problems-finance.md",
+      "slug": "penetration-tester",
+      "file": "problems-penetration-tester.md",
       "status": "stub",
+      "role": "Penetration Tester",
+      "assessmentId": "cybersecurity",
+      "assessment": "Cybersecurity Assessment",
+      "category": "Cybersecurity"
+    },
+    {
+      "slug": "incident-responder",
+      "file": "problems-incident-responder.md",
+      "status": "stub",
+      "role": "Incident Responder",
+      "assessmentId": "cybersecurity",
+      "assessment": "Cybersecurity Assessment",
+      "category": "Cybersecurity"
+    },
+    {
+      "slug": "application-security-engineer",
+      "file": "problems-application-security-engineer.md",
+      "status": "stub",
+      "role": "Application Security Engineer",
+      "assessmentId": "cybersecurity",
+      "assessment": "Cybersecurity Assessment",
+      "category": "Cybersecurity"
+    },
+    {
+      "slug": "finance-expert",
+      "file": "problems-finance-expert.md",
+      "status": "stub",
+      "role": "Finance Expert",
       "assessmentId": "finance",
-      "roles": [
-        "Finance Expert",
-        "Quantitative Analyst",
-        "Portfolio Manager",
-        "Investment Banker",
-        "Private Equity Associate",
-        "Credit Analyst",
-        "Wealth Manager",
-        "Equity Research Analyst",
-        "Actuary",
-        "Venture Capitalist",
-        "Insurance Underwriter",
-        "Trader",
-        "Treasury Analyst",
-        "Management Consultant"
-      ]
+      "assessment": "Finance Assessment",
+      "category": "Finance"
     },
     {
-      "slug": "accounting",
-      "file": "problems-accounting.md",
+      "slug": "quantitative-analyst",
+      "file": "problems-quantitative-analyst.md",
       "status": "stub",
+      "role": "Quantitative Analyst",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "portfolio-manager",
+      "file": "problems-portfolio-manager.md",
+      "status": "stub",
+      "role": "Portfolio Manager",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "investment-banker",
+      "file": "problems-investment-banker.md",
+      "status": "stub",
+      "role": "Investment Banker",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "private-equity-associate",
+      "file": "problems-private-equity-associate.md",
+      "status": "stub",
+      "role": "Private Equity Associate",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "credit-analyst",
+      "file": "problems-credit-analyst.md",
+      "status": "stub",
+      "role": "Credit Analyst",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "wealth-manager",
+      "file": "problems-wealth-manager.md",
+      "status": "stub",
+      "role": "Wealth Manager",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "equity-research-analyst",
+      "file": "problems-equity-research-analyst.md",
+      "status": "stub",
+      "role": "Equity Research Analyst",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "actuary",
+      "file": "problems-actuary.md",
+      "status": "stub",
+      "role": "Actuary",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "venture-capitalist",
+      "file": "problems-venture-capitalist.md",
+      "status": "stub",
+      "role": "Venture Capitalist",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "insurance-underwriter",
+      "file": "problems-insurance-underwriter.md",
+      "status": "stub",
+      "role": "Insurance Underwriter",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "trader",
+      "file": "problems-trader.md",
+      "status": "stub",
+      "role": "Trader",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "treasury-analyst",
+      "file": "problems-treasury-analyst.md",
+      "status": "stub",
+      "role": "Treasury Analyst",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "management-consultant",
+      "file": "problems-management-consultant.md",
+      "status": "stub",
+      "role": "Management Consultant",
+      "assessmentId": "finance",
+      "assessment": "Finance Assessment",
+      "category": "Finance"
+    },
+    {
+      "slug": "tax-accountant",
+      "file": "problems-tax-accountant.md",
+      "status": "stub",
+      "role": "Tax Accountant",
       "assessmentId": "accounting",
-      "roles": [
-        "Tax Accountant",
-        "Corporate Accountant",
-        "Accountant",
-        "Auditor",
-        "Public Accountant",
-        "FP&A Analyst",
-        "Financial Reporting Manager"
-      ]
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
     },
     {
-      "slug": "economics",
-      "file": "problems-economics.md",
+      "slug": "corporate-accountant",
+      "file": "problems-corporate-accountant.md",
       "status": "stub",
+      "role": "Corporate Accountant",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "accountant",
+      "file": "problems-accountant.md",
+      "status": "stub",
+      "role": "Accountant",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "auditor",
+      "file": "problems-auditor.md",
+      "status": "stub",
+      "role": "Auditor",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "public-accountant",
+      "file": "problems-public-accountant.md",
+      "status": "stub",
+      "role": "Public Accountant",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "fpa-analyst",
+      "file": "problems-fpa-analyst.md",
+      "status": "stub",
+      "role": "FP&A Analyst",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "financial-reporting-manager",
+      "file": "problems-financial-reporting-manager.md",
+      "status": "stub",
+      "role": "Financial Reporting Manager",
+      "assessmentId": "accounting",
+      "assessment": "Accounting Assessment",
+      "category": "Accounting"
+    },
+    {
+      "slug": "economist",
+      "file": "problems-economist.md",
+      "status": "stub",
+      "role": "Economist",
       "assessmentId": "economics",
-      "roles": [
-        "Economist",
-        "Research Economist",
-        "Applied Economist",
-        "Quantitative Economist"
-      ]
+      "assessment": "Economics Assessment",
+      "category": "Economics"
     },
     {
-      "slug": "legal",
-      "file": "problems-legal.md",
+      "slug": "research-economist",
+      "file": "problems-research-economist.md",
       "status": "stub",
+      "role": "Research Economist",
+      "assessmentId": "economics",
+      "assessment": "Economics Assessment",
+      "category": "Economics"
+    },
+    {
+      "slug": "applied-economist",
+      "file": "problems-applied-economist.md",
+      "status": "stub",
+      "role": "Applied Economist",
+      "assessmentId": "economics",
+      "assessment": "Economics Assessment",
+      "category": "Economics"
+    },
+    {
+      "slug": "quantitative-economist",
+      "file": "problems-quantitative-economist.md",
+      "status": "stub",
+      "role": "Quantitative Economist",
+      "assessmentId": "economics",
+      "assessment": "Economics Assessment",
+      "category": "Economics"
+    },
+    {
+      "slug": "legal-expert",
+      "file": "problems-legal-expert.md",
+      "status": "stub",
+      "role": "Legal Expert",
       "assessmentId": "legal",
-      "roles": [
-        "Legal Expert",
-        "Attorney",
-        "Paralegal",
-        "Litigation Attorney",
-        "Corporate Attorney",
-        "Compliance Officer",
-        "Contract Manager",
-        "IP Attorney"
-      ]
+      "assessment": "Legal Assessment",
+      "category": "Legal"
     },
     {
-      "slug": "medical",
-      "file": "problems-medical.md",
+      "slug": "attorney",
+      "file": "problems-attorney.md",
       "status": "stub",
+      "role": "Attorney",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "paralegal",
+      "file": "problems-paralegal.md",
+      "status": "stub",
+      "role": "Paralegal",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "litigation-attorney",
+      "file": "problems-litigation-attorney.md",
+      "status": "stub",
+      "role": "Litigation Attorney",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "corporate-attorney",
+      "file": "problems-corporate-attorney.md",
+      "status": "stub",
+      "role": "Corporate Attorney",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "compliance-officer",
+      "file": "problems-compliance-officer.md",
+      "status": "stub",
+      "role": "Compliance Officer",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "contract-manager",
+      "file": "problems-contract-manager.md",
+      "status": "stub",
+      "role": "Contract Manager",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "ip-attorney",
+      "file": "problems-ip-attorney.md",
+      "status": "stub",
+      "role": "IP Attorney",
+      "assessmentId": "legal",
+      "assessment": "Legal Assessment",
+      "category": "Legal"
+    },
+    {
+      "slug": "healthmedical-expert",
+      "file": "problems-healthmedical-expert.md",
+      "status": "stub",
+      "role": "Health/Medical Expert",
       "assessmentId": "medical",
-      "roles": [
-        "Health/Medical Expert",
-        "Radiologist",
-        "Sonographer",
-        "Imaging Specialist",
-        "Physician",
-        "Nurse",
-        "Surgical Clinician",
-        "Surgical Medicine Expert",
-        "Surgeon",
-        "Internal Medicine Clinician",
-        "Internist",
-        "Internal Medicine Physician",
-        "Dermatologist",
-        "Gynecologist",
-        "Obstetrician",
-        "Cardiologist",
-        "Interventional Cardiologist",
-        "Cardiac Electrophysiologist",
-        "Registered Nurse"
-      ]
+      "assessment": "Medical Assessment",
+      "category": "Medical"
     },
     {
-      "slug": "healthcare-ops",
-      "file": "problems-healthcare-ops.md",
+      "slug": "radiologist",
+      "file": "problems-radiologist.md",
       "status": "stub",
+      "role": "Radiologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "sonographer",
+      "file": "problems-sonographer.md",
+      "status": "stub",
+      "role": "Sonographer",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "imaging-specialist",
+      "file": "problems-imaging-specialist.md",
+      "status": "stub",
+      "role": "Imaging Specialist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "physician",
+      "file": "problems-physician.md",
+      "status": "stub",
+      "role": "Physician",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "nurse",
+      "file": "problems-nurse.md",
+      "status": "stub",
+      "role": "Nurse",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "surgical-clinician",
+      "file": "problems-surgical-clinician.md",
+      "status": "stub",
+      "role": "Surgical Clinician",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "surgical-medicine-expert",
+      "file": "problems-surgical-medicine-expert.md",
+      "status": "stub",
+      "role": "Surgical Medicine Expert",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "surgeon",
+      "file": "problems-surgeon.md",
+      "status": "stub",
+      "role": "Surgeon",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "internal-medicine-clinician",
+      "file": "problems-internal-medicine-clinician.md",
+      "status": "stub",
+      "role": "Internal Medicine Clinician",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "internist",
+      "file": "problems-internist.md",
+      "status": "stub",
+      "role": "Internist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "internal-medicine-physician",
+      "file": "problems-internal-medicine-physician.md",
+      "status": "stub",
+      "role": "Internal Medicine Physician",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "dermatologist",
+      "file": "problems-dermatologist.md",
+      "status": "stub",
+      "role": "Dermatologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "gynecologist",
+      "file": "problems-gynecologist.md",
+      "status": "stub",
+      "role": "Gynecologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "obstetrician",
+      "file": "problems-obstetrician.md",
+      "status": "stub",
+      "role": "Obstetrician",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "cardiologist",
+      "file": "problems-cardiologist.md",
+      "status": "stub",
+      "role": "Cardiologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "interventional-cardiologist",
+      "file": "problems-interventional-cardiologist.md",
+      "status": "stub",
+      "role": "Interventional Cardiologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "cardiac-electrophysiologist",
+      "file": "problems-cardiac-electrophysiologist.md",
+      "status": "stub",
+      "role": "Cardiac Electrophysiologist",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "registered-nurse",
+      "file": "problems-registered-nurse.md",
+      "status": "stub",
+      "role": "Registered Nurse",
+      "assessmentId": "medical",
+      "assessment": "Medical Assessment",
+      "category": "Medical"
+    },
+    {
+      "slug": "healthcare-operations-manager",
+      "file": "problems-healthcare-operations-manager.md",
+      "status": "stub",
+      "role": "Healthcare Operations Manager",
       "assessmentId": "healthcare-ops",
-      "roles": [
-        "Healthcare Operations Manager",
-        "Healthcare Compliance Specialist",
-        "Medical Coder",
-        "Revenue Cycle Specialist",
-        "Managed Care Analyst",
-        "Clinical Documentation Specialist"
-      ]
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
     },
     {
-      "slug": "engineering-mechanical",
-      "file": "problems-engineering-mechanical.md",
+      "slug": "healthcare-compliance-specialist",
+      "file": "problems-healthcare-compliance-specialist.md",
       "status": "stub",
+      "role": "Healthcare Compliance Specialist",
+      "assessmentId": "healthcare-ops",
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
+    },
+    {
+      "slug": "medical-coder",
+      "file": "problems-medical-coder.md",
+      "status": "stub",
+      "role": "Medical Coder",
+      "assessmentId": "healthcare-ops",
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
+    },
+    {
+      "slug": "revenue-cycle-specialist",
+      "file": "problems-revenue-cycle-specialist.md",
+      "status": "stub",
+      "role": "Revenue Cycle Specialist",
+      "assessmentId": "healthcare-ops",
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
+    },
+    {
+      "slug": "managed-care-analyst",
+      "file": "problems-managed-care-analyst.md",
+      "status": "stub",
+      "role": "Managed Care Analyst",
+      "assessmentId": "healthcare-ops",
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
+    },
+    {
+      "slug": "clinical-documentation-specialist",
+      "file": "problems-clinical-documentation-specialist.md",
+      "status": "stub",
+      "role": "Clinical Documentation Specialist",
+      "assessmentId": "healthcare-ops",
+      "assessment": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops"
+    },
+    {
+      "slug": "mechanical-engineer",
+      "file": "problems-mechanical-engineer.md",
+      "status": "stub",
+      "role": "Mechanical Engineer",
       "assessmentId": "engineering-mechanical",
-      "roles": [
-        "Mechanical Engineer",
-        "Mechanical Design Engineer",
-        "Validation Engineer",
-        "Automation Technician",
-        "Mechanical Designer",
-        "Senior Mechanical Design Engineer"
-      ]
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
     },
     {
-      "slug": "engineering-civil",
-      "file": "problems-engineering-civil.md",
+      "slug": "mechanical-design-engineer",
+      "file": "problems-mechanical-design-engineer.md",
       "status": "stub",
+      "role": "Mechanical Design Engineer",
+      "assessmentId": "engineering-mechanical",
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "validation-engineer",
+      "file": "problems-validation-engineer.md",
+      "status": "stub",
+      "role": "Validation Engineer",
+      "assessmentId": "engineering-mechanical",
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "automation-technician",
+      "file": "problems-automation-technician.md",
+      "status": "stub",
+      "role": "Automation Technician",
+      "assessmentId": "engineering-mechanical",
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "mechanical-designer",
+      "file": "problems-mechanical-designer.md",
+      "status": "stub",
+      "role": "Mechanical Designer",
+      "assessmentId": "engineering-mechanical",
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "senior-mechanical-design-engineer",
+      "file": "problems-senior-mechanical-design-engineer.md",
+      "status": "stub",
+      "role": "Senior Mechanical Design Engineer",
+      "assessmentId": "engineering-mechanical",
+      "assessment": "Engineering Assessment (Mechanical)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "civil-engineer",
+      "file": "problems-civil-engineer.md",
+      "status": "stub",
+      "role": "Civil Engineer",
       "assessmentId": "engineering-civil",
-      "roles": [
-        "Civil Engineer",
-        "Civil Design Engineer"
-      ]
+      "assessment": "Engineering Assessment (Civil)",
+      "category": "Engineering"
     },
     {
-      "slug": "engineering-electrical",
-      "file": "problems-engineering-electrical.md",
+      "slug": "civil-design-engineer",
+      "file": "problems-civil-design-engineer.md",
       "status": "stub",
+      "role": "Civil Design Engineer",
+      "assessmentId": "engineering-civil",
+      "assessment": "Engineering Assessment (Civil)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "electrical-engineer",
+      "file": "problems-electrical-engineer.md",
+      "status": "stub",
+      "role": "Electrical Engineer",
       "assessmentId": "engineering-electrical",
-      "roles": [
-        "Electrical Engineer",
-        "Embedded Systems Developer",
-        "Hardware Engineer",
-        "Electronics Engineer"
-      ]
+      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "category": "Engineering"
     },
     {
-      "slug": "stem",
-      "file": "problems-stem.md",
+      "slug": "embedded-systems-developer",
+      "file": "problems-embedded-systems-developer.md",
       "status": "stub",
+      "role": "Embedded Systems Developer",
+      "assessmentId": "engineering-electrical",
+      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "hardware-engineer",
+      "file": "problems-hardware-engineer.md",
+      "status": "stub",
+      "role": "Hardware Engineer",
+      "assessmentId": "engineering-electrical",
+      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "electronics-engineer",
+      "file": "problems-electronics-engineer.md",
+      "status": "stub",
+      "role": "Electronics Engineer",
+      "assessmentId": "engineering-electrical",
+      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "category": "Engineering"
+    },
+    {
+      "slug": "chemist",
+      "file": "problems-chemist.md",
+      "status": "stub",
+      "role": "Chemist",
       "assessmentId": "stem",
-      "roles": [
-        "Chemist",
-        "Physicist",
-        "Mathematician",
-        "Biologist",
-        "Experimental Biologist",
-        "Drug Discovery Scientist",
-        "Computational Biologist"
-      ]
+      "assessment": "STEM Assessment",
+      "category": "STEM"
     },
     {
-      "slug": "languages",
-      "file": "problems-languages.md",
+      "slug": "physicist",
+      "file": "problems-physicist.md",
       "status": "stub",
+      "role": "Physicist",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "mathematician",
+      "file": "problems-mathematician.md",
+      "status": "stub",
+      "role": "Mathematician",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "biologist",
+      "file": "problems-biologist.md",
+      "status": "stub",
+      "role": "Biologist",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "experimental-biologist",
+      "file": "problems-experimental-biologist.md",
+      "status": "stub",
+      "role": "Experimental Biologist",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "drug-discovery-scientist",
+      "file": "problems-drug-discovery-scientist.md",
+      "status": "stub",
+      "role": "Drug Discovery Scientist",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "computational-biologist",
+      "file": "problems-computational-biologist.md",
+      "status": "stub",
+      "role": "Computational Biologist",
+      "assessmentId": "stem",
+      "assessment": "STEM Assessment",
+      "category": "STEM"
+    },
+    {
+      "slug": "chinese-specialist",
+      "file": "problems-chinese-specialist.md",
+      "status": "stub",
+      "role": "Chinese Specialist",
       "assessmentId": "languages",
-      "roles": [
-        "Chinese Specialist",
-        "Thai Specialist",
-        "Russian Specialist",
-        "Polish Specialist",
-        "Hebrew Specialist"
-      ]
+      "assessment": "Language Assessment",
+      "category": "Languages"
     },
     {
-      "slug": "design",
-      "file": "problems-design.md",
+      "slug": "thai-specialist",
+      "file": "problems-thai-specialist.md",
       "status": "stub",
+      "role": "Thai Specialist",
+      "assessmentId": "languages",
+      "assessment": "Language Assessment",
+      "category": "Languages"
+    },
+    {
+      "slug": "russian-specialist",
+      "file": "problems-russian-specialist.md",
+      "status": "stub",
+      "role": "Russian Specialist",
+      "assessmentId": "languages",
+      "assessment": "Language Assessment",
+      "category": "Languages"
+    },
+    {
+      "slug": "polish-specialist",
+      "file": "problems-polish-specialist.md",
+      "status": "stub",
+      "role": "Polish Specialist",
+      "assessmentId": "languages",
+      "assessment": "Language Assessment",
+      "category": "Languages"
+    },
+    {
+      "slug": "hebrew-specialist",
+      "file": "problems-hebrew-specialist.md",
+      "status": "stub",
+      "role": "Hebrew Specialist",
+      "assessmentId": "languages",
+      "assessment": "Language Assessment",
+      "category": "Languages"
+    },
+    {
+      "slug": "designer",
+      "file": "problems-designer.md",
+      "status": "stub",
+      "role": "Designer",
       "assessmentId": "design",
-      "roles": [
-        "Designer"
-      ]
+      "assessment": "Design Assessment",
+      "category": "Design"
     },
     {
-      "slug": "project-based",
-      "file": "problems-project-based.md",
+      "slug": "cybersecurity-projects",
+      "file": "problems-cybersecurity-projects.md",
       "status": "stub",
+      "role": "Cybersecurity Projects",
       "assessmentId": "project-based",
-      "roles": [
-        "Cybersecurity Projects",
-        "Robotics Projects",
-        "Nuclear Engineering Projects",
-        "Chemical Engineering Projects",
-        "Process Engineering Projects",
-        "Architectural Engineering Projects",
-        "Ophthalmology Projects",
-        "Machine Learning Engineering Projects"
-      ]
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
     },
     {
-      "slug": "biology",
-      "file": "problems-biology.md",
+      "slug": "robotics-projects",
+      "file": "problems-robotics-projects.md",
       "status": "stub",
-      "assessmentId": "stem",
-      "roles": [
-        "Biologist",
-        "Experimental Biologist",
-        "Computational Biologist"
-      ]
+      "role": "Robotics Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
     },
     {
-      "slug": "chemistry",
-      "file": "problems-chemistry.md",
+      "slug": "nuclear-engineering-projects",
+      "file": "problems-nuclear-engineering-projects.md",
       "status": "stub",
-      "assessmentId": "stem",
-      "roles": [
-        "Chemist",
-        "Drug Discovery Scientist"
-      ]
+      "role": "Nuclear Engineering Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
     },
     {
-      "slug": "physics",
-      "file": "problems-physics.md",
+      "slug": "chemical-engineering-projects",
+      "file": "problems-chemical-engineering-projects.md",
       "status": "stub",
-      "assessmentId": "stem",
-      "roles": [
-        "Physicist"
-      ]
+      "role": "Chemical Engineering Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
     },
     {
-      "slug": "math",
-      "file": "problems-math.md",
+      "slug": "process-engineering-projects",
+      "file": "problems-process-engineering-projects.md",
       "status": "stub",
-      "assessmentId": "stem",
-      "roles": [
-        "Mathematician"
-      ]
+      "role": "Process Engineering Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
+    },
+    {
+      "slug": "architectural-engineering-projects",
+      "file": "problems-architectural-engineering-projects.md",
+      "status": "stub",
+      "role": "Architectural Engineering Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
+    },
+    {
+      "slug": "ophthalmology-projects",
+      "file": "problems-ophthalmology-projects.md",
+      "status": "stub",
+      "role": "Ophthalmology Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
+    },
+    {
+      "slug": "machine-learning-engineering-projects",
+      "file": "problems-machine-learning-engineering-projects.md",
+      "status": "stub",
+      "role": "Machine Learning Engineering Projects",
+      "assessmentId": "project-based",
+      "assessment": "Project-Based Specialist Assessments",
+      "category": "Other"
     }
-  ]
+  ],
+  "byFamily": {
+    "generalist": {
+      "captured": 0,
+      "stub": 1,
+      "n": 1
+    },
+    "coding": {
+      "captured": 0,
+      "stub": 5,
+      "n": 5
+    },
+    "data-ml": {
+      "captured": 0,
+      "stub": 2,
+      "n": 2
+    },
+    "cybersecurity": {
+      "captured": 0,
+      "stub": 4,
+      "n": 4
+    },
+    "finance": {
+      "captured": 0,
+      "stub": 14,
+      "n": 14
+    },
+    "accounting": {
+      "captured": 0,
+      "stub": 7,
+      "n": 7
+    },
+    "economics": {
+      "captured": 0,
+      "stub": 4,
+      "n": 4
+    },
+    "legal": {
+      "captured": 0,
+      "stub": 8,
+      "n": 8
+    },
+    "medical": {
+      "captured": 0,
+      "stub": 19,
+      "n": 19
+    },
+    "healthcare-ops": {
+      "captured": 0,
+      "stub": 6,
+      "n": 6
+    },
+    "engineering-mechanical": {
+      "captured": 0,
+      "stub": 6,
+      "n": 6
+    },
+    "engineering-civil": {
+      "captured": 0,
+      "stub": 2,
+      "n": 2
+    },
+    "engineering-electrical": {
+      "captured": 0,
+      "stub": 4,
+      "n": 4
+    },
+    "stem": {
+      "captured": 0,
+      "stub": 7,
+      "n": 7
+    },
+    "languages": {
+      "captured": 0,
+      "stub": 5,
+      "n": 5
+    },
+    "design": {
+      "captured": 0,
+      "stub": 1,
+      "n": 1
+    },
+    "project-based": {
+      "captured": 0,
+      "stub": 8,
+      "n": 8
+    }
+  }
 }
