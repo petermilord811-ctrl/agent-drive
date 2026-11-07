@@ -122,6 +122,11 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   faced while solving (wrong fills, ads, misreads, slow paths) gets a short review and is written into
   the skill / this file / AGENTS before you stop. Waiting for “learn it” has been a repeated miss.
   Then **auto-commit and push** those learnings (no wait for “commit/push”).
+- **Chrome blank / blocked page:** F5 or new tab **once**. If still blank, **instantly** switch to
+  Firefox / Edge / the OS default browser (`firefox '<url>' &` via shell on Ubuntu). Do not keep
+  clicking a blank Chrome render. (Operator, 34123, 2026-11-07 — DataAnnotation.)
+- **Always enable run/shell automatically** when the job needs `exec` (launch apps, curl, etc.) —
+  `access {shell:1}` without waiting to be told. (Operator, 34123, 2026-11-07.)
 
 ## More from a live run (host 34123, 2026-11-06/07) — Master sudoku in Firefox
 - **`F11` fullscreen blanks the capture the same way maximize does.** Window chrome may still draw; the

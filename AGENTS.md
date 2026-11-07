@@ -89,6 +89,8 @@ file explains them.
 - **Auto-commit and push after learnings/fixes.** Once the check→analyze→learn pass (or any skill/docs
   fix) is written, `git commit` and `git push` to the tracked remote without waiting to be asked.
   Skip secrets (`.env`, `*.local.json`) and throwaway `work/` clutter.
+- **Browser blank on Chrome:** one F5/new-tab retry, then Firefox/Edge/default immediately. Request
+  **shell** automatically when you need `exec` to launch it — do not wait for “enable run.”
 
 ### MUST NOT — ever
 

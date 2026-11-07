@@ -21,6 +21,9 @@ tags: browser, navigation, read
   Enter does nothing. Use a new tab, or close the tab.
 - Heavy-ad pages can **crash the renderer to blank**; reload won't fix it → restart the browser, or
   switch browsers (Firefox) if the operator named none. See [../recover-a-stuck-session/](../recover-a-stuck-session/README.md).
+- **Operator rule (34123, 2026-11-07):** if Chrome is blank/blocked → F5 or new tab **once**; if that
+  fails, **instantly** use Firefox / Edge / system default. Prefer `exec` `firefox '<url>' &` when
+  shell is available. Always request/enable **shell** automatically when launching a browser that way.
 - Keyboard needs window focus; mouse always lands.
 
 ## Launching a different browser / app
