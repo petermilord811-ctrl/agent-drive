@@ -36,6 +36,15 @@ const verbs = require(path.join(KIT, 'core', 'verbs.js'));
 const { putCmd, budgetOf } = require(path.join(KIT, 'core', 'cmd-file.js'));
 
 const SERVER = { name: 'agent-drive', title: 'ScreenMirror agent-drive', version: '1.0.0' };
+// THE ICON (MCP 2025-11-25 `icons`): ScreenMirror's own mark, so a client that draws a server's icon -- beside its tool
+// calls, in its list of servers -- shows this one rather than a generic one. PNG, which every client that draws icons
+// must read (SVG is only a SHOULD), at 32 and 64 px for a 16 px row at 2x and 4x, as data: URIs so it works offline and
+// asks nothing of the network. Sent only to a client that negotiated 2025-11-25, the revision that defines the field,
+// so an older one never meets a key it does not know. A missing file is no icon, not an error.
+const ICONS = [['icon-32.png', '32x32'], ['icon-64.png', '64x64']].map(([file, sizes]) => {
+  try { return { src: 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, file)).toString('base64'), mimeType: 'image/png', sizes: [sizes] }; }
+  catch (_) { return null; }
+}).filter(Boolean);
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];   // newest first
 const AGENT = 'claude';
 // How long `connect` waits for a person to press Allow. The code expires after two minutes and the client gives up
@@ -677,7 +686,8 @@ async function handle(msg) {
       const asked = msg.params && msg.params.protocolVersion;
       const protocolVersion = PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0];
       if (isRequest) log('initialize: ' + (asked || '?') + ' -> ' + protocolVersion);
-      return isRequest ? reply(id, { protocolVersion, capabilities: { tools: {} }, serverInfo: SERVER, instructions: INSTRUCTIONS }) : null;
+      const serverInfo = protocolVersion >= '2025-11-25' && ICONS.length ? Object.assign({}, SERVER, { icons: ICONS }) : SERVER;
+      return isRequest ? reply(id, { protocolVersion, capabilities: { tools: {} }, serverInfo, instructions: INSTRUCTIONS }) : null;
     }
     case 'notifications/initialized': case 'initialized': return null;
     case 'notifications/cancelled': {
