@@ -20,6 +20,12 @@ the reasoning.
 A good first slice was **02 + a watchdog reconnect** (below) — the two things the field runs most
 needed. Both have since shipped.
 
+## The board — the panel as the room's control surface (2026-11-06) ✅ BUILT
+
+[07 — the board](07-the-board.md): the watchers answer the agent's questions, pause it, stop it at three strengths, turn
+the autonomy dial, put its changes back and see its goal, budget, time, proofs and what it saw — from the panel, through
+the session chat, honoured by the serve itself. The relay keeps each visit's run for a late viewer, and a short History.
+
 ## Missions — the big plan, milestones, proof (2026-10-27) ✅ BUILT
 
 [06 — missions](06-missions.md): a job is planned as milestones that each say what will be on the screen when they

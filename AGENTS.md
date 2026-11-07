@@ -46,6 +46,9 @@ file explains them.
 - **Replan out loud** — when the screen or the operator says the plan no longer fits: add, change, split, skip
   or fail, each with its why. The room sees the plan move, and the reason.
 - **Act on `remind` and `hint`.** When an answer in `done.json` carries either, do that before anything else.
+- **Act on `room` before anything else, too** — what the people watching did on the panel's board: paused you, stopped the
+  task, answered your question, had a change put back, asked you to skip a step. A command refused with `paused`, `held`,
+  `approval` or `checkpoint` did NOTHING: wait in `chat-wait`, then do what it says ([the board](docs/reference/serve-protocol.md#the-board-what-the-room-can-do-from-the-panel)).
 - **A new job in the chat may already be a skill.** When the operator's message names one, `inbox.latest.skill` says
   which: read its README before working the job out yourself. A request in plain words before any visit —
   "connect 10004 and do my sticky notes" — is read by `node kit.js intake "<it>"` (or the MCP `intake` tool).

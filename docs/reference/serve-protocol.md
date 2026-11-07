@@ -320,6 +320,27 @@ needed; answers carry `via:"relay"`. The relay reads up to 6 MB and puts up to 4
 A refused photo or recording answers `ok:false` with `verdict` (`cancelled` or `unclear`) and the replies. The pictures and recordings
 are captures like a `shot`: they are deleted when the visit ends unless `keep:1`.
 
+## The board: what the room can do from the panel ([plan 07](../plans/07-the-board.md), `core/board.js`)
+
+The panel is the people's control surface. Its buttons post chat lines that start with a mark only the panel sends; the
+serve honours each **itself**, so a button works while you are busy or thinking. What it means for you:
+
+- **Read `room` on every answer first** — what the people did on the board (paused you, stopped the task, answered a
+  question, had a change put back, asked you to skip or redo a step, set the autonomy dial). It is said once.
+- **A refused acting command did nothing**, and says why: `paused {by, at, why}` (wait in `chat-wait` for “▶ Go on”, then
+  send it again), `held {k}` (the room stopped the task: report what is done with `status {fin:1, say}`, then wait),
+  `approval {id, q}` (the autonomy dial asks before this command: wait for the answer, then send the SAME command again —
+  the yes runs it once), `checkpoint` (a step ended in 'checkpoints' mode: wait for the go-ahead). Looking, talking, the
+  panel and finishing are never held.
+- **Questions carry ids.** `confirm`, `captcha`, `budget {more}`, a mission's preview or checkpoint and `undo`'s question are
+  on the panel with buttons; a button answers only the question it was shown for. A yes counts only from the person who
+  let you in (the relay tells the serve); anyone's no still wins.
+- **The serve does some things itself, between your commands**: an Undo the room asked for (`↩ Undo c3`), saving the job
+  as a draft skill, scheduling it, answering "are you still there?". You hear each in `room`.
+- **A person taking the mouse, or someone at the machine, pauses you** (unless you were waiting for them). Wait for “▶ Go on”.
+- What the panel shows comes from you: `why` on commands, `status {task|step}`, proofs (`mission achieve` with a check or a
+  picture, `status {fin:1, file}`), and the `look` you take (a small copy goes to the panel as "what it saw").
+
 ## Exclusive control & running commands
 
 Each is its OWN consent, named on the Allow card and recorded on the grant: `--control` for the keyboard,

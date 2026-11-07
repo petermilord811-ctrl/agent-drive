@@ -59,6 +59,13 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   temp, up to 16 MB), a registry value, a startup type, a mode or owner, an ACL — is kept or read first, so `undo` puts
   those back too, refusing when the thing changed again since; the copies go when the visit ends. A change a later
   one made moot is marked `gone` and is not offered back.
+- **The board** (`core/board.js`, [plan 07](docs/plans/07-the-board.md)): the panel is the room's control surface. Its buttons
+  post chat lines with marks only the panel sends, honoured by the serve itself: pause / go on, stop the task, stop after
+  a step, answers by question id (the inviter's yes only; anyone's no), Undo, the autonomy dial (each action / risky
+  actions / checkpoints), skip / redo, save as a skill, schedule, "are you still there?". A person taking the mouse pauses
+  the agent. New panel fields: goal and done-when, budget, where the time went, the question, changes, pause / stop, the
+  dial, failures, row badges; frames of what the agent saw (`drive-eye`) and its proofs (`drive-proof`); clicks ring on
+  the watchers' picture. Answers carry `room`, `paused`, `hold`, `autonomy`; refusals say `paused` / `held` / `approval`.
 - `why:"…"` on any command (or batch step) is the panel's thought — the reason, shown above the plan, at no
   extra turn. A thought now ends with its step (a declared task, step or sub-step, a plan's move, a finish),
   and a new one replaces the last one's `conf` and `next` too.
