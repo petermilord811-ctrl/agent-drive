@@ -35,7 +35,7 @@ ok(SK.every((s) => Object.keys(s).join(',') === 'slug,name,when,tags,run'), 'a s
 ok(!SLUGS.has('_template') && !SLUGS.has('README.md'), 'skills/_template and skills/README.md are not skills');
 ok(SK.map((s) => s.slug).join() === SK.map((s) => s.slug).sort().join(), 'skills come sorted by slug');
 const sudoku = SK.find((s) => s.slug === 'solve-a-sudoku');
-ok(sudoku && sudoku.name === 'Solve a sudoku' && sudoku.run === 'node skills/solve-a-sudoku/sudoku.js ./work play master' && sudoku.tags.includes('puzzle'),
+ok(sudoku && sudoku.name === 'Solve a sudoku' && sudoku.run === 'node skills/solve-a-sudoku/fast.js ./work master' && sudoku.tags.includes('puzzle'),
    'a skill carries its frontmatter: name, run, tags');
 ok(Array.isArray(intake.skills(path.join(KIT, 'no-such-folder'))) && intake.skills(path.join(KIT, 'no-such-folder')).length === 0, 'a missing folder is an empty library, never a throw');
 const lib = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-intake-'));
@@ -340,7 +340,7 @@ try { jo = JSON.parse(j.stdout); } catch (_) {}
 ok(j.status === 0 && jo && jo.host === '10004' && jo.skill.slug === 'work-through-sticky-notes' && jo.needs.control === true && jo.task === 'do my sticky notes' &&
    /^node core\/agent-join\.js --host 10004 --task "do my sticky notes" --control --serve \.\/work$/.test(jo.command), 'kit.js intake --json: the reading plus the command, exit 0 (words unquoted are one request)');
 const h = kit(['on machine 10002 solve the sudoku', '--sh']);
-ok(h.status === 0 && /machine\s+10002/.test(h.stdout) && /skill\s+solve-a-sudoku -- Solve a sudoku/.test(h.stdout) && /run:\s+node skills\/solve-a-sudoku\/sudoku\.js \.\/work play master/.test(h.stdout) &&
+ok(h.status === 0 && /machine\s+10002/.test(h.stdout) && /skill\s+solve-a-sudoku -- Solve a sudoku/.test(h.stdout) && /run:\s+node skills\/solve-a-sudoku\/fast\.js \.\/work master/.test(h.stdout) &&
    /access\s+the keyboard and mouse \(--control\)/.test(h.stdout) && h.stdout.includes('node core/agent-join.js --host 10002 --task "solve the sudoku" --control --serve ./work'),
    'kit.js intake prints the machine, the skill and its run line, the access, and the command line');
 const nm = kit(['research the capital of Peru']);

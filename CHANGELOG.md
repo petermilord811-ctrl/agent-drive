@@ -69,6 +69,8 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 - `why:"…"` on any command (or batch step) is the panel's thought — the reason, shown above the plan, at no
   extra turn. A thought now ends with its step (a declared task, step or sub-step, a plan's move, a finish),
   and a new one replaces the last one's `conf` and `next` too.
+- CI is green again: the tests know the sudoku skill's one command is its fast path now (`fast.js`), the
+  DataAnnotation skill's two Python checks carry their `@tool` / `@run` lines, and the map names `.cursor/`.
 - The MCP server sends ScreenMirror's icon (`serverInfo.icons`, MCP 2025-11-25: 32 and 64 px PNGs as `data:`
   URIs) to a client that speaks that revision, for one that draws a server's icon beside its tools.
 

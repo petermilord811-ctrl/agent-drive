@@ -66,7 +66,9 @@ try {
   const skillListed = new Set([].concat(...real.skills.map((s) => s.tools.map((t) => t.path))));
   ok(skillFiles.every((f) => skillListed.has(f)), 'every script inside a skill folder is listed with its skill (' + skillFiles.length + ')');
   const sudoku = real.skills.find((e) => e.slug === 'solve-a-sudoku');
-  ok(!!sudoku && sudoku.run === 'node skills/solve-a-sudoku/sudoku.js ./work play master' && sudoku.tools.some((t) => t.path === 'skills/solve-a-sudoku/sudoku.js'),
+  // its one command is the fast path since 55a0fe5 (fast.js plays and posts the proof itself); sudoku.js is still one of its scripts
+  ok(!!sudoku && sudoku.run === 'node skills/solve-a-sudoku/fast.js ./work master' &&
+     ['fast.js', 'sudoku.js'].every((n) => sudoku.tools.some((t) => t.path === 'skills/solve-a-sudoku/' + n)),
      'the sudoku skill lists its one command and its own scripts');
   const areas = real.areas.map((a) => a.path);
   ok(areas.filter((a) => a !== 'work/').every((a) => fs.existsSync(path.join(KIT, a))), 'every area the map names exists (' + areas.join(' ') + ')');
