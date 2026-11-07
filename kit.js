@@ -47,6 +47,7 @@ const AREAS = [
   ['dev/', 'for contributors: check, new skill, update, contribute (node kit.js check|new|update|contribute)'],
   ['tests/', "the kit's own tests: npm test (CI runs them on every pull request)"],
   ['.github/', 'CI on every pull request, CODEOWNERS (who reviews what), the pull-request and issue templates'],
+  ['.cursor/', "Cursor's project rules (rules/*.mdc): what an agent working on this kit in Cursor must do"],
   ['work/', "a run's scratch: cmd.json, done.json, ledger.json, screenshots (never committed)"],
 ];
 

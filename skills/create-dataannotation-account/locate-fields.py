@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Locate light input-field bands in a look PNG. Prints JSON: [{cx,cy,y0,y1,x0,x1}, ...]"""
+"""Locate light input-field bands in a look PNG. Prints JSON: [{cx,cy,y0,y1,x0,x1}, ...]
+@tool find the sign-up form's light input fields in a look picture: each band and its centre, as JSON
+@run  python skills/create-dataannotation-account/locate-fields.py look.png [y_min=180] [y_max=560]
+"""
 from __future__ import annotations
 
 import json
