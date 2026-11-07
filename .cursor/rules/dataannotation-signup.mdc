@@ -16,12 +16,14 @@ When creating a DataAnnotation.tech worker account (any host, especially 34123):
 
 3. **Locate fields from the current `look`.** Click each field’s own mid (`lx/ly` from `locate-fields.py`). Never reuse coords from an earlier visit. Order is First → Last → Email (offset by one band was a live miss).
 
-4. **Replace, never append.** Every field: click → Ctrl+A → Backspace → `keys {human:0}` (`secret:1` for passwords). Do not Tab between password boxes without clicking each.
+4. **Replace, never append.** Every field: click → Ctrl+A → Backspace → `keys` (`secret:1` for passwords). Do not Tab between password boxes without clicking each.
 
-5. **Chrome blank once, then Firefox.** F5/new-tab once; if still blank, `exec firefox '<url>' &`. Request shell automatically. No maximize / F11.
+5. **ALWAYS use ScreenMirror auto-type** for form text (operator, 2026-11-07): call `keys` **without** `human:0` (default = person rhythm / autotype). Never `human:0` for names, emails, or passwords on DA signup. Speed drills that used `human:0` are superseded.
 
-6. **Budget:** prefer `keys human:0`, not `type-text.js` (burns steps). Ask `budget {more:1}` early if near the limit.
+6. **Chrome blank once, then Firefox.** F5/new-tab once; if still blank, `exec firefox '<url>' &`. Request shell automatically. No maximize / F11.
 
-7. **CAPTCHA:** never solve it. After `captcha` returns, **look again**. If still unchecked / “Please complete the recaptcha,” ask again or stop. Chat “solved” / “sign off” is not proof.
+7. **Budget:** auto-type is slower than `human:0` — ask `budget {more:1}` early if near the limit. Still avoid `type-text.js` (one key per command).
 
-8. After the visit: check → analyze → learn into the skill (not gotchas alone) → auto-commit/push.
+8. **CAPTCHA:** never solve it. After `captcha` returns, **look again**. If still unchecked / “Please complete the recaptcha,” ask again or stop. Chat “solved” / “sign off” is not proof.
+
+9. After the visit: check → analyze → learn into the skill (not gotchas alone) → auto-commit/push.

@@ -5,7 +5,8 @@
 // Learned 34123 MCP (2026-11-07) — open→pre-captcha plan alone ~9 s (iter2); wall <30 s typical:
 //  - Use SCREEN x/y in a blind plan (lx/ly REFUSED until a look) — Email CTA (960,600), Terms (795,722)
 //  - Firefox focused; open worker_signup; Continue with Email; Tab between fields
-//  - keys human:0; Escape before password (Firefox manager popup); ONE end look; never touch captcha
+//  - keys with ScreenMirror AUTO-TYPE (never human:0 — operator 2026-11-07); Escape before password
+//  - ONE end look; never touch captcha
 // Failures this path avoids: Chrome duplicates, field-band offset, append, type-text, lx-without-look.
 const path = require('path');
 const { exchange } = require('../../core/cmd-file.js');
@@ -68,21 +69,21 @@ act({
   intent: 'Open → Email CTA → name → passwords → Terms (stop before captcha)',
   timeout: 90000,
   steps: [
-    { do: 'open', url, wait: 1500, human: 0 },
+    { do: 'open', url, wait: 1500 },
     { do: 'click', x: 960, y: 600, intent: 'Continue with Email' },
     { do: 'pause', ms: 800 },
-    { do: 'keys', text: first, human: 0, show: 1 },
+    { do: 'keys', text: first, show: 1 },
     { do: 'press', code: 'Tab' },
-    { do: 'keys', text: last, human: 0, show: 1 },
+    { do: 'keys', text: last, show: 1 },
     { do: 'press', code: 'Tab' },
-    { do: 'keys', text: email, human: 0, show: 1 },
+    { do: 'keys', text: email, show: 1 },
     { do: 'press', code: 'Enter' },
     { do: 'pause', ms: 1500 },
     { do: 'press', code: 'Escape' },
     { do: 'pause', ms: 150 },
-    { do: 'keys', text: password, human: 0, secret: 1 },
+    { do: 'keys', text: password, secret: 1 },
     { do: 'press', code: 'Tab' },
-    { do: 'keys', text: password, human: 0, secret: 1 },
+    { do: 'keys', text: password, secret: 1 },
     { do: 'pause', ms: 300 },
     { do: 'click', x: 795, y: 722, intent: 'Check Terms' },
   ],

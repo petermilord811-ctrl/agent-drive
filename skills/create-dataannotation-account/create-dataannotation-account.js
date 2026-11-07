@@ -8,7 +8,7 @@
 //  3) Ctrl+A + Backspace before every keys (replace, never append)
 //  4) Chrome blank → F5 once → Firefox via exec (shell auto)
 //  5) captcha.solved is NOT proof — look + verify; re-ask or stop
-//  6) keys human:0 only (no type-text budget burn)
+//  6) ScreenMirror AUTO-TYPE for all field keys (never human:0 — operator 2026-11-07)
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -163,7 +163,7 @@ function openInFirefox() {
   focusFormWindow();
 }
 
-/** Fix #3 + #6: replace-not-append; human:0 keys only. */
+/** Fix #3 + #6: replace-not-append; ScreenMirror auto-type (never human:0). */
 function fillField(lx, ly, text, label, secret) {
   act({
     do: 'plan',
@@ -174,8 +174,7 @@ function fillField(lx, ly, text, label, secret) {
       {
         do: 'keys',
         text,
-        human: 0,
-        intent: 'Type ' + label,
+        intent: 'Type ' + label + ' (auto-type)',
         ...(secret ? { secret: 1 } : { show: 1 }),
       },
     ],

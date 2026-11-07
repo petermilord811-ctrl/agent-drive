@@ -25,9 +25,10 @@ node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
 # Or env: DA_FIRST DA_LAST DA_EMAIL DA_PASSWORD
 ```
 
-**MCP fast path (34123, proven ~9 s plan):** one `plan` with **screen** coords (not `lx/ly` until after a
-`look`): Email CTA `(960,600)` → Tab name/email → Enter → Escape → passwords → Terms `(795,722)` →
-**stop**. Do not call `captcha`. Iter2 fill plan **8796 ms**; target wall open→pre-captcha **<60 s**.
+**MCP fast path (34123):** one `plan` with **screen** coords (not `lx/ly` until after a `look`): Email CTA
+`(960,600)` → Tab name/email → Enter → Escape → passwords → Terms `(795,722)` → **stop**. Do not call
+`captcha`. **Always ScreenMirror auto-type** (`keys` default — never `human:0` for DA fields; operator
+2026-11-07). Instant `human:0` was only for an earlier timing drill and is retired for signup.
 
 **Do not** invent email/password — take them from the operator (session chat or flags). **Do not** click
 reCAPTCHA yourself — `captcha` then **look again**.
@@ -53,8 +54,8 @@ reCAPTCHA yourself — `captcha` then **look again**.
    First → Last → Email (or Create password → Confirm). Click each band’s **own** `cx,cy` (`lx/ly`). Guessing
    from an earlier visit offsets into the wrong box (operator: Last typed into First, Email into Last).
 4. **Replace, never append.** For every field: click → `chord ControlLeft KeyA` → `Backspace` →
-   `keys {text, human:0}` (add `secret:1` for passwords). Tab-after-type can leave Create empty and Confirm
-   filled → “Passwords must match.”
+   `keys {text}` with **auto-type** (never `human:0`; add `secret:1` for passwords). Tab-after-type can
+   leave Create empty and Confirm filled → “Passwords must match.”
 5. **Continue** (button or Enter) → password page. Dismiss Firefox’s password-manager popup with Escape.
 6. **Terms** checkbox (small square above Create). Then **`captcha`** — when the reply is not a refusal,
    **look again**. If “I'm not a robot” is still empty or the page says “Please complete the recaptcha,”
@@ -78,10 +79,10 @@ one-liner `exec` strings.
 |---------------|------------------------------------------|
 | Keys hit Chrome while Firefox had the form | `focusFormWindow` kills Chrome DA windows, activates Firefox |
 | First/Last/Email offset by one field | `pickNameFields` from current `locate-fields.py` look only |
-| Appended into existing strings | every `fillField` does Ctrl+A → Backspace → `keys human:0` |
+| Appended into existing strings | every `fillField` does Ctrl+A → Backspace → auto-type `keys` |
 | Chrome blank DA page | `openInFirefox` + one F5; shell via `access` |
 | `captcha.solved` but still blocked | `waitCaptchaVerified` looks + `verify.py captcha-blocked`, re-asks once |
-| Step budget burned by type-text | `keys human:0` only; no `type-text.js` |
+| Instant typing / no auto-type | **never `human:0`** on DA fields — ScreenMirror auto-type only |
 
 Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and gotchas.
 
@@ -90,7 +91,8 @@ Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and g
 - Duplicate titled windows steal keystrokes — close extras first.
 - Field mid_y from **this** look only; one band down = wrong field.
 - Append into existing text → wrong values / password mismatch.
-- `type-text.js` (one key per command) burns the step budget — prefer `keys human:0` for known strings.
+- `type-text.js` (one key per command) burns the step budget — prefer one `keys` call with auto-type.
+- Never `human:0` on DA signup fields (operator: always ScreenMirror auto-type).
 - `captcha.solved:true` ≠ checkbox checked — always look.
 - Never solve, bypass, or click through reCAPTCHA.
 - No Tesseract on 34123 — prove with pictures, not `text` checks.
