@@ -1,20 +1,25 @@
 #!/usr/bin/env node
 'use strict';
-// @tool run a saved job on a schedule: a proven recipe (drive/replay.js) or a command line, at a time, every N or once -- every visit still needs Allow
+// @tool run a saved job on a schedule or when something happens: a proven recipe (drive/replay.js) or a command line, at a time, every N, once, or on a relay alert, a new file or a call -- every visit still needs Allow
 // @run  node drive/schedule.js add --host 10004 --recipe skills/<name>/replay.json --at 09:00 --days mon-fri   then   node drive/schedule.js run
 // schedule.js -- A JOB THAT WAS DONE ONCE AND PROVEN, DONE AGAIN WHEN IT IS DUE.
 //
 // A job saved by drive/replay.js needs no AI to run again: its recipe holds every command, and the proof of every
-// milestone. So it can run at 09:00 on weekdays, every two hours, or once next Tuesday, with nobody driving it. This
+// milestone. So it can run at 09:00 on weekdays, every two hours, or once next Tuesday, with nobody driving it -- or
+// when something happens: the relay alerts that a machine is offline, a file lands in a folder, a script calls. This
 // keeps the list of such jobs and a runner that starts each one when it is due:
 //
 //   add     a job and when it runs:  --recipe skills/<name>/replay.json | --cmd "<a command line>",  with
 //           --at HH:MM [--days mon,tue,...|mon-fri|weekdays]  |  --every 30m|2h|1d|1w  |  --once "YYYY-MM-DD HH:MM"
+//           |  --on <event> [--machine <number[,number...]|name>] [--match *.csv] [--debounce 1m]   (drive/triggers.js)
 //           [--name] [--task <the Allow card's line>] [--limit 4h] [--secret-env NAME, one per secret the recipe types]
-//   list    what is scheduled, when each runs next, how its last run ended, the fires it missed or skipped
+//   list    what is scheduled, when each runs next (a trigger: what it waits for, when it last fired), how its last run
+//           ended, the fires it missed, skipped or counted in a burst
 //   remove  an entry (a run in progress finishes)
 //   next    the next fire times, every entry merged [--n 5]
-//   run     the runner, in the foreground: it starts each job when it is due (--once: what is due now, then exit)
+//   hook    the address to paste into the relay's webhook setting, and each direct call's [--new-token: replace them]
+//   run     the runner, in the foreground: it starts each job when it is due or when its event comes (--once: what is
+//           due now, then exit) [--listen [host:]port: where the relay's alerts and direct calls reach it]
 //   (each takes --work <dir>, where the state lives: the kit's work/ by default, which is never committed)
 //
 // THE RULES IT KEEPS
@@ -43,21 +48,50 @@
 //     time: <work>/schedule.runner.json names it, touched as it runs (a mark left by one that died is taken over).
 //     Nothing here installs a service or an OS scheduled task -- whoever wants one starts `run` from their own.
 //
+// TRIGGERS (--on): a job that starts when something happens -- one of the relay's health alerts (alert-offline,
+// recovered-disk, ...: its webhook posts them to the runner's listener), a new file in a folder (file:<folder>), or a
+// direct call (http). drive/triggers.js says what the relay really sends and what each event matches. They keep every
+// rule above, and these:
+//   * EVERY RULE STILL HOLDS: never two runs of one entry, one visit per machine, Allow on every visit -- a triggered
+//     run nobody lets in is recorded "not let in" and waits for the entry's next event, never retried in a loop --
+//     and one failing job stops nothing else.
+//   * A BURST STARTS ONE RUN: the same event again within the entry's --debounce of the run it started (1 min by
+//     default: a quiet-hours summary opened up, an outage alerting on every machine, ten files landing together) is
+//     counted in `list`, never started; one that comes later while that run still goes is skipped and counted.
+//   * THE EVENT'S FACTS ARE HANDED TO THE JOB AS VALUES: a recipe gets --set event=... --set machine=<number>
+//     --set file=<full path> on its `drive/replay.js run` line (a recipe ignores names it does not use; a replay.js
+//     that cannot take them yet is found out before anybody is asked to let the visit in); a command gets SM_EVENT,
+//     SM_MACHINE, SM_FILE and SM_EVENT_FILE (the whole event, as JSON) in its environment -- never spliced into its
+//     command line, and add refuses one that expands %SM_FILE% outside double quotes (cmd.exe would run what a
+//     file's name holds). --host from-alert visits the machine the alert names; --machine <number>[,<number>...]
+//     says which it may be -- without it, whoever holds the token chooses, and add says so.
+//   * A FILE starts it once, when its size has held still (not while it is being written); the same file never again.
+//   * THE LISTENER (run: when an entry waits for an alert or a call, or --listen asks) is on 127.0.0.1:8754 unless
+//     --listen names another address -- this machine alone; binding wider is the user's explicit choice. The relay's
+//     webhook carries no signature, so EVERY request must carry the book's secret token in its path (/hook/<token>
+//     for the relay, /run/<id>/<token> for a call): made on first use in schedule.json, printed by `hook`, replaced
+//     by `hook --new-token`. Without it a request gets the 404 of any unknown address, and nothing is kept of it but
+//     a count (list shows it). Only a runner that keeps running hears alerts and calls; `run --once` looks for files.
+//
 // Pure, exported and proven in tests/schedule.js: parseSpec(args) -> {ok, spec} | {ok:false, why}; nextFire(spec,
 // afterMs, zone?) -> ms | null; due(entries, nowMs, {grace, zone}?) -> what to start, queue or skip. A ZONE is a
 // function from an instant to its offset from UTC in minutes -- LOCAL is this machine's -- so a test hands in one with
-// a DST change and every rule is checked anywhere. The runner takes its clock and its launcher from a context; the
-// command line's test hooks: SM_SCHEDULE_NOW (the clock starts there), SM_SCHEDULE_LAUNCHER (a command run INSTEAD of
-// each job, the entry in SM_SCHEDULE_ENTRY: exit 0 ok, 2 not let in, else failed), SM_SCHEDULE_CLIENT (stands in for
-// core/agent-join.js), SM_SCHEDULE_ALLOW_MS (how long a visit waits for Allow).
+// a DST change and every rule is checked anywhere. The event side is pure too, in drive/triggers.js (hookEvents,
+// offer, scanFiles), and proven with the listener and the folder watch in tests/triggers.js. The runner takes its
+// clock and its launcher from a context; the command line's test hooks: SM_SCHEDULE_NOW (the clock starts there),
+// SM_SCHEDULE_LAUNCHER (a command run INSTEAD of each job, the entry in SM_SCHEDULE_ENTRY and the event's facts as a
+// command gets them: exit 0 ok, 2 not let in, else failed), SM_SCHEDULE_CLIENT (stands in for core/agent-join.js),
+// SM_SCHEDULE_ALLOW_MS (how long a visit waits for Allow).
 //
 // Exit codes: 0 done; 1 the state could not be read or written; 2 usage: a bad command line, a time that cannot be
-// read or has passed, no such entry; 3 refused: a job that cannot run unattended (no recipe, not a replay recipe, a
-// secret with no --secret-env), or a runner is running already; 4 run --once: a job ran and did not end ok.
+// read or has passed, no such entry, no folder to watch; 3 refused: a job that cannot run unattended (no recipe, not a
+// replay recipe, a secret with no --secret-env), or a runner is running already; 4 run --once: a job ran and did not
+// end ok.
 const fs = require('fs'), os = require('os'), path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { putCmd } = require('../core/cmd-file.js');
 const { countSecrets } = require('./replay.js');
+const T = require('./triggers.js');
 
 const KIT = path.join(__dirname, '..');
 const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
@@ -66,6 +100,7 @@ const LIMIT_MS = 4 * HOUR;    // a run still going after this is stopped (add --
 const ALLOW_MS = 170000;      // how long a visit waits for Allow: the code expires after two minutes (as mcp/server.js)
 const TICK_MS = 15000;        // the runner looks at least this often: an add or a remove from elsewhere, a wake from sleep
 const END_MS = 15000;         // how long a visit may take to sign off before its client is stopped
+const FILE_POLL_MS = 1000;    // the runner looks in each watched folder this often (a file is whole after T.STEADY_MS)
 const p2 = (n) => String(n).padStart(2, '0');
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return null; } };
@@ -127,7 +162,7 @@ const UNITS = { m: 'm', min: 'm', mins: 'm', minute: 'm', minutes: 'm', h: 'h', 
 const UNIT_MS = { m: MIN, h: HOUR, d: DAY, w: 7 * DAY };
 function parseDuration(text) {
   const m = /^\s*(\d{1,6})\s*([a-z]+)\s*$/i.exec(String(text == null ? '' : text));
-  const unit = m && UNITS[m[2].toLowerCase()];
+  const unit = m && Object.hasOwn(UNITS, m[2].toLowerCase()) && UNITS[m[2].toLowerCase()];   // not "constructor"
   if (!unit || !(+m[1] > 0)) return null;
   return { n: +m[1], unit, ms: +m[1] * UNIT_MS[unit] };
 }
@@ -143,23 +178,26 @@ function parseWhen(text) {
 function timingFlags(words) {
   const a = {};
   for (let i = 0; i < words.length; i++) {
-    const m = /^--(at|days|every|once)(?:=(.*))?$/.exec(String(words[i]));
+    const m = /^--(at|days|every|once|on|machine|match)(?:=(.*))?$/.exec(String(words[i]));
     if (m) a[m[1]] = m[2] !== undefined ? m[2] : words[++i];
   }
   return a;
 }
 
-// When a job runs -> {ok, spec} | {ok:false, why}. `args` is {at, days, every, once} as typed (strings), or the words
-// of a command line. opts.now anchors --every: the moment the entry is added, to the minute. The specs:
+// When a job runs -> {ok, spec} | {ok:false, why}. `args` is {at, days, every, once, on, machine, match} as typed
+// (strings), or the words of a command line. opts.now anchors --every: the moment the entry is added, to the minute.
 //   {kind:'at', time:'09:00', days?:['mon',...]}   {kind:'every', n, unit:'m'|'h'|'d'|'w', from}   {kind:'once', when}
+//   {kind:'on', event:'alert-offline'|'recovered-*'|'file'|'http'|..., machine?, folder?, match?}   (drive/triggers.js)
 function parseSpec(args, opts) {
   const a = Array.isArray(args) ? timingFlags(args) : (args || {});
   const given = (k) => a[k] != null && a[k] !== false;
   const no = (why) => ({ ok: false, why });
-  const kinds = ['at', 'every', 'once'].filter(given);
-  if (!kinds.length) return no('say when it runs: --at HH:MM [--days mon-fri], --every 30m|2h|1d, or --once "YYYY-MM-DD HH:MM"');
-  if (kinds.length > 1) return no('one of --at, --every and --once -- not ' + kinds.map((k) => '--' + k).join(' and '));
+  const kinds = ['at', 'every', 'once', 'on'].filter(given);
+  if (!kinds.length) return no('say when it runs: --at HH:MM [--days mon-fri], --every 30m|2h|1d, or --once "YYYY-MM-DD HH:MM" -- or what starts it: --on <event>');
+  if (kinds.length > 1) return no('one of --at, --every, --once and --on -- not ' + kinds.map((k) => '--' + k).join(' and '));
   if (given('days') && kinds[0] !== 'at') return no('--days goes with --at, e.g. --at 09:00 --days mon-fri');
+  for (const k of ['machine', 'match']) if (given(k) && kinds[0] !== 'on') return no('--' + k + ' goes with --on, e.g. ' + (k === 'machine' ? '--on alert-offline --machine 10004' : '--on file:./inbox --match *.csv'));
+  if (kinds[0] === 'on') return T.parseOn(a);
   if (kinds[0] === 'at') {
     const t = parseTime(a.at);
     if (!t) return no('--at is a time of day on a 24-hour clock, HH:MM (09:00, 17:30) -- not "' + a.at + '"');
@@ -247,18 +285,30 @@ function lastFire(e, nowMs, zone) {
 }
 
 // What to do at nowMs. An entry: {id, host?, spec, next (its pending fire; null when it has none left), running?
-// ({queued:true, fire} while it waits for its machine), done?}. -> [{id, act, fire, missed, missedLast, next, queued?}]:
-//   start   its fire has come -- or its machine is free again (queued) -- start it
+// ({queued:true, fire} while it waits for its machine), done?} -- or a trigger's, {spec: {kind: 'on'}, next: null,
+// pending? ({fire, facts, host?}: its event came, and it has not started yet)}. -> [{id, act, fire, missed,
+// missedLast, next, queued?}]:
+//   start   its fire has come -- or its event (a trigger's pending fire) -- or its machine is free again (queued):
+//           start it
 //   queue   its fire has come but its machine is busy with another entry's run: it waits, and starts when that ends
 //   busy    its fire came while its own run is still going (or waiting): skipped -- never two runs of one entry
 //   missed  its fire came more than `grace` ago, when no runner was running: skipped, never caught up
 // `missed` counts the fires skipped on the way (missedLast the latest of them); `next` is the entry's next fire after
-// this one (null: none left). opts: {grace, zone, onlyQueued (start only what waits for a machine)}.
+// this one (null: none left; a trigger's decisions have none). opts: {grace, zone, onlyQueued (start only what waits
+// for a machine), busy (machines held by runs this runner has going -- one whose entry was removed meanwhile too)}.
 function due(entries, nowMs, opts) {
   const o = opts || {}, z = o.zone || LOCAL, grace = o.grace == null ? GRACE_MS : Number(o.grace);
   const list = (Array.isArray(entries) ? entries : []).filter((e) => e && e.id != null);
   const out = [], fresh = [];
   for (const e of o.onlyQueued ? [] : list) {
+    if (T.isTrigger(e)) {
+      // an event came for it: it starts now, whatever the time -- the runner recorded it a moment ago (one a stopped
+      // runner left behind is dropped when the next one starts: recover)
+      if (!e.pending || e.done) continue;
+      const d = { id: e.id, act: e.running ? 'busy' : 'start', fire: Number(e.pending.fire) || nowMs, missed: 0, trigger: true };
+      if (d.act === 'start') fresh.push({ e, d }); else out.push(d);
+      continue;
+    }
     if (e.done || e.next == null || !(e.next <= nowMs)) continue;
     const f = lastFire(e, nowMs, z);
     const d = { id: e.id, act: 'start', fire: f.last, missed: f.count - 1, missedLast: f.prev, next: nextFire(e.spec, f.last, z) };
@@ -266,9 +316,10 @@ function due(entries, nowMs, opts) {
     else if (e.running) d.act = 'busy';
     if (d.act === 'start') fresh.push({ e, d }); else out.push(d);
   }
-  // one visit per machine: a run in progress holds its machine; those waiting get it first, in the order they came
-  const held = new Set(list.filter((e) => e.running && !e.running.queued && e.host).map((e) => String(e.host)));
-  const take = (e) => { if (!e.host) return true; const h = String(e.host); if (held.has(h)) return false; held.add(h); return true; };
+  // one visit per machine: a run in progress holds its machine (a trigger's: the one its event named); those waiting
+  // get it first, in the order they came
+  const held = new Set(list.filter((e) => e.running && !e.running.queued && T.hostOf(e)).map((e) => T.hostOf(e)).concat((o.busy || []).map(String)));
+  const take = (e) => { const h = T.hostOf(e); if (!h) return true; if (held.has(h)) return false; held.add(h); return true; };
   for (const e of list.filter((x) => x.running && x.running.queued).sort((a, b) => (a.running.fire || 0) - (b.running.fire || 0))) {
     if (take(e)) out.push({ id: e.id, act: 'start', fire: e.running.fire, missed: 0, queued: true });
   }
@@ -310,9 +361,11 @@ function daysText(days) {
   if (idx.length >= 3 && idx[idx.length - 1] - idx[0] === idx.length - 1) return WEEK[idx[0]] + '-' + WEEK[idx[idx.length - 1]];   // mon-fri
   return idx.map((i) => WEEK[i]).join(', ');
 }
-// "mon-fri at 09:00", "every 30 min, counted from Fri 2026-11-06 14:20", "every 2 days at 14:20", "once, 2026-12-01 09:00"
+// "mon-fri at 09:00", "every 30 min, counted from Fri 2026-11-06 14:20", "every 2 days at 14:20", "once, 2026-12-01 09:00",
+// "when the relay alerts "offline" for machine 10004"
 function describe(spec, zone) {
   if (!spec) return '?';
+  if (spec.kind === 'on') return T.describeOn(spec);
   if (spec.kind === 'at') return (spec.days && spec.days.length ? daysText(spec.days) : 'every day') + ' at ' + spec.time;
   if (spec.kind === 'once') return 'once, ' + spec.when;
   if (spec.kind === 'every') {
@@ -344,10 +397,11 @@ function readState(p) {
   return st;
 }
 // written whole, then renamed over the old one -- a reader never sees half of it (Windows refuses the rename while
-// another process has the file open, so a refusal is retried, as core/cmd-file.js does)
-function writeJson(file, obj) {
+// another process has the file open, so a refusal is retried, as core/cmd-file.js does). mode: the new file's (the
+// schedule holds the listener's token, so it is its owner's alone)
+function writeJson(file, obj, mode) {
   const tmp = file + '.' + process.pid + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(obj, null, 1) + '\n');
+  fs.writeFileSync(tmp, JSON.stringify(obj, null, 1) + '\n', mode ? { mode } : undefined);
   for (let i = 0; ; i++) {
     try { fs.renameSync(tmp, file); return; } catch (e) {
       if (i >= 100 || !['EPERM', 'EACCES', 'EBUSY'].includes(e.code)) { try { fs.unlinkSync(tmp); } catch (_) {} throw e; }
@@ -373,7 +427,7 @@ function withState(p, fn) {
   try {
     const st = readState(p), before = JSON.stringify(st);
     const r = fn(st);
-    if (JSON.stringify(st) !== before) writeJson(p.state, st);
+    if (JSON.stringify(st) !== before) writeJson(p.state, st, 0o600);
     return r;
   } finally { try { fs.unlinkSync(p.lock); } catch (_) {} }
 }
@@ -407,6 +461,8 @@ function takeRunner(p, now) {
   return { ok: false };
 }
 function dropRunner(p) { const r = readJson(p.runner); if (r && Number(r.pid) === process.pid) { try { fs.unlinkSync(p.runner); } catch (_) {} } }
+// more on this runner's mark -- where it listens, how many requests it refused -- for list and hook to say
+function markRunner(p, extra) { const r = readJson(p.runner); if (r && Number(r.pid) === process.pid) { try { writeJson(p.runner, Object.assign(r, extra)); } catch (_) {} } }
 
 // ---- a job's processes ----------------------------------------------------------------------------------------------------
 const LIVE = new Set();   // every process a job started and that has not exited: stopped if the runner exits
@@ -467,8 +523,10 @@ function lastWords(file) {
   const codes = [...txt.matchAll(/\[>\]\s*code\s+(\S+)/g)];
   return { x: x ? x.replace(/^\[x\]\s*/, '') : '', last: lines.length ? lines[lines.length - 1] : '', code: codes.length ? codes[codes.length - 1][1] : '' };
 }
-const jobEnv = (entry, run) => ({ SM_SCHEDULE_ID: String(entry.id), SM_SCHEDULE_NAME: String(entry.name || ''), SM_SCHEDULE_HOST: String(entry.host || ''),
-  SM_SCHEDULE_TASK: String(entry.task || ''), SM_SCHEDULE_DIR: run.dir, SM_SCHEDULE_FIRE: new Date(run.fire).toISOString() });
+// a command's environment: the run, and -- every one set, empty on a clock's run -- the facts of the event that started it
+const jobEnv = (entry, run) => Object.assign({ SM_SCHEDULE_ID: String(entry.id), SM_SCHEDULE_NAME: String(entry.name || ''), SM_SCHEDULE_HOST: String(entry.host || ''),
+  SM_SCHEDULE_TASK: String(entry.task || ''), SM_SCHEDULE_DIR: run.dir, SM_SCHEDULE_FIRE: new Date(run.fire).toISOString() },
+  T.envOf(run.facts), { SM_EVENT_FILE: run.facts ? path.join(run.dir, 'event.json') : '' });
 
 // ---- the jobs ---------------------------------------------------------------------------------------------------------------
 // a recipe as add was given it: a path from here, else from the kit; a bare name is skills/<name>/replay.json
@@ -489,10 +547,17 @@ function readRecipe(file) {
   if (!r || r.kind !== 'mission-replay' || !Array.isArray(r.milestones) || !r.milestones.length) return { ok: false, why: file + ' is not a replay recipe -- save one with: node drive/replay.js save <serve-dir> <name>' };
   return { ok: true, goal: String(r.goal || ''), secrets: countSecrets(r.milestones.map((m) => m && m.cmds)) };
 }
-function defaultTask(goal, name) {
+// Does this drive/replay.js take --set name=value -- the values a triggered run hands its recipe? Its own text says:
+// one from before --set answers the flag with its usage, and that only once somebody has let the visit in.
+function takesValues(replayFile) {
+  try { return fs.readFileSync(replayFile, 'utf8').includes('--set'); } catch (_) { return false; }
+}
+// the Allow card's line when add was given none: the recipe's goal, and what starts the run -- the person asked to let
+// it in at 03:00 is told it came from the relay's "offline" alert
+function defaultTask(goal, name, spec) {
   let g = clean(goal);
   if (/^[A-Z][a-z]/.test(g)) g = g[0].toLowerCase() + g.slice(1);
-  return (g || 'run the saved job "' + name + '"') + ' (a scheduled run)';
+  return (g || 'run the saved job "' + name + '"') + (spec && spec.kind === 'on' ? ' (a run started by ' + T.shortOn(spec) + ')' : ' (a scheduled run)');
 }
 const CLIENT_EXIT = {
   1: 'the client could not start: a bad invocation, no SM_JOIN_KEY, or no relay could be reached',
@@ -508,6 +573,9 @@ async function visitJob(entry, run, ctx) {
   const file = recipePath(String(entry.recipe || ''));
   const r = readRecipe(file);
   if (!r.ok) return { result: 'could not start', why: r.why };
+  // a triggered run hands the recipe its event's facts as --set name=value: a drive/replay.js that cannot take them
+  // would refuse its line after somebody pressed Allow -- so nobody is asked
+  if (run.facts && !takesValues(ctx.replay)) return { result: 'could not start', why: 'drive/replay.js does not take --set name=value yet, which hands a recipe its event\'s facts -- nobody was asked to let it in' };
   const names = entry.secretEnv || [], secrets = [];
   if (r.secrets > names.length) return { result: 'could not start', why: 'the recipe types ' + r.secrets + ' secret(s) and the entry names ' + names.length + ' (--secret-env)' };
   for (const n of names.slice(0, r.secrets)) {
@@ -515,7 +583,7 @@ async function visitJob(entry, run, ctx) {
     if (v == null || v === '') return { result: 'could not start', why: 'the secret $' + n + ' is not set in the runner\'s environment' };
     secrets.push('--secret', v);
   }
-  const task = clean(entry.task) || defaultTask(r.goal, entry.name);
+  const task = clean(entry.task) || defaultTask(r.goal, entry.name, entry.spec);
   const clientLog = path.join(run.dir, 'client.log');
   let client;
   try {
@@ -547,7 +615,8 @@ async function visitJob(entry, run, ctx) {
   if (client.exited) res = { result: 'failed', why: 'the visit ended as soon as it was let in' };
   else {
     let rep = null;
-    try { rep = startProc(process.execPath, [ctx.replay, 'run', file, run.dir].concat(secrets), { cwd: KIT, log: replayLog }); }
+    // a triggered run hands the recipe its event's facts: --set event=... --set machine=... --set file=...
+    try { rep = startProc(process.execPath, [ctx.replay, 'run', file, run.dir].concat(secrets, T.setArgs(run.facts)), { cwd: KIT, log: replayLog }); }
     catch (e) { res = { result: 'could not start', why: 'the replay did not start: ' + e.message }; }
     if (rep) {
       await untilAbort(Promise.race([rep.done, client.done]), run.signal);
@@ -597,7 +666,8 @@ const commandLauncher = (line) => (entry, run) => shellJob(line, entry, run, { S
 // ---- the runner -------------------------------------------------------------------------------------------------------------
 // ctx: {paths, now() (the clock), zone, grace, launch(entry, {dir, fire, signal}, ctx) -> {result, why, code}, out(line),
 //       and for the real launcher: client, replay, allowMs}
-const newRuntime = () => ({ active: new Map(), results: [], wake: null, stopping: false });
+// active: the runs going; watch: each watched folder's look so far; refused: requests to the listener without the token
+const newRuntime = () => ({ active: new Map(), results: [], wake: null, stopping: false, watch: new Map(), refused: 0, listening: null, closeTriggers: null });
 const workRel = (p, dir) => path.relative(p.work, dir).split(path.sep).join('/');
 function note(ctx, e, what, detail) {
   const line = stamp(ctx.now(), ctx.zone) + '  #' + e.id + ' ' + JSON.stringify(String(e.name || '')) + '  ' + what + (detail ? '  ' + detail : '');
@@ -615,9 +685,11 @@ function runDir(p, id, now, zone) {
 // One look at the schedule: record what was missed or skipped, mark and start what is due. -> how many started
 function tick(ctx, rt, opts) {
   const starts = [];
+  // the machines this runner's own runs hold -- the schedule may no longer say so (an entry removed while it runs)
+  const busy = [...rt.active.values()].map((j) => j.entry && j.entry.host).filter((h) => h && h !== T.FROM_ALERT);
   withState(ctx.paths, (st) => {
     const now = ctx.now();
-    for (const d of due(st.entries, now, { grace: ctx.grace, zone: ctx.zone, onlyQueued: !!(opts && opts.onlyQueued) })) {
+    for (const d of due(st.entries, now, { grace: ctx.grace, zone: ctx.zone, onlyQueued: !!(opts && opts.onlyQueued), busy })) {
       const e = st.entries.find((x) => x.id === d.id);
       if (!e) continue;
       if (d.next !== undefined) e.next = d.next;
@@ -625,25 +697,40 @@ function tick(ctx, rt, opts) {
         e.missed = { n: ((e.missed && e.missed.n) || 0) + d.missed, last: d.missedLast };
         note(ctx, e, 'missed', d.missed + ' fire(s) while no runner was running, the last ' + fmtWhen(d.missedLast, ctx.zone) + ' -- skipped, not caught up');
       }
+      // a trigger's fire carries its event: the facts (and the machine an alert named) go with it into its wait for
+      // a machine, and into its run
+      const ev = T.isTrigger(e) ? (d.queued ? e.running : e.pending) : null;
+      if (T.isTrigger(e) && !d.queued) e.pending = null;
       if (d.act === 'missed') {
         if (e.next == null) { e.done = true; e.last = { fire: d.fire, result: 'missed', why: 'no runner was running at ' + fmtWhen(d.fire, ctx.zone) }; }
       } else if (d.act === 'busy') {
         e.overlapped = { n: ((e.overlapped && e.overlapped.n) || 0) + 1, last: d.fire };
-        note(ctx, e, 'skipped', 'its ' + fmtWhen(d.fire, ctx.zone) + ' fire came while its run was still going');
+        note(ctx, e, 'skipped', d.trigger ? (ev ? T.factsLine(ev.facts) : 'its event') + ' came while its run was still going'
+                                          : 'its ' + fmtWhen(d.fire, ctx.zone) + ' fire came while its run was still going');
       } else if (d.act === 'queue') {
         e.running = { queued: true, fire: d.fire, since: now, runner: process.pid };
-        note(ctx, e, 'waiting', 'machine ' + e.host + ' is busy with another entry\'s run; it starts when that ends');
+        if (ev) Object.assign(e.running, { host: ev.host || undefined, facts: ev.facts, detail: ev.detail });
+        note(ctx, e, 'waiting', 'machine ' + T.hostOf(e) + ' is busy with another entry\'s run; it starts when that ends');
       } else if (d.act === 'start') {
         let dir;
         try { dir = runDir(ctx.paths, e.id, now, ctx.zone); } catch (err) {
           e.running = null;
           e.last = { fire: d.fire, start: now, end: now, result: 'could not start', why: 'no folder for the run: ' + err.message };
-          if (e.next == null) e.done = true;
+          if (e.next == null && !T.isTrigger(e)) e.done = true;
           note(ctx, e, 'could not start', e.last.why);
           continue;
         }
+        const facts = (ev && ev.facts) || null, host = (ev && ev.host) || null;
         e.running = { fire: d.fire, since: now, runner: process.pid, dir: workRel(ctx.paths, dir) };
-        starts.push({ entry: JSON.parse(JSON.stringify(e)), fire: d.fire, start: now, dir });
+        if (host) e.running.host = host;
+        if (facts) {
+          e.running.facts = facts;
+          // the whole event, for a job that wants more than the values it is handed (SM_EVENT_FILE)
+          try { writeJson(path.join(dir, 'event.json'), Object.assign({ fire: d.fire }, ev.detail || {}, { facts })); } catch (_) {}
+        }
+        const entry = JSON.parse(JSON.stringify(e));
+        if (host) entry.host = host;   // --host from-alert: this run's machine
+        starts.push({ entry, fire: d.fire, start: now, dir, facts });
       }
     }
   });
@@ -653,16 +740,18 @@ function tick(ctx, rt, opts) {
 function launch(ctx, rt, s) {
   const e = s.entry, ac = new AbortController();
   const timer = setTimeout(() => ac.abort('timed out'), Number(e.limit) > 0 ? Number(e.limit) : LIMIT_MS);
-  note(ctx, e, 'started', (e.host ? 'machine ' + e.host + ', ' : '') + (e.recipe ? 'the recipe ' + e.recipe : 'the command') + '  [' + workRel(ctx.paths, s.dir) + ']');
+  note(ctx, e, 'started', (e.host ? 'machine ' + e.host + ', ' : '') + (e.recipe ? 'the recipe ' + e.recipe : 'the command') + '  [' + workRel(ctx.paths, s.dir) + ']' +
+                          (s.facts ? '  on ' + T.factsLine(s.facts) : ''));
   const job = { ac, entry: e, promise: null };
   rt.active.set(e.id, job);
   let running;   // started now, before tick returns; a launcher that throws at once is a failed run like any other
-  try { running = Promise.resolve(ctx.launch(e, { dir: s.dir, fire: s.fire, signal: ac.signal }, ctx)); } catch (err) { running = Promise.reject(err); }
+  try { running = Promise.resolve(ctx.launch(e, { dir: s.dir, fire: s.fire, signal: ac.signal, facts: s.facts || null }, ctx)); } catch (err) { running = Promise.reject(err); }
   job.promise = running.catch((err) => ({ result: 'failed', why: 'the runner failed on it: ' + ((err && err.message) || err) })).then((res) => {
     clearTimeout(timer);
     res = Object.assign({ result: 'failed', why: '' }, res || {});
     try { finish(ctx, s, res); } catch (err) { if (ctx.out) ctx.out('[x] could not record how #' + e.id + ' ended: ' + err.message); }
     rt.results.push({ id: e.id, result: res.result });
+    if (rt.results.length > 1000) rt.results.splice(0, rt.results.length - 1000);   // a runner up for months, triggered often, keeps only the last
     rt.active.delete(e.id);
     if (rt.wake) rt.wake();
   });
@@ -672,13 +761,14 @@ function finish(ctx, s, res) {
   const last = { fire: s.fire, start: s.start, end, result: res.result, why: String(res.why || '').slice(0, 500) };
   if (res.code != null) last.code = res.code;
   last.dir = workRel(ctx.paths, s.dir);
+  if (s.facts) last.on = T.factsLine(s.facts);
   let gone = true;
   withState(ctx.paths, (st) => {
     const e = st.entries.find((x) => x.id === s.entry.id);
     if (!e) return;
     gone = false;
     e.running = null; e.last = last; e.runs = (e.runs || 0) + 1;
-    if (e.next == null) e.done = true;
+    if (e.next == null && !T.isTrigger(e)) e.done = true;   // a trigger is never done: it waits for its next event
   });
   note(ctx, s.entry, res.result, fmtSpan(end - s.start) + (last.why ? ' -- ' + last.why : '') + (gone ? ' (the entry was removed meanwhile)' : ''));
 }
@@ -686,13 +776,15 @@ function finish(ctx, s, res) {
 function recover(ctx) {
   withState(ctx.paths, (st) => {
     for (const e of st.entries) {
+      // an event that came as that runner stopped: not started late, as a missed fire is not caught up
+      if (e.pending) { note(ctx, e, 'dropped', (T.factsLine(e.pending.facts) || 'an event') + ' came as its runner stopped -- not started'); e.pending = null; }
       const r = e.running;
       if (!r) continue;
       e.running = null;
-      if (r.queued) { note(ctx, e, 'dropped', 'it was waiting for machine ' + e.host + ' when its runner stopped'); continue; }
+      if (r.queued) { note(ctx, e, 'dropped', 'it was waiting for machine ' + (r.host || e.host) + ' when its runner stopped'); continue; }
       e.last = { fire: r.fire, start: r.since, end: null, result: 'interrupted', why: 'its runner stopped while it ran', dir: r.dir };
       e.runs = (e.runs || 0) + 1;
-      if (e.next == null) e.done = true;
+      if (e.next == null && !T.isTrigger(e)) e.done = true;
       note(ctx, e, 'interrupted', 'its runner stopped while it ran (since ' + fmtWhen(r.since, ctx.zone) + ')');
     }
   });
@@ -705,8 +797,202 @@ function untilNext(ctx) {
 function nextLine(ctx) {
   let st;
   try { st = readState(ctx.paths); } catch (_) { return ''; }
-  const f = upcoming(st.entries, ctx.now(), 1, ctx.zone)[0];
-  return f ? 'next: #' + f.id + ' "' + f.name + '" ' + fmtWhen(f.at, ctx.zone) + ' (in ' + fmtSpan(f.at - ctx.now()) + ')' : 'nothing is going to run';
+  const f = upcoming(st.entries, ctx.now(), 1, ctx.zone)[0], ev = st.entries.filter(T.isTrigger).length;
+  return (f ? 'next: #' + f.id + ' "' + f.name + '" ' + fmtWhen(f.at, ctx.zone) + ' (in ' + fmtSpan(f.at - ctx.now()) + ')' : ev ? 'nothing on the clock' : 'nothing is going to run') +
+         (ev ? '; ' + ev + ' entr' + (ev === 1 ? 'y waits' : 'ies wait') + ' for an event' : '');
+}
+
+// ---- triggers, in the runner: the relay's alerts and direct calls (the listener), new files (the folder watch) ----------
+// One line in schedule.log that is about no single entry (a message from the relay, a call)
+function logLine(ctx, text) {
+  const line = stamp(ctx.now(), ctx.zone) + '  ' + text;
+  try { fs.mkdirSync(ctx.paths.work, { recursive: true }); fs.appendFileSync(ctx.paths.log, line + '\n'); } catch (_) {}
+  if (ctx.out) ctx.out(line);
+}
+// The book's token, made on first use: the relay's webhook and every direct call carry it in their address
+function ensureToken(st, now) {
+  if (!st.hook || typeof st.hook !== 'object') st.hook = {};
+  if (!st.hook.token) Object.assign(st.hook, { token: T.makeToken(), made: now });
+  return st.hook.token;
+}
+// An event, offered to every entry it matches (opts.only: the one it is for): each starts, or waits for its machine,
+// or is counted -- recorded at once, and the runner woken to start what it may. -> the decisions
+function offerEvent(ctx, rt, ev, opts) {
+  const now = ctx.now();
+  const ds = withState(ctx.paths, (st) => {
+    const out = T.offer(st.entries, ev, now, opts);
+    for (const d of out) {
+      const e = st.entries.find((x) => x.id === d.id);
+      d.name = e.name; d.win = e.debounce != null ? Number(e.debounce) : T.DEBOUNCE_MS;
+      if (d.act === 'start' || d.act === 'queue') {
+        const detail = Object.assign({}, ev);
+        delete detail.entry;
+        e.pending = { fire: now, facts: d.facts, detail };
+        if (d.host) e.pending.host = d.host;
+        e.fired = { at: now, on: T.factsLine(d.facts) };
+      } else if (d.act === 'burst') e.bursts = { n: ((e.bursts && e.bursts.n) || 0) + 1, last: now };
+      else e.overlapped = { n: ((e.overlapped && e.overlapped.n) || 0) + 1, last: now };
+    }
+    return out;
+  });
+  for (const d of ds) {
+    if (d.act === 'burst') note(ctx, d, 'counted', T.factsLine(d.facts) + ' -- within ' + fmtSpan(d.win) + ' of the run the same event started: one burst, one run');
+    else if (d.act === 'busy') note(ctx, d, 'skipped', T.factsLine(d.facts) + ' came while its run was still going');
+  }
+  if (ds.some((d) => d.act === 'start' || d.act === 'queue') && rt.wake) rt.wake();
+  return ds;
+}
+const acted = (ds) => {
+  const ids = (acts) => ds.filter((d) => acts.includes(d.act)).map((d) => '#' + d.id);
+  const go = ids(['start', 'queue']), counted = ids(['burst', 'busy']);
+  return (go.length ? 'started ' + go.join(' ') : '') + (go.length && counted.length ? '; ' : '') + (counted.length ? 'counted ' + counted.join(' ') : '') ||
+         'no entry waits for it';
+};
+// POST /hook/<token>: a message from the relay's webhook. Every one is answered 200 -- the relay counts it delivered
+// and would not send it again anyway
+function onHook(ctx, rt, body) {
+  const r = T.hookEvents(body), now = ctx.now(), kind = body && typeof body.event === 'string' ? T.one(body.event, 40) : '?';
+  const ds = [];
+  for (const ev of r.events) ds.push(...offerEvent(ctx, rt, ev));
+  withState(ctx.paths, (st) => {
+    if (!st.hook || typeof st.hook !== 'object') st.hook = {};
+    st.hook.heard = { n: ((st.hook.heard && st.hook.heard.n) || 0) + 1, at: now, event: kind };
+  });
+  const what = r.held != null ? kind + ': ' + r.held + ' held alert(s), ' + r.events.length + ' still to act on'
+             : r.events.length === 1 ? T.factsLine(T.factsOf(r.events[0])) : kind;
+  logLine(ctx, 'hook  ' + what + ' -- ' + (r.why || acted(ds)));
+  return { status: 200, json: { ok: true, events: r.events.length, started: ds.filter((d) => d.act === 'start' || d.act === 'queue').map((d) => d.id),
+                                counted: ds.filter((d) => d.act === 'burst' || d.act === 'busy').map((d) => d.id), why: r.why || undefined } };
+}
+// POST /run/<id>/<token>: a direct call starts that entry now -- 202 -- or says why not: 404 no such entry waits for a
+// call, 409 it was counted (a burst, or its run still goes)
+function onCall(ctx, rt, id) {
+  let e;
+  try { e = readState(ctx.paths).entries.find((x) => x.id === String(id)); } catch (err) { return { status: 500, json: { ok: false, why: err.message } }; }
+  if (!e || !T.isTrigger(e) || e.spec.event !== 'http') return { status: 404, json: { ok: false, why: 'no entry #' + id + ' starts on a call (add one with --on http)' } };
+  const d = offerEvent(ctx, rt, { event: 'http', on: 'http', entry: String(id), at: ctx.now() }, { only: id })[0];
+  logLine(ctx, 'call  #' + id + ' -- ' + (d ? acted([d]) : 'not started'));
+  if (d && (d.act === 'start' || d.act === 'queue')) return { status: 202, json: { ok: true, id: String(id), act: d.act, why: d.act === 'queue' ? 'its machine is busy with another entry\'s run: it starts when that ends' : 'it starts now' } };
+  return { status: 409, json: { ok: false, id: String(id), act: d ? d.act : 'none',
+                                why: d && d.act === 'burst' ? 'it started less than ' + fmtSpan(d.win) + ' ago: counted as a burst, not started' : 'its run is still going: counted, not started' } };
+}
+// The files a folder entry has had: <work>/schedule/<id>/files.json, so a file is never offered twice -- not even
+// after the runner restarts -- and since when a name has been gone from the folder (it is forgotten after a while)
+const seenFile = (p, id) => path.join(p.runs, String(id), 'files.json');
+function readSeen(p, e) {
+  const j = readJson(seenFile(p, e.id));
+  if (!j || !j.seen || typeof j.seen !== 'object' || j.folder !== e.spec.folder) return null;
+  return { seen: j.seen, missing: j.missing && typeof j.missing === 'object' ? j.missing : {} };
+}
+function writeSeen(p, e, had) {
+  fs.mkdirSync(path.dirname(seenFile(p, e.id)), { recursive: true });
+  writeJson(seenFile(p, e.id), { folder: e.spec.folder, seen: had.seen, missing: had.missing || {} });
+}
+// One look in every watched folder: a new file whose size has held still is offered to its entry -- after it is
+// written down as had, so it is never offered twice. A folder that cannot be read is said once, and looked at again.
+function scanFolders(ctx, rt) {
+  let st;
+  try { st = readState(ctx.paths); } catch (_) { return; }
+  const live = new Set();
+  for (const e of st.entries.filter(T.watchesFolder)) {
+    live.add(e.id);
+    let w = rt.watch.get(e.id);
+    if (!w || w.folder !== e.spec.folder || w.match !== (e.spec.match || '')) {
+      const had = readSeen(ctx.paths, e);
+      w = { folder: e.spec.folder, match: e.spec.match || '', re: T.globRe(e.spec.match), seen: had && had.seen, missing: had ? had.missing : {}, cand: {}, broken: '' };
+      rt.watch.set(e.id, w);
+    }
+    let listing;
+    try { listing = T.listFolder(w.folder, w.re); } catch (err) {
+      if (w.broken !== err.code) { w.broken = err.code; note(ctx, e, 'cannot look', 'in ' + w.folder + ' (' + (err.code || err.message) + ') -- looking again'); }
+      continue;
+    }
+    if (w.broken) { w.broken = ''; note(ctx, e, 'looking again', 'in ' + w.folder); }
+    if (!w.seen) {   // no record of what it had (it was deleted): what is there now counts as there before
+      w.seen = T.snapshot(listing); w.missing = {};
+      try { writeSeen(ctx.paths, e, w); } catch (_) {}
+      note(ctx, e, 'watching', w.folder + ' -- its ' + listing.length + ' file(s) there now are taken as there before');
+      continue;
+    }
+    const r = T.scanFiles(w, listing, ctx.now(), ctx.steadyMs, ctx.forgetMs);
+    w.cand = r.cand;
+    if (r.changed) {
+      try { writeSeen(ctx.paths, e, r); } catch (err) { note(ctx, e, 'cannot write', seenFile(ctx.paths, e.id) + ' (' + err.message + ') -- the new files wait'); continue; }
+      w.seen = r.seen; w.missing = r.missing;
+    }
+    for (const f of r.ready) {
+      try { offerEvent(ctx, rt, { event: 'file', on: 'file', entry: e.id, file: path.join(w.folder, f.name), size: f.size, at: f.ms }, { only: e.id }); }
+      catch (err) { note(ctx, e, 'could not start', f.name + ': ' + err.message); }
+    }
+  }
+  for (const id of [...rt.watch.keys()]) if (!live.has(id)) rt.watch.delete(id);
+}
+// The listener and the folder watch, for one runner: opened when an entry needs them (or --listen asked), closed with
+// it. A listener that cannot open (the port is taken) is said, and tried again a minute later -- the clock's jobs run on.
+function triggersFor(ctx, rt, once) {
+  const t = { srv: null, timer: null, failedAt: 0, closed: false };
+  const tok = { at: 0, v: '' };
+  const token = () => {   // read again at most once a second, so `hook --new-token` takes hold at once
+    if (Date.now() - tok.at > 1000) { tok.at = Date.now(); try { const st = readState(ctx.paths); tok.v = (st.hook && st.hook.token) || ''; } catch (_) {} }
+    return tok.v;
+  };
+  const say = ctx.out || (() => {});
+  function open() {
+    const where = ctx.listen || { host: T.DEFAULT_HOST, port: T.DEFAULT_PORT };
+    withState(ctx.paths, (st) => { ensureToken(st, ctx.now()); });
+    tok.at = 0;
+    const srv = T.listener({ token, refused: () => { rt.refused++; }, hook: (body) => onHook(ctx, rt, body), run: (id) => onCall(ctx, rt, id) });
+    t.srv = srv;
+    srv.on('error', (err) => {
+      if (srv.listening) { say('[x] the listener: ' + err.message); return; }
+      t.srv = null; t.failedAt = Date.now();
+      if (t.failSaid) return;   // said once; tried again each minute, quietly
+      t.failSaid = true;
+      say('[x] cannot listen on ' + T.urlHost(where.host) + ':' + where.port + ' (' + (err.code || err.message) + '): the relay\'s alerts and direct calls do not reach this runner -- ' +
+          'another port: run --listen <port>. Trying again each minute.');
+    });
+    srv.listen(where.port, where.host, () => {
+      if (t.closed) { srv.close(); return; }
+      const at = T.urlHost(where.host) + ':' + srv.address().port;
+      rt.listening = at; t.failSaid = false;
+      markRunner(ctx.paths, { listen: at });
+      say('[+] listening on http://' + at + ' for the relay\'s alerts and direct calls (node drive/schedule.js hook prints their addresses)');
+      if (!T.loopback(where.host)) say('[!] ' + at + ' can be reached from other machines: whoever reaches it with the address and its token starts these jobs, and plain http carries the token in clear');
+    });
+  }
+  // what the schedule needs now: the listener, the folder watch. Never throws -- a schedule locked for a moment is
+  // looked at again on the next round, and the runner runs on
+  t.refresh = () => {
+    if (t.closed) return;
+    try {
+      const st = readState(ctx.paths);
+      const ear = st.entries.filter(T.needsListener).length, files = st.entries.some(T.watchesFolder);
+      if (!once && !t.srv && (ctx.listen || ear) && Date.now() - t.failedAt > MIN) open();
+      if (!once && files && !t.timer) t.timer = setInterval(() => { try { scanFolders(ctx, rt); } catch (err) { say('[x] the folder watch: ' + err.message); } }, ctx.filePollMs || FILE_POLL_MS);
+      if (!files && t.timer) { clearInterval(t.timer); t.timer = null; }
+      if (once && (ear || ctx.listen) && !t.toldOnce) {
+        t.toldOnce = true;
+        say('[.] ' + (ear ? ear + ' entr' + (ear === 1 ? 'y waits' : 'ies wait') + ' for the relay\'s alerts or a call: ' : '--once does not listen: ') +
+            'only a runner that keeps running hears them (node drive/schedule.js run)');
+      }
+    } catch (err) { say('[x] ' + err.message); }
+  };
+  // run --once: two looks in each folder, a file's steady time apart -- what is whole by then is offered
+  t.filePass = async () => {
+    try {
+      if (!readState(ctx.paths).entries.some(T.watchesFolder)) return;
+      scanFolders(ctx, rt);
+      await sleep((ctx.steadyMs != null ? ctx.steadyMs : T.STEADY_MS) + 150);
+      scanFolders(ctx, rt);
+    } catch (err) { say('[x] the folder watch: ' + err.message); }
+  };
+  t.close = () => {
+    t.closed = true;
+    if (t.timer) { clearInterval(t.timer); t.timer = null; }
+    if (t.srv) { const s = t.srv; t.srv = null; try { s.close(); s.closeAllConnections(); } catch (_) {} }
+    rt.listening = null;
+  };
+  return t;
 }
 // The runner: one at a time; clears what a stopped runner left marked; then looks at the schedule until stopped --
 // or, with once, starts what is due now, waits for it (and for what waited for its machine), and returns. -> exit code
@@ -719,9 +1005,14 @@ async function runner(ctx, opts) {
     return 3;
   }
   let broken = false;
+  const tg = triggersFor(ctx, rt, once);
+  rt.closeTriggers = tg.close;
   try {
     recover(ctx);
     if (!once) say('[+] the runner is running (pid ' + process.pid + ', ' + ctx.paths.state + ') -- Ctrl+C stops it. ' + nextLine(ctx));
+    if (once) await tg.filePass();
+    tg.refresh();
+    let marked = 0;
     for (let first = true; ; first = false) {
       if (!rt.stopping && !broken) {
         try {
@@ -736,8 +1027,10 @@ async function runner(ctx, opts) {
       });
       rt.wake = null;
       touchRunner(ctx.paths);
+      if (rt.refused !== marked) { marked = rt.refused; markRunner(ctx.paths, { refused: marked }); }
+      if (!rt.stopping) tg.refresh();
     }
-  } finally { dropRunner(ctx.paths); }
+  } finally { tg.close(); dropRunner(ctx.paths); }
   if (broken) return 1;
   return once && rt.results.some((r) => r.result !== 'ok') ? 4 : 0;
 }
@@ -746,20 +1039,25 @@ async function runner(ctx, opts) {
 const USAGE = [
   'usage:',
   '  node drive/schedule.js add --host <number> (--recipe skills/<name>/replay.json | --cmd "<a command line>")',
-  '      (--at HH:MM [--days mon,tue,...|mon-fri|weekdays] | --every 30m|2h|1d|1w | --once "YYYY-MM-DD HH:MM")',
+  '      (--at HH:MM [--days mon,tue,...|mon-fri|weekdays] | --every 30m|2h|1d|1w | --once "YYYY-MM-DD HH:MM"',
+  '       | --on <event> [--machine <number[,number...]|name>] [--match *.csv] [--debounce 1m])',
   '      [--name "..."] [--task "<the line on the Allow card>"] [--limit 4h] [--secret-env NAME]...',
+  '      <event>: alert-<rule> (alert-offline, alert-*), recovered-<rule>, resolved-<rule>, digest, monthly-report, test,',
+  '               file:<folder>, http;  --host from-alert visits the machine the alert names',
   '  node drive/schedule.js list [--json]           what is scheduled, when each runs next, how its last run ended',
   '  node drive/schedule.js remove <id>',
   '  node drive/schedule.js next [--n 5] [--json]   the next fire times',
-  '  node drive/schedule.js run [--once] [--grace 2m]   the runner, in the foreground (--once: what is due now, then exit)',
+  '  node drive/schedule.js hook [--new-token] [--listen [host:]port] [--json]   the address for the relay\'s webhook, and each call\'s',
+  '  node drive/schedule.js run [--once] [--grace 2m] [--listen [host:]port]   the runner, in the foreground (--once: what is due now, then exit)',
   '  each takes --work <dir>: where schedule.json, schedule.log and the runs are (default: the kit\'s work/)',
 ].join('\n');
 const FLAGS = {
-  add: { values: ['host', 'recipe', 'cmd', 'at', 'days', 'every', 'once', 'name', 'task', 'limit', 'secret-env', 'work'], switches: [] },
+  add: { values: ['host', 'recipe', 'cmd', 'at', 'days', 'every', 'once', 'on', 'machine', 'match', 'debounce', 'name', 'task', 'limit', 'secret-env', 'work'], switches: [] },
   list: { values: ['work'], switches: ['json'] },
   remove: { values: ['work'], switches: [] },
   next: { values: ['n', 'work'], switches: ['json'] },
-  run: { values: ['work', 'grace'], switches: ['once'] },
+  hook: { values: ['work', 'listen'], switches: ['new-token', 'json'] },
+  run: { values: ['work', 'grace', 'listen'], switches: ['once'] },
 };
 // --flag value (or --flag=value), --switch, and words
 function parseArgs(words, values, switches) {
@@ -792,8 +1090,13 @@ function contextOf(o, env) {
     if (!d) throw new Error('--grace is how late a fire may be seen and still run: 2m, 15m, 1h');
     grace = d.ms;
   }
+  let listen = null;
+  if (o.listen != null) {
+    listen = T.parseListen(o.listen);
+    if (!listen) throw new Error('--listen is where the runner listens: a port (8754), or an address and a port (127.0.0.1:8754, 0.0.0.0:8754) -- not "' + o.listen + '"');
+  }
   return {
-    paths: pathsOf(o.work), zone: LOCAL, grace,
+    paths: pathsOf(o.work), zone: LOCAL, grace, listen, steadyMs: T.STEADY_MS, forgetMs: T.FORGET_MS, filePollMs: FILE_POLL_MS,
     now: base == null ? () => Date.now() : () => base + (Date.now() - t0),
     allowMs: Math.max(1000, Number(env.SM_SCHEDULE_ALLOW_MS) || ALLOW_MS),
     client: env.SM_SCHEDULE_CLIENT ? path.resolve(env.SM_SCHEDULE_CLIENT) : path.join(KIT, 'core', 'agent-join.js'),
@@ -818,13 +1121,36 @@ function add(o, pos, ctx) {
     return 3;
   }
   if (pos.length) return fail(2, 'what is "' + pos.join(' ') + '"? Everything add takes is a --flag (the Allow card\'s line is --task "...")');
-  if (host && !/^[0-9]{5}$/.test(host)) return fail(2, '--host is the five-digit machine number (got "' + host + '")');
+  const fromAlert = host.toLowerCase() === T.FROM_ALERT;
+  if (host && !fromAlert && !/^[0-9]{5}$/.test(host)) return fail(2, '--host is the five-digit machine number (got "' + host + '") -- or from-alert: the machine a relay alert names');
   if (o.recipe != null && !host) return fail(2, 'a recipe runs on a machine: --host <its five-digit number>');
   const now = ctx.now();
   const ps = parseSpec(o, { now });
   if (!ps.ok) return fail(2, ps.why);
-  const next = nextFire(ps.spec, now, ctx.zone);
-  if (next == null) return fail(2, 'that time has passed: ' + describe(ps.spec, ctx.zone) + ', and it is ' + fmtWhen(now, ctx.zone) + ' here');
+  const trig = ps.spec.kind === 'on', on = trig ? T.partsOf(ps.spec.event) : null;
+  let next = null;
+  if (!trig) {
+    next = nextFire(ps.spec, now, ctx.zone);
+    if (next == null) return fail(2, 'that time has passed: ' + describe(ps.spec, ctx.zone) + ', and it is ' + fmtWhen(now, ctx.zone) + ' here');
+  }
+  if (fromAlert) {
+    if (!on || !on.rule) return fail(2, '--host from-alert takes the machine from a relay alert: it goes with --on alert-<rule>, recovered-<rule> or resolved-<rule>');
+    if (T.NO_MACHINE.has(on.rule)) return fail(2, 'a "' + on.rule + '" alert is about no machine, so --host from-alert would have none to visit');
+    if (on.rule === 'site' && !T.machineNums(ps.spec)) return fail(2, 'a site alert names several machines: with --host from-alert, say which with --machine <number>[,<number>...]');
+  }
+  let debounce = null;
+  if (o.debounce != null) {
+    if (!trig) return fail(2, '--debounce goes with --on: how long the same event again counts as the same burst');
+    debounce = T.parseSpan(o.debounce);
+    if (debounce == null || debounce > DAY) return fail(2, '--debounce is a span from 0 to a day: 0, 30s, 2m, 1h -- not "' + o.debounce + '"');
+  }
+  let seen = null;
+  if (trig && ps.spec.event === 'file') {
+    let s = null;
+    try { s = fs.statSync(ps.spec.folder); } catch (_) {}
+    if (!s || !s.isDirectory()) return fail(2, 'there is no folder ' + ps.spec.folder + ' to watch -- give the folder the files land in (make it first if need be)');
+    try { seen = T.snapshot(T.listFolder(ps.spec.folder, T.globRe(ps.spec.match))); } catch (e) { return fail(2, 'the folder ' + ps.spec.folder + ' cannot be read: ' + e.message); }
+  }
   let limit = LIMIT_MS;
   if (o.limit != null) { const d = parseDuration(o.limit); if (!d) return fail(2, '--limit is how long a run may take: 30m, 2h'); limit = d.ms; }
   const secretEnv = [].concat(o['secret-env'] || []);
@@ -841,57 +1167,119 @@ function add(o, pos, ctx) {
     if (secretEnv.length > r.secrets) return fail(2, 'the recipe types ' + r.secrets + ' secret(s), and --secret-env named ' + secretEnv.length);
     entry.name = clean(o.name) || (path.basename(file) === 'replay.json' ? path.basename(path.dirname(file)) : '') || clean(r.goal) || 'recipe';
     entry.recipe = keepPath(file);
-    entry.task = clean(o.task) || defaultTask(r.goal, entry.name);
+    entry.task = clean(o.task) || defaultTask(r.goal, entry.name, ps.spec);
     if (secretEnv.length) entry.secretEnv = secretEnv;
   } else {
     const cmd = String(o.cmd).trim();
     if (!cmd) return fail(2, '--cmd is a command line, e.g. --cmd "node skills/<name>/<script>.js ..."');
     if (secretEnv.length) return fail(2, '--secret-env goes with --recipe: a command reads its own environment');
+    // whoever drops a file chooses its name, and cmd.exe expands %SM_FILE% BEFORE it reads & | < > -- so a file named
+    // "a&b.csv" would run b.csv. Inside double quotes it is only a name (a Windows name cannot hold a ")
+    const bare = T.bareFileVar(cmd);
+    if (bare) return fail(2, '--cmd expands ' + bare + ' outside double quotes, where cmd.exe would run what a file\'s name holds ("a&b.csv" runs b.csv): ' +
+                             'quote it -- "' + bare + '" -- or read SM_FILE inside the program (process.env.SM_FILE)');
     entry.name = clean(o.name) || cmd.slice(0, 40);
     entry.cmd = cmd;
     if (clean(o.task)) entry.task = clean(o.task);
   }
+  if (fromAlert) entry.host = T.FROM_ALERT;
   Object.assign(entry, { spec: ps.spec, limit, added: now, next, runs: 0 });
-  withState(ctx.paths, (st) => { st.seq += 1; entry.id = String(st.seq); st.entries.push(entry); });
+  if (trig) entry.debounce = debounce != null ? debounce : T.DEBOUNCE_MS;
+  const token = withState(ctx.paths, (st) => {
+    st.seq += 1; entry.id = String(st.seq);
+    // the folder as it is now, written down before the entry exists: no runner can take these files for new ones
+    if (seen) writeSeen(ctx.paths, entry, { seen });
+    st.entries.push(entry);
+    return trig && T.needsListener(entry) ? ensureToken(st, now) : '';
+  });
+  const where = fromAlert ? ' on the machine the alert names' : entry.host ? ' on machine ' + entry.host : '';
   console.log('[+] added #' + entry.id + ' "' + entry.name + '": ' + (entry.recipe ? 'the recipe ' + entry.recipe : 'the command ' + JSON.stringify(entry.cmd)) +
-              (entry.host ? ' on machine ' + entry.host : '') + ', ' + describe(entry.spec, ctx.zone));
-  console.log('    next: ' + fmtWhen(next, ctx.zone) + ' (in ' + fmtSpan(next - now) + ')');
-  if (entry.recipe) {
-    console.log('[!] Every run asks machine ' + host + ' to let it in: a person who can see that machine must press Allow (the code');
-    console.log('    expires in about two minutes) -- unless its owner pre-authorised this agent (docs/reference/unattended-access.md).');
-    console.log('    A run nobody lets in is recorded as "not let in" and waits for its next time; it is never retried in a loop.');
-  } else console.log('[!] If the command visits a machine, that visit needs Allow like any other (docs/reference/unattended-access.md).');
+              where + ', ' + describeEntry(entry, ctx.zone));
   const rn = runnerOf(ctx.paths);
-  console.log(rn ? '[.] the runner (pid ' + rn.pid + ') starts it when it is due' : '[.] nothing starts until a runner runs: node drive/schedule.js run   (it stays in the foreground)');
+  if (!trig) console.log('    next: ' + fmtWhen(next, ctx.zone) + ' (in ' + fmtSpan(next - now) + ')');
+  else {
+    console.log('    it starts on that event, not on a clock: ' + (entry.debounce ? 'the same event again within ' + fmtSpan(entry.debounce) + ' of the run it started is counted, not started'
+                                                                     : 'each one starts a run, unless its run is still going (then it is counted)'));
+    const base = 'http://' + listenAt(ctx, rn), n = Object.keys(seen || {}).length;
+    if (entry.spec.event === 'http') console.log('[.] start it with a call:  curl -X POST ' + base + '/run/' + entry.id + '/' + token);
+    else if (entry.spec.event === 'file') console.log('[.] the runner watches ' + entry.spec.folder + ' for new files' + (entry.spec.match ? ' matching ' + entry.spec.match : '') +
+                                                       ' -- ' + (n === 1 ? 'the 1 file there now is' : 'the ' + n + ' files there now are') + ' taken as there before');
+    else {
+      console.log('[.] the relay posts its alerts to the runner\'s listener: paste ' + base + '/hook/' + token);
+      console.log('    into the relay\'s Health settings, "a webhook (JSON POST)" -- the relay must be able to reach that address: node drive/schedule.js hook says how');
+    }
+  }
+  if (entry.recipe) {
+    console.log('[!] Every run asks ' + (fromAlert ? 'the machine the alert names' : 'machine ' + host) + ' to let it in: a person who can see that machine must press Allow (the code');
+    console.log('    expires in about two minutes) -- unless its owner pre-authorised this agent (docs/reference/unattended-access.md).');
+    console.log('    A run nobody lets in is recorded as "not let in" and waits for its next ' + (trig ? 'event' : 'time') + '; it is never retried in a loop.');
+    if (fromAlert && on.on === 'alert' && (on.rule === 'offline' || on.rule === 'site')) {
+      console.log('[!] An offline machine cannot be visited: these runs would only be "not let in". --on recovered-' + on.rule + ' starts the job once it is back.');
+    }
+    if (trig && !takesValues(path.join(__dirname, 'replay.js'))) {
+      console.log('[!] This kit\'s drive/replay.js does not take --set name=value yet, which hands a recipe its event\'s facts: until it does,');
+      console.log('    each run is recorded "could not start" -- before anybody is asked to let it in.');
+    }
+  } else console.log('[!] If the command visits a machine, that visit needs Allow like any other (docs/reference/unattended-access.md).');
+  // --host from-alert with no machine NUMBERS: the alert names the machine, and the relay's webhook is not signed --
+  // whoever holds the token can name any machine this agent may ask, one that pre-authorised it included
+  if (fromAlert && !T.machineNums(entry.spec)) {
+    console.log('[!] --host from-alert visits whichever machine an alert names, and whoever holds the token can send one naming any machine');
+    console.log('    this agent may ask -- one that pre-authorised it included. Name the machines it may visit: --machine <number>[,<number>...]');
+  }
+  console.log(rn ? '[.] the runner (pid ' + rn.pid + ') starts it when ' + (trig ? 'its event comes' : 'it is due') + (trig && T.needsListener(entry) && !rn.listen ? ' -- it listens from its next look, within ' + fmtSpan(TICK_MS) : '')
+                 : '[.] nothing starts until a runner runs: node drive/schedule.js run   (it stays in the foreground' + (trig && T.needsListener(entry) ? ', and listens' : '') + ')');
   return 0;
+}
+// an entry's when, with its own id where the words have a place for it (a call's address)
+const describeEntry = (e, zone) => describe(e.spec, zone).replace('/run/<id>/', '/run/' + e.id + '/');
+// where the runner listens, as an address says it: the running runner's own, else --listen, else the default
+function listenAt(ctx, rn) {
+  if (rn && rn.listen && !ctx.listen) return rn.listen;
+  const w = ctx.listen || { host: T.DEFAULT_HOST, port: T.DEFAULT_PORT };
+  return T.urlHost(w.host) + ':' + w.port;
 }
 
 function stateOf(e, now, runner, zone) {
-  if (e.running && e.running.queued) return 'waiting for machine ' + e.host + ' (its ' + fmtWhen(e.running.fire, zone) + ' fire)';
+  if (e.running && e.running.queued) return 'waiting for machine ' + T.hostOf(e) + ' (its ' + fmtWhen(e.running.fire, zone) + (T.isTrigger(e) ? ' event' : ' fire') + ')';
   if (e.running) return 'running since ' + fmtWhen(e.running.since, zone) + (runner ? '' : ' -- but no runner is running: it was interrupted');
+  if (T.isTrigger(e)) {
+    if (e.pending) return 'starting: ' + T.factsLine(e.pending.facts);
+    if (!runner) return 'waits for it -- but no runner is running, so nothing ' + (T.watchesFolder(e) ? 'watches the folder' : 'hears it');
+    if (T.needsListener(e) && !runner.listen) return 'waits for it -- but the runner is not listening yet';
+    return 'waits for it';
+  }
   if (e.done || e.next == null) return 'done';
   if (e.next <= now) return 'due since ' + fmtWhen(e.next, zone) + (runner ? '' : ' -- with no runner running it will be skipped as missed');
   return fmtWhen(e.next, zone) + ' (in ' + fmtSpan(e.next - now) + ')';
 }
 function list(o, pos, ctx) {
   if (pos.length) { console.error('[x] list takes no words\n' + USAGE); return 2; }
-  const st = readState(ctx.paths), now = ctx.now(), rn = runnerOf(ctx.paths);
-  if (o.json) {
-    console.log(JSON.stringify({ now, runner: rn || null, entries: st.entries.map((e) => Object.assign({}, e, { when: describe(e.spec, ctx.zone), state: stateOf(e, now, rn, ctx.zone) })) }, null, 1));
+  const st = readState(ctx.paths), now = ctx.now(), rn = runnerOf(ctx.paths), heard = (st.hook && st.hook.heard) || null;
+  if (o.json) {   // never the token: `hook` alone prints it
+    console.log(JSON.stringify({ now, runner: rn || null, heard, entries: st.entries.map((e) => Object.assign({}, e, { when: describeEntry(e, ctx.zone), state: stateOf(e, now, rn, ctx.zone) })) }, null, 1));
     return 0;
   }
   console.log('schedule: ' + ctx.paths.state);
-  console.log('runner:   ' + (rn ? 'running (pid ' + rn.pid + (rn.on && rn.on !== os.hostname() ? ' on ' + rn.on : '') + ', since ' + fmtWhen(rn.since, ctx.zone) + ')'
+  console.log('runner:   ' + (rn ? 'running (pid ' + rn.pid + (rn.on && rn.on !== os.hostname() ? ' on ' + rn.on : '') + ', since ' + fmtWhen(rn.since, ctx.zone) + ')' +
+                                   (rn.listen ? ', listening on ' + rn.listen : '') + (rn.refused ? ' -- refused ' + rn.refused + ' request(s) without the token' : '')
                                  : 'not running -- nothing starts until one does: node drive/schedule.js run'));
+  if (st.entries.some(T.needsListener) || heard) {
+    console.log('hook:     ' + (heard ? 'the relay last reached it ' + fmtWhen(heard.at, ctx.zone) + ' (' + heard.event + '), ' + heard.n + ' message(s) in all' : 'the relay has not reached it yet') +
+                ' -- node drive/schedule.js hook prints its address');
+  }
   if (!st.entries.length) { console.log('\nnothing is scheduled. Add a job: node drive/schedule.js add --host <number> --recipe skills/<name>/replay.json --at 09:00'); return 0; }
   for (const e of st.entries) {
-    console.log('\n#' + e.id + '  ' + e.name + (e.host ? '  machine ' + e.host : '') + '  ' + (e.recipe ? 'recipe ' + e.recipe : 'command ' + JSON.stringify(e.cmd)));
-    console.log('    when: ' + describe(e.spec, ctx.zone) + '   next: ' + stateOf(e, now, rn, ctx.zone));
+    const tr = T.isTrigger(e);
+    console.log('\n#' + e.id + '  ' + e.name + (e.host ? '  machine ' + (e.host === T.FROM_ALERT ? 'from the alert' : e.host) : '') + '  ' + (e.recipe ? 'recipe ' + e.recipe : 'command ' + JSON.stringify(e.cmd)));
+    console.log('    when: ' + describeEntry(e, ctx.zone) + '   next: ' + stateOf(e, now, rn, ctx.zone));
+    if (tr) console.log('    last fired: ' + (e.fired ? fmtWhen(e.fired.at, ctx.zone) + ' -- ' + e.fired.on : 'never') + '   (debounce ' + fmtSpan(e.debounce != null ? e.debounce : T.DEBOUNCE_MS) + ')');
     const l = e.last;
     if (l) console.log('    last: ' + l.result + ', ' + fmtWhen(l.start != null ? l.start : l.fire, ctx.zone) + (l.end && l.start ? ' (' + fmtSpan(l.end - l.start) + ')' : '') +
                        (l.why ? ' -- ' + l.why : '') + (l.dir ? '  [' + l.dir + ']' : ''));
     const skips = [];
     if (e.missed && e.missed.n) skips.push('missed ' + e.missed.n + ' while no runner was running (the last ' + fmtWhen(e.missed.last, ctx.zone) + ')');
+    if (e.bursts && e.bursts.n) skips.push('counted ' + e.bursts.n + ' in a burst (the last ' + fmtWhen(e.bursts.last, ctx.zone) + ')');
     if (e.overlapped && e.overlapped.n) skips.push('skipped ' + e.overlapped.n + ' while its run was still going (the last ' + fmtWhen(e.overlapped.last, ctx.zone) + ')');
     if (skips.length) console.log('    ' + skips.join('; '));
   }
@@ -909,16 +1297,65 @@ function next(o, pos, ctx) {
   if (pos.length) { console.error('[x] next takes no words\n' + USAGE); return 2; }
   const n = o.n == null ? 5 : Number(o.n);
   if (!Number.isInteger(n) || n < 1 || n > 1000) { console.error('[x] --n is how many, 1 to 1000'); return 2; }
-  const st = readState(ctx.paths), now = ctx.now(), fires = upcoming(st.entries, now, n, ctx.zone);
+  const st = readState(ctx.paths), now = ctx.now(), fires = upcoming(st.entries, now, n, ctx.zone), ev = st.entries.filter(T.isTrigger).length;
   if (o.json) { console.log(JSON.stringify(fires.map((f) => Object.assign({ text: fmtWhen(f.at, ctx.zone) }, f)), null, 1)); return 0; }
-  if (!fires.length) { console.log(st.entries.length ? 'nothing is going to run: every entry is done' : 'nothing is scheduled'); return 0; }
+  const more = ev ? ev + ' entr' + (ev === 1 ? 'y starts' : 'ies start') + ' on an event, not a clock: node drive/schedule.js list shows ' + (ev === 1 ? 'it' : 'them') : '';
+  if (!fires.length) { console.log(ev ? 'nothing on the clock; ' + more : st.entries.length ? 'nothing is going to run: every entry is done' : 'nothing is scheduled'); return 0; }
   for (const f of fires) console.log(fmtWhen(f.at, ctx.zone) + '  (in ' + fmtSpan(f.at - now) + ')  #' + f.id + ' ' + f.name + (f.host ? '  machine ' + f.host : ''));
+  if (more) console.log('(and ' + more + ')');
+  return 0;
+}
+// The addresses the relay and a caller use: the relay's webhook, and each --on http entry's call. Makes the token on
+// first use; --new-token replaces it (every old address stops working at once).
+function hook(o, pos, ctx) {
+  if (pos.length) { console.error('[x] hook takes no words\n' + USAGE); return 2; }
+  const now = ctx.now(), fresh = !!o['new-token'];
+  const st = withState(ctx.paths, (s) => {
+    if (fresh && s.hook) delete s.hook.token;
+    ensureToken(s, now);
+    return JSON.parse(JSON.stringify(s));
+  });
+  const rn = runnerOf(ctx.paths), token = st.hook.token, at = listenAt(ctx, rn);
+  const port = at.slice(at.lastIndexOf(':') + 1), host = at.slice(0, at.lastIndexOf(':')).replace(/^\[|\]$/g, '');
+  const wild = host === '0.0.0.0' || host === '::';
+  const base = 'http://' + (wild ? '<this machine\'s address>:' + port : at);
+  const calls = st.entries.filter((e) => T.isTrigger(e) && e.spec.event === 'http');
+  const heard = st.hook.heard || null;
+  if (o.json) {
+    console.log(JSON.stringify({ hook: base + '/hook/' + token, calls: calls.map((e) => ({ id: e.id, name: e.name, url: base + '/run/' + e.id + '/' + token })),
+                                 listen: at, runner: rn ? { pid: rn.pid, listen: rn.listen || null, refused: rn.refused || 0 } : null, heard, made: st.hook.made }, null, 1));
+    return 0;
+  }
+  if (fresh) console.log('[+] a new token: every old address stops working at once (a running runner takes the new one within a second) -- paste the new one into the relay');
+  console.log('[+] the relay\'s webhook -- in its console: Health -> settings -> "Send alerts to" -> "a webhook (JSON POST)":');
+  console.log('    ' + base + '/hook/' + token);
+  for (const e of calls) console.log('[+] #' + e.id + ' "' + e.name + '" starts on a call:  curl -X POST ' + base + '/run/' + e.id + '/' + token);
+  if (T.loopback(host)) {
+    console.log('[!] The relay reaches this address only if it runs on this machine: ' + at + ' is this machine alone -- the safe default.');
+    console.log('    A relay elsewhere needs the runner to listen on an address it can reach, and binding wider is your explicit choice:');
+    console.log('      node drive/schedule.js run --listen <an address of this machine>:' + port + '    (0.0.0.0:' + port + ': all of them)');
+    console.log('    -- then paste the address hook prints with that same --listen.');
+  } else console.log('[!] ' + at + ' can be reached from other machines -- by the relay too, if its network reaches this one.');
+  console.log('    Whoever reaches the listener with this address can start these jobs: the token in it is the only lock (the relay\'s');
+  console.log('    webhook carries no signature), and plain http carries it in clear -- across a network you do not trust, put a TLS');
+  console.log('    proxy or a tunnel in front. Anyone who can read the relay\'s Health settings sees it too. Replace it: hook --new-token');
+  if (wild) {
+    const mine = [];
+    for (const list of Object.values(os.networkInterfaces())) for (const a of list || []) if (!a.internal && a.family === 'IPv4') mine.push(a.address);
+    console.log('    This machine\'s addresses: ' + (mine.join(', ') || 'none found'));
+  }
+  console.log(rn ? '[.] the runner (pid ' + rn.pid + ') ' + (rn.listen ? 'listens on ' + rn.listen : 'is not listening: it listens once an entry waits for an alert or a call, or with --listen') +
+                   (rn.refused ? ' -- it refused ' + rn.refused + ' request(s) without the token' : '')
+                 : '[.] no runner is running, so nothing hears it yet: node drive/schedule.js run' + (o.listen != null ? ' --listen ' + o.listen : ''));
+  console.log(heard ? '[.] the relay last reached it ' + fmtWhen(heard.at, ctx.zone) + ' (' + heard.event + '), ' + heard.n + ' message(s) in all'
+                    : '[.] the relay has not reached it yet -- the Test button beside the webhook setting proves the way: schedule.log then says "hook  test"');
   return 0;
 }
 // Stop a runner: nothing new starts, every run in progress is ended ("interrupted", its processes with it), and the
 // runner returns once they have
 function stopRunner(rt) {
   rt.stopping = true;
+  if (rt.closeTriggers) rt.closeTriggers();   // no new event is taken while the runs end
   for (const j of rt.active.values()) j.ac.abort('stopped');
   if (rt.wake) rt.wake();
 }
@@ -948,6 +1385,7 @@ async function main(argv, env) {
     if (sub === 'list') return list(a.opts, a.pos, ctx);
     if (sub === 'remove') return remove(a.opts, a.pos, ctx);
     if (sub === 'next') return next(a.opts, a.pos, ctx);
+    if (sub === 'hook') return hook(a.opts, a.pos, ctx);
     return await runCmd(a.opts, a.pos, ctx);
   } catch (e) { console.error('[x] ' + ((e && e.message) || e)); return 1; }
 }
@@ -955,4 +1393,5 @@ async function main(argv, env) {
 if (require.main === module) main(process.argv.slice(2)).then((code) => process.exit(code));
 
 module.exports = { parseSpec, nextFire, due, upcoming, describe, wallOf, instantOf, LOCAL, fixedZone, GRACE_MS,
-                   pathsOf, readState, newRuntime, tick, runner, stopRunner, launchJob, main };
+                   pathsOf, readState, newRuntime, tick, runner, stopRunner, launchJob, main,
+                   offerEvent, scanFolders, onHook, onCall, defaultTask, takesValues };
