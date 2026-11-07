@@ -5,6 +5,9 @@
   verify.py <png> captcha-blocked      # 1 if "recaptcha" error-ish red under captcha band
   verify.py <png> password-page        # 1 if page looks like Almost done / password step
   verify.py <png> name-page            # 1 if Create your account name step
+
+@tool screen checks on a sign-up look picture: green ticks, red errors, a blocked CAPTCHA, which page it is
+@run  python skills/create-dataannotation-account/verify.py look.png green-checks 3
 """
 from __future__ import annotations
 
