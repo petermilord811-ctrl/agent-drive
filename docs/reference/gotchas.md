@@ -171,7 +171,11 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   miss — dismiss the toast first, then click the icon (orange/purple blob ~look x 129 on a 900-wide look).
 
 ## More from a live run (host 34123, 2026-11-07) — DataAnnotation worker_signup
-- **Skill (fixes the live misses):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
+- **Full workflow (4 big steps):** [skills/dataannotation-assessment-workflow/](../../skills/dataannotation-assessment-workflow/README.md)
+  — account → profile → pick assessment → (assessment later). Sub-skills:
+  `create-dataannotation-account`, `setup-dataannotation-profile`, `pick-dataannotation-assessment`.
+  Role DB: `assessments.json`. Password page: always ask chat vs self-type.
+- **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:
   `.cursor/rules/dataannotation-signup.mdc`.

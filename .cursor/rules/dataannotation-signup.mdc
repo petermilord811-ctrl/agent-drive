@@ -1,33 +1,46 @@
 ---
-description: Hard rules for DataAnnotation account creation on remote hosts
+description: Hard rules for the full DataAnnotation assessment workflow on remote hosts
 alwaysApply: true
 ---
 
-# DataAnnotation signup (remember)
+# DataAnnotation assessment workflow (remember)
 
-When creating a DataAnnotation.tech worker account (any host, especially 34123):
+Full path = **4 big steps**. Orchestrator:
+`node kit.js skills dataannotation` → `dataannotation-assessment-workflow`.
 
-1. **Use the skill first:** `node kit.js skills dataannotation` →
-   - Through passwords/Terms only (practice / before captcha): `fast-pre-captcha.js`
-   - Full create: `create-dataannotation-account.js`
-   MCP: after Continue with Email, Tab between fields with **auto-type** `keys` (never `human:0`); Terms `(530,481)`; never touch captcha in a pre-captcha run.
+| Step | Skill |
+|------|--------|
+| 1 Create account | `create-dataannotation-account` |
+| 2 Setup profile | `setup-dataannotation-profile` |
+| 3 Pick assessment | `pick-dataannotation-assessment` + `assessments.json` |
+| 4 Real assessment | *later — do not invent* |
 
-2. **One window only.** Before any `keys`: list windows named DataAnnotation; close Chrome duplicates; focus the Firefox form. Wrong window = First name stays empty.
+## Step 1 — account
 
-3. **Locate fields from the current `look`.** Click each field’s own mid (`lx/ly` from `locate-fields.py`). Never reuse coords from an earlier visit. Order is First → Last → Email (offset by one band was a live miss).
+1. Inputs: operator **resume**, **full name**, **email** (not random unless they say so).
+2. Scripts: `fast-pre-captcha.js` (through Terms) / `create-dataannotation-account.js` (full).
+3. **Password page: ALWAYS ask** via session chat — they send the password (type `secret:1`) **or**
+   reply `I'll type it` and fill both boxes themselves. `chat_wait` before continuing.
+4. One DataAnnotation window only (Firefox form; kill Chrome duplicates).
+5. Locate fields from the **current** `look` (`locate-fields.py`). Replace, never append.
+6. **ALWAYS** ScreenMirror auto-type (`keys` without `human:0`).
+7. CAPTCHA: **agent solves by default** (~look `584,432` → Create ~`959,768`). Handoff only if refused/stuck.
 
-4. **Replace, never append.** Every field: click → Ctrl+A → Backspace → `keys` (`secret:1` for passwords). Do not Tab between password boxes without clicking each.
+## Step 2 — profile (`learn-about-you`)
 
-5. **ALWAYS use ScreenMirror auto-type** for form text (operator, 2026-11-07): call `keys` **without** `human:0` (default = person rhythm / autotype). Never `human:0` for names, emails, or passwords on DA signup. Speed drills that used `human:0` are superseded.
+1. Copy resume into host **Documents**, then upload; wait for auto-fill.
+2. Experience / Education: trust auto-fill; fix gaps only.
+3. About you defaults: English **Native**; other languages from resume (often Spanish); location
+   **United States**; race/ethnicity **White**; how found us **Referral**; comments **none**.
+4. Availability: **40+ hours** always.
 
-6. **Chrome blank once, then Firefox.** F5/new-tab once; if still blank, `exec firefox '<url>' &`. Request shell automatically. No maximize / F11.
+## Step 3 — pick assessment (`workers/projects`)
 
-7. **Budget:** auto-type is slower than `human:0` — ask `budget {more:1}` early if near the limit. Still avoid `type-text.js` (one key per command).
+1. Score resume: `node skills/dataannotation-assessment-workflow/pick-assessment.js --resume <txt>`
+2. Open the scored **role** (search), not the first grid card.
+3. Catalog DB: `skills/dataannotation-assessment-workflow/assessments.json` — update when roles change.
+4. Stop at assessment start until step 4 is configured.
 
-8. **CAPTCHA:** **agent solves by default** (operator 2026-11-07: “Solve captcha on your own in
-   default”). Click the checkbox (~look `584,432`); on image challenges, map the 3×3 from the blue
-   header, click matching tiles, VERIFY, look for the green check, then Create (~`959,768`). Maya Chen
-   run: checkbox alone → `auth_state=confirm_email`. Use `captcha` handoff only if they refuse agent
-   solve or the challenge is stuck.
+## After every visit
 
-9. After the visit: check → analyze → learn into the skill (not gotchas alone) → auto-commit/push.
+Check → analyze → learn into the matching skill folder → `node kit.js skills <word>` → commit/push.

@@ -1,10 +1,12 @@
 ---
 name: Create a DataAnnotation account
-when: sign up a DataAnnotation.tech worker account from a CV/name — open worker_signup, fill First/Last/Email, password, Terms, solve reCAPTCHA (agent by default), Create an account
+when: sign up a DataAnnotation.tech worker account from resume/full name/email — open worker_signup, fill First/Last/Email, ask for password (chat or self-type), Terms, solve reCAPTCHA (agent by default), Create an account; big step 1 of DA assessment workflow
 tags: browser, forms, dataannotation, signup, captcha, firefox, mission
 run: node skills/create-dataannotation-account/fast-pre-captcha.js ./work --first F --last L --email E --password P
 ---
 # skill: create a DataAnnotation worker account
+
+**Big step 1** of [`dataannotation-assessment-workflow`](../dataannotation-assessment-workflow/README.md).
 
 Opens (or resumes) `https://app.dataannotation.tech/worker_signup`, fills the create-account form for one
 person, solves reCAPTCHA (**agent by default** — operator 2026-11-07), and submits. Password text is typed
@@ -30,8 +32,16 @@ node skills/create-dataannotation-account/fast-pre-captcha.js ./work \
 `captcha`. **Always ScreenMirror auto-type** (`keys` default — never `human:0` for DA fields; operator
 2026-11-07). Instant `human:0` was only for an earlier timing drill and is retired for signup.
 
-**Credentials:** take First/Last/Email/password from the operator (session chat or flags). If they
-explicitly ask for **random** name/email/password, invent strong ones and tell them in chat.
+**Credentials (full workflow):**
+- Operator gives **resume**, **full name**, and **email** (session chat / Cursor). Split full name →
+  First / Last. Keep the resume path for step 2 (Documents copy).
+- **Password — always ask on the password page** (do not invent in the full workflow):
+  1. `chat`: “Password page is ready. Reply with the password (I type it secret), or reply
+     `I'll type it` and fill Create + Confirm yourself.”
+  2. `chat_wait` until they answer.
+  3. If they send a password → Create + Confirm with `secret:1` auto-type; Escape password-manager popups.
+  4. If `I'll type it` → wait / look until both boxes have green checks, then Terms + captcha.
+- Random name/email/password only when they **explicitly** ask for a random drill (not the full workflow).
 
 **reCAPTCHA — agent solves by default (34123, 2026-11-07 — “Solve captcha on your own in default”):**
 1. Click the checkbox (~look `584,432` / screen ~`876,648` after a look). Often enough alone (Maya
@@ -49,6 +59,7 @@ explicitly ask for **random** name/email/password, invent strong ones and tell t
 |-----------|-----------|-------|
 | One live form window | only the Firefox DataAnnotation window is focused | look: title bar Firefox, form visible |
 | Name + email step | First / Last / Email each have a green check | look after fill |
+| Password ask | operator answered chat (sent password or “I'll type it”) | inbox / look |
 | Password step | “Almost done, \<First\>” + both password boxes green, no “must match” | look |
 | Terms + captcha | Terms checked; reCAPTCHA shows its checkmark | look (not just `captcha.solved`) |
 | Account created | left the password page (dashboard / verify-email / next onboarding) | look + report |
@@ -113,7 +124,7 @@ Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and g
 
 - **34123**, 2026-11-07, Firefox: First=Patrick, Last=Mathias — form filled; operator declined
   reCAPTCHA → no account (earlier run).
-- **34123**, 2026-11-07, Firefox: Maya Chen / maya.chen9246@proton.me — random creds per operator;
-  Terms checked; agent clicked reCAPTCHA (~584,432 look) → green check (no image challenge) →
-  Create (~959,768) → `…/users/sign_in?auth_state=confirm_email` “Check your email”. Operator:
-  “Solve captcha on your own in default.”
+- **34123**, 2026-11-07, Firefox: Maya Chen / maya.chen.example@example.com — random creds per
+  operator; Terms checked; agent clicked reCAPTCHA (~584,432 look) → green check (no image
+  challenge) → Create (~959,768) → `…/users/sign_in?auth_state=confirm_email` “Check your email”.
+  Operator: “Solve captcha on your own in default.”

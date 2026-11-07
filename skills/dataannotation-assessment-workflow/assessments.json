@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "updated": "2026-11-07",
+  "source": "operator catalog + Browse roles UI",
+  "note": "assessment = family used for matching; roles = cards on workers/projects",
+  "assessments": [
+    {
+      "id": "generalist",
+      "name": "Generalist Assessment",
+      "category": "General",
+      "roles": ["Generalist"],
+      "keywords": ["generalist", "writing", "editing", "research", "communication", "customer support", "admin"]
+    },
+    {
+      "id": "coding",
+      "name": "Coding Assessment",
+      "category": "Coding",
+      "roles": [
+        "Software Engineer",
+        "Frontend Engineer",
+        "DevOps Engineer",
+        "Backend Engineer",
+        "Full Stack Engineer"
+      ],
+      "keywords": [
+        "software engineer", "developer", "programmer", "frontend", "backend", "full stack",
+        "devops", "react", "typescript", "javascript", "python", "java", "golang", "kubernetes",
+        "docker", "ci/cd", "api", "node.js", "rails", "django"
+      ]
+    },
+    {
+      "id": "data-ml",
+      "name": "Data & ML Assessment",
+      "category": "Data & ML",
+      "roles": ["Data Scientist", "Machine Learning Engineer"],
+      "keywords": [
+        "data scientist", "machine learning", "ml engineer", "deep learning", "pytorch",
+        "tensorflow", "nlp", "pandas", "spark", "feature engineering", "model training"
+      ]
+    },
+    {
+      "id": "cybersecurity",
+      "name": "Cybersecurity Assessment",
+      "category": "Cybersecurity",
+      "roles": [
+        "Cybersecurity Expert",
+        "Penetration Tester",
+        "Incident Responder",
+        "Application Security Engineer"
+      ],
+      "keywords": [
+        "cybersecurity", "security engineer", "penetration", "pentest", "soc", "incident response",
+        "appsec", "vulnerability", "siem", "red team", "blue team", "cissp", "oscp"
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "Finance Assessment",
+      "category": "Finance",
+      "roles": [
+        "Finance Expert",
+        "Quantitative Analyst",
+        "Portfolio Manager",
+        "Investment Banker",
+        "Private Equity Associate",
+        "Credit Analyst",
+        "Wealth Manager",
+        "Equity Research Analyst",
+        "Actuary",
+        "Venture Capitalist",
+        "Insurance Underwriter",
+        "Trader",
+        "Treasury Analyst",
+        "Management Consultant"
+      ],
+      "keywords": [
+        "finance", "investment banking", "private equity", "portfolio", "equity research",
+        "quant", "trader", "treasury", "credit analyst", "wealth management", "actuary",
+        "underwriter", "venture capital", "cfa", "management consultant"
+      ]
+    },
+    {
+      "id": "accounting",
+      "name": "Accounting Assessment",
+      "category": "Accounting",
+      "roles": [
+        "Tax Accountant",
+        "Corporate Accountant",
+        "Accountant",
+        "Auditor",
+        "Public Accountant",
+        "FP&A Analyst",
+        "Financial Reporting Manager"
+      ],
+      "keywords": [
+        "accountant", "accounting", "cpa", "tax", "audit", "auditor", "gaap", "ifrs",
+        "fp&a", "financial reporting", "bookkeeping", "controller"
+      ]
+    },
+    {
+      "id": "economics",
+      "name": "Economics Assessment",
+      "category": "Economics",
+      "roles": [
+        "Economist",
+        "Research Economist",
+        "Applied Economist",
+        "Quantitative Economist"
+      ],
+      "keywords": [
+        "economist", "economics", "econometrics", "macroeconomics", "microeconomics",
+        "phd economics", "policy research"
+      ]
+    },
+    {
+      "id": "legal",
+      "name": "Legal Assessment",
+      "category": "Legal",
+      "roles": [
+        "Legal Expert",
+        "Attorney",
+        "Paralegal",
+        "Litigation Attorney",
+        "Corporate Attorney",
+        "Compliance Officer",
+        "Contract Manager",
+        "IP Attorney"
+      ],
+      "keywords": [
+        "attorney", "lawyer", "legal", "paralegal", "litigation", "corporate counsel",
+        "compliance", "contract", "intellectual property", "jd", "bar "
+      ]
+    },
+    {
+      "id": "medical",
+      "name": "Medical Assessment",
+      "category": "Medical",
+      "roles": [
+        "Health/Medical Expert",
+        "Radiologist",
+        "Sonographer",
+        "Imaging Specialist",
+        "Physician",
+        "Nurse",
+        "Surgical Clinician",
+        "Surgical Medicine Expert",
+        "Surgeon",
+        "Internal Medicine Clinician",
+        "Internist",
+        "Internal Medicine Physician",
+        "Dermatologist",
+        "Gynecologist",
+        "Obstetrician",
+        "Cardiologist",
+        "Interventional Cardiologist",
+        "Cardiac Electrophysiologist",
+        "Registered Nurse"
+      ],
+      "keywords": [
+        "physician", "doctor", "md", "do ", "nurse", "rn ", "np ", "radiologist", "surgeon",
+        "cardiologist", "dermatologist", "obgyn", "obstetric", "gynecolog", "sonographer",
+        "clinical", "hospital", "patient care", "residency", "board certified"
+      ]
+    },
+    {
+      "id": "healthcare-ops",
+      "name": "Healthcare Operations Assessment",
+      "category": "Healthcare Ops",
+      "roles": [
+        "Healthcare Operations Manager",
+        "Healthcare Compliance Specialist",
+        "Medical Coder",
+        "Revenue Cycle Specialist",
+        "Managed Care Analyst",
+        "Clinical Documentation Specialist"
+      ],
+      "keywords": [
+        "healthcare operations", "medical coder", "revenue cycle", "hipaa", "managed care",
+        "clinical documentation", "healthcare compliance", "billing", "claims"
+      ]
+    },
+    {
+      "id": "engineering-mechanical",
+      "name": "Engineering Assessment (Mechanical)",
+      "category": "Engineering",
+      "roles": [
+        "Mechanical Engineer",
+        "Mechanical Design Engineer",
+        "Validation Engineer",
+        "Automation Technician",
+        "Mechanical Designer",
+        "Senior Mechanical Design Engineer"
+      ],
+      "keywords": [
+        "mechanical engineer", "solidworks", "cad", "fea", "validation engineer",
+        "automation technician", "mechanical design", "hvac", "thermodynamics"
+      ]
+    },
+    {
+      "id": "engineering-civil",
+      "name": "Engineering Assessment (Civil)",
+      "category": "Engineering",
+      "roles": ["Civil Engineer", "Civil Design Engineer"],
+      "keywords": [
+        "civil engineer", "structural", "geotechnical", "transportation engineer",
+        "site design", "autocad civil"
+      ]
+    },
+    {
+      "id": "engineering-electrical",
+      "name": "Engineering Assessment (Electrical/Hardware)",
+      "category": "Engineering",
+      "roles": [
+        "Electrical Engineer",
+        "Embedded Systems Developer",
+        "Hardware Engineer",
+        "Electronics Engineer"
+      ],
+      "keywords": [
+        "electrical engineer", "embedded", "hardware engineer", "electronics", "fpga",
+        "pcb", "firmware", "circuit", "verilog", "vhdl"
+      ]
+    },
+    {
+      "id": "stem",
+      "name": "STEM Assessment",
+      "category": "STEM",
+      "roles": [
+        "Chemist",
+        "Physicist",
+        "Mathematician",
+        "Biologist",
+        "Experimental Biologist",
+        "Drug Discovery Scientist",
+        "Computational Biologist"
+      ],
+      "keywords": [
+        "chemist", "chemistry", "physicist", "physics", "mathematician", "biologist",
+        "biology", "drug discovery", "computational biology", "lab research", "phd"
+      ]
+    },
+    {
+      "id": "languages",
+      "name": "Language Assessment",
+      "category": "Languages",
+      "roles": [
+        "Chinese Specialist",
+        "Thai Specialist",
+        "Russian Specialist",
+        "Polish Specialist",
+        "Hebrew Specialist"
+      ],
+      "keywords": [
+        "chinese", "mandarin", "cantonese", "thai", "russian", "polish", "hebrew",
+        "translator", "localization", "native speaker"
+      ]
+    },
+    {
+      "id": "design",
+      "name": "Design Assessment",
+      "category": "Design",
+      "roles": ["Designer"],
+      "keywords": [
+        "designer", "ux", "ui", "figma", "product design", "graphic design", "brand"
+      ]
+    },
+    {
+      "id": "project-based",
+      "name": "Project-Based Specialist Assessments",
+      "category": "Other",
+      "roles": [
+        "Cybersecurity Projects",
+        "Robotics Projects",
+        "Nuclear Engineering Projects",
+        "Chemical Engineering Projects",
+        "Process Engineering Projects",
+        "Architectural Engineering Projects",
+        "Ophthalmology Projects",
+        "Machine Learning Engineering Projects"
+      ],
+      "keywords": [
+        "robotics", "nuclear", "chemical engineering", "process engineering",
+        "architectural engineering", "ophthalmology", "project-based"
+      ]
+    }
+  ]
+}
