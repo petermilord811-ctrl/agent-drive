@@ -794,14 +794,15 @@ function create(opts) {
 
   // ---- output -----------------------------------------------------------------------------------------
   const numbered = (label, nth) => nth > 1 ? clip(label, 95) + ' #' + nth : label;
-  const node = (t, s, k) => { const n = { t: clip(t, 100) || '…' }; if (s) n.s = s; if (k && k.length) n.k = k; return n; };
+  // `x`: the board's flags on a row (core/board.js) -- r risky, c changed the machine, p proven -- drawn as small badges
+  const node = (t, s, k, x) => { const n = { t: clip(t, 100) || '…' }; if (s) n.s = s; if (k && k.length) n.k = k; if (x) n.x = x; return n; };
   // a fold of older rows -- no "✓" of its own (the done state draws one), but it keeps count of PROBLEMS
   // in what it folds, so a failure never reads as a pass once it scrolls out of the window
   const earlier = (n, what, bad) => node(plural(n, 'earlier ' + what) + (bad ? ' (⚠ ' + bad + ' failed)' : ''), 'done');
   // A row whose own state is live: amber `warn` when its latest answer was bad
   const gNode = (g) => {
     const live = !g.done, lbl = gLabel(g, live);
-    return node(lbl, live ? (gIsBad(g) ? 'warn' : 'doing') : 'done', (live && g.leaf && g.leaf !== lbl) ? [node(g.leaf, g.leafBad ? 'warn' : 'doing')] : null);
+    return node(lbl, live ? (gIsBad(g) ? 'warn' : 'doing') : 'done', (live && g.leaf && g.leaf !== lbl) ? [node(g.leaf, g.leafBad ? 'warn' : 'doing')] : null, g.x || '');
   };
   // What FAILED in a step or sub-step whose rows are folded away: kept visible, one row, under it
   function failNodes(owner) {
@@ -905,8 +906,8 @@ function create(opts) {
         out.push(node(label, 'doing', kids));
       } else if (m.s === 'done') {
         const kids = [];
-        if (withProof.has(m.id)) { if (m.ev) kids.push(node(m.ev, 'done')); const f = st ? failNodes(st) : null; if (f) kids.push(...f); }
-        out.push(node(label, 'done', kids));
+        if (withProof.has(m.id)) { if (m.ev) kids.push(node(m.ev, 'done', null, 'p')); const f = st ? failNodes(st) : null; if (f) kids.push(...f); }
+        out.push(node(label, 'done', kids, m.ev ? 'p' : ''));
       } else if (m.s === 'skipped') out.push(node('⤼ ' + label, 'todo', [node('skipped — ' + (str(m.why) || 'not needed'), 'todo')]));
       else if (m.s === 'failed') out.push(node('✗ ' + label, 'todo', [node('not achieved — ' + (str(m.why) || 'it could not be done'), 'todo')]));
       else out.push(node(label, 'todo', st ? failNodes(st) : null));   // set aside after a start: what failed stays in sight
@@ -949,7 +950,14 @@ function create(opts) {
   const taskLabel = () => { const t = curTask(false); return t ? t.label : ''; };
   const hasContent = () => S.tasks.length > 0;
 
-  return { mark, start, end, unbind, tick, idle, suspend, adopt, ensureTask, setPlan, retask, relabel, render, line, taskLabel, hasContent, state: S };
+  // THE BOARD'S FLAGS on the group the last command went into (core/board.js): r = risky, c = it changed the machine
+  function flag(f) {
+    const g = S.cur;
+    if (!g || g.sub || typeof f !== 'string') return false;
+    for (const ch of f) if (/^[rcp]$/.test(ch) && !String(g.x || '').includes(ch)) g.x = String(g.x || '') + ch;
+    return true;
+  }
+  return { mark, start, end, unbind, tick, idle, suspend, adopt, ensureTask, setPlan, retask, relabel, render, line, taskLabel, hasContent, flag, state: S };
 }
 
 // how many COMMANDS an item stands for (a merged group of 16 presses is 16, a sub-step all of its actions)
