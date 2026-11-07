@@ -2,23 +2,45 @@
 name: Solve a sudoku
 when: read a grid, compute the answer, and fill the cells (sudoku and similar puzzle grids)
 tags: browser, puzzle, grid, ocr-free, learned-shapes, fill
-run: node skills/solve-a-sudoku/sudoku.js ./work play master
+run: node skills/solve-a-sudoku/fast.js ./work master
 ---
 # skill: solve a sudoku on a web page
 
-For `sudoku.com/evil`. **One command, no model in it:**
+For `sudoku.com/evil`. **Keep the model out of the hot path** — one command, glyphs + one host `plan`.
+
+## Agent workflow (verified — use this)
 
 ```bash
-node skills/solve-a-sudoku/sudoku.js ./work play master    # from the win screen: a new Master game; in a game: that one
+# Preferred on a live visit (open shortcut if needed → play → crop proof; no long chat-wait):
+node skills/solve-a-sudoku/fast.js ./work master
+
+# Board already on screen / win screen (core routine only):
+node skills/solve-a-sudoku/sudoku.js ./work play master
 ```
+
+**Do not** hand-read 81 cells from a screenshot when `play`/`fast` can run. That was 35–65 s every board
+before glyphs; on 34123 it turned 18 s Chrome solves into 5–15 minute visits. Ceremony (mission
+`chat-wait` before `finish`, per-cell `drive.js` clicks) costs more than the solver.
+
+**Speed rules learned live (34123, 2026-11-06/07):**
+1. **Locate** with box-sep **pitch ≈55.3** when `findGrid` is wrong (Firefox banners → origin ≈500,342).
+2. **Fill** with **shifted pad clicks** when pad tiles still read `#eaeef4` — Digit keys are flaky there.
+3. **One** host-side `plan` for all fills (never 100 separate click/press commands — burns the budget).
+4. Learn into `glyphs.local.json` only after the **game** confirms a win; thin digit banks (e.g. `5`) misread.
+5. Post proof after `play` (`fast.js` does it); do **not** `chat-wait` until `finish`/`status fin` is done.
+6. **Silent misread → Game Over:** a wrong clue read can still yield one solver solution (0 doubts) and
+   then burn 3 mistakes. That is **not** random clicking. `play` recovers once (New Game → re-read);
+   never learn the lost board. Live fix after that path: **19.1 s**, no mistakes (34123, 2026-11-07).
+
+**Live targets:** total visit ≤2 min is routine when the board is visible (~30–40 s proven). Puzzle slice
+≤15 s (look+fill+check, excluding new-game/ads) is the next squeeze — fill is still ~8–16 s of host actions.
 
 It looks once, reads the 81 cells from that picture by **digit shapes it has learned**, solves, enters
 every answer in one host-side plan, and asks the **game** whether it is solved. The panel shows each step
 and ends on `Solved in N s (new game … · look … · read … · solve … · fill … · check …)`; the chat gets the
 same result as a report (`status … say`, see [config/etiquette.md](../../config/etiquette.md) §4) — a
-`**✓ Sudoku solved in N s**` line, then one bullet per step with its time. **It posts no picture** (it
-checks by pixels, for speed), so the serve's next answer carries `remind`: post the solved board yourself
-right after — `shot {out, quiet:1}` → `vision/crop.py … board.jpg` → `chat-img`.
+`**✓ Sudoku solved in N s**` line, then one bullet per step with its time. **`play` posts no picture** (it
+checks by pixels, for speed), so use `fast.js` or `shot` → crop → `chat-img` / `status fin` yourself.
 
 **`--show`** (when the operator wants to see what the agent works on): before each step, the part of the
 screen it handles is spotlighted — the whole screen before a capture, New Game before it is pressed, the
@@ -149,17 +171,29 @@ tiles x 983–1301, y 344–650.
   (~171 s), so the fill ran long and `play` gave up — but the fill landed and the game reached its WIN
   screen (new best score 38,395). The game's own state is the truth: on a `play` timeout, `shot` the board
   before assuming failure — the win may already be on screen.
+- **Firefox / windowed (live 34123, 2026-11-06/07):** never `F11` (blanks capture like maximize).
+  `play` uses **box-sep pitch find** (≈55.3, origin ≈500,342 under banners) when `findGrid` grabs a
+  partial square. **Prefer pad clicks at the shifted geometry** when tiles still read `#eaeef4`;
+  Digit keys often never land (a “7.8 s fill” left the board empty). Digit fill is only the fallback
+  when pad colours miss. After a confirmed win, shapes go to `glyphs.local.json`. Tip banners
+  ("Only 6.9%…") — select a cell before reading. Streak / "Keep Going" / win panel = solved.
+  New Game on the Excellent panel is a **wide white button** (~y 834), not baseline 643+dy.
+  Video “Play Ad” / tab crash: wait or F5 / Restore — don’t hand-solve through an ad.
+  Agent path: `node skills/solve-a-sudoku/fast.js ./work master`.
 
 ## Manual fallback (if `play`'s assumptions don't hold)
 
-1. Open a hard puzzle at **default window size** (never maximize). Dismiss the cookie banner.
+1. Open a hard puzzle at **default window size** (never maximize, never F11). Dismiss the cookie banner.
 2. `node skills/solve-a-sudoku/sudoku.js ./work newgame master` (writes board.png — and grid.json too, when the shapes are sure).
-3. Read board.png → `work/grid.json` (a 9×9 array, 0 = empty).
+3. Read board.png → `work/grid.json` (a 9×9 array, 0 = empty) — **only** on exit 10; then `learn` after a win.
 4. `node skills/solve-a-sudoku/sudoku.js ./work solve` — solve, fill, ask the game, learn the read.
-5. Last resort, by hand: `python -I skills/solve-a-sudoku/solve_sudoku.py grid.json fills.json`, then
-   `node drive/fill.js ./work fills.json geometry.json` (geometry: see `geometry.example.json`).
+5. Last resort: `python -I skills/solve-a-sudoku/solve_sudoku.py grid.json fills.json`, then
+   `node drive/fill.js ./work fills.json geometry.json` (baseline Chrome pad), or click cell + pad /
+   `DigitN` from pitch geometry when the window is offset.
 
 ## Files here
+- `fast.js` — agent visit wrapper (open → play → proof). Prefer this over inventing steps.
+- `sudoku.js` — core `play` / `solve` / `read` / `learn` / `state`.
 - `glyphs.json` — sudoku.com's digit shapes (53, learned from four boards solved live; ~10 KB). Shared.
 - `glyphs.local.json` — what this machine has learned since. Gitignored; delete it to forget.
 - `grid.example.json` — a set of givens read on 10004 (unique solution → read was correct).

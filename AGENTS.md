@@ -33,8 +33,12 @@ file explains them.
    tool that finished it for you sends no picture — the serve's `remind` says so: `shot {out, quiet:1}` → crop →
    `chat-img`.)
 8. **After:** stay and listen — `chat-wait {timeout:180000}`, and again while they keep talking.
-9. **Write it down:** a new kind of task → a skill (`skills/<slug>/`, with the mission plan that worked); a new
-   snag → a few lines in [docs/reference/gotchas.md](docs/reference/gotchas.md). Right then, not at the end.
+9. **Sign off** only when they say they're finished — then `done`. That ends the *visit*, not your work.
+10. **After sign-off — check, analyze, learn (MUST).** Whatever you faced while solving (misses, quirks,
+    wrong reads, slow paths, recovery steps, operator questions): **check** what actually happened,
+    **analyze** cause → fix, **learn** into the skill / [docs/reference/gotchas.md](docs/reference/gotchas.md)
+    / `AGENTS.md` / data the next run loads — **without being asked**. Waiting for "learn it" is a miss.
+    A new kind of task → a skill (`skills/<slug>/`). Snags noted mid-run still get this full pass at the end.
 
 ### MUST — always
 
@@ -79,6 +83,9 @@ file explains them.
 - **Save what a check confirmed as data** the next run loads. Don't read again what you have read once.
 - **Sign off (`done`) only when they're finished** — "done / bye / that's all", or minutes of silence
   after your check-in.
+- **After every sign-off: check → analyze → learn.** Review the visit (ledger, exits, chat, what burned
+  time or failed once). Encode the lesson into skill code/docs, gotchas, or AGENTS before you stop.
+  Do this even when the job “succeeded.” Do not wait for the operator to say “learn it.”
 
 ### MUST NOT — ever
 
@@ -95,6 +102,8 @@ file explains them.
   listening is deaf, and the operator's next message is lost.
 - **Never answer the operator only in your own terminal.** They are in the session chat.
 - **Never `done` right after answering**, or while they're mid-conversation — `done` hangs up.
+- **Never treat sign-off as “nothing left to do.”** Skipping the post-sign-off check/analyze/learn pass
+  (or waiting for “learn it”) means the next visit pays the same tax again.
 - **Never leave the panel a flat feed** of bare verbs or unnamed batches, and never hand-write a `tree` for
   ad-hoc work — declare the levels.
 - **Never read chat and act in the same command** — read it first, as its own step.
@@ -277,8 +286,11 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
      after an action that loads a new view — `wait` for a tell-tale pixel (a control that only exists once
      loaded) before you read, so a shot never catches a half-loaded screen. And **always verify the screen
      before you act on it**: this is what turned a flailing sudoku New Game into a reliable one, and the
-     whole solve is now ONE command with no model in it (`skills/solve-a-sudoku/sudoku.js play`, see
-     [skills/solve-a-sudoku](skills/solve-a-sudoku/README.md)).
+     whole solve is now ONE command with no model in it — prefer
+     `node skills/solve-a-sudoku/fast.js ./work master` (open → play → proof), or `sudoku.js … play`
+     when the board is already up; see [skills/solve-a-sudoku](skills/solve-a-sudoku/README.md).
+     **Never** hand-read 81 cells or stream per-cell `drive.js` clicks when that skill applies (that
+     path cost 5–15 min on 34123; the skill path is ~30–40 s when the board is visible).
 6. **Gate the dangerous things.** Before anything hard to undo — restart, shut down, log off, delete,
    overwrite, stop a service — announce it in session chat and wait for a human yes. See
    [config/etiquette.md](config/etiquette.md).
@@ -301,12 +313,12 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
    After someone has spoken in chat at all, never `done` right after answering — loop another long
    `chat-wait` first. When you do intend to wrap, say so and wait for a yes rather than announcing a
    sign-off and vanishing mid-conversation. If a step failed, say so, plainly.
-8. **Write it down — so the next agent never re-learns it.** If you solved a new *kind* of task, add a skill
-   — a folder `skills/<slug>/` with its README, plus its code and data if it has any (step 2 pays off next
-   time). And whenever you hit a new SITUATION — a breakage, a site quirk, a tool limit, a workaround, a
-   thing that cost you time — record it in [docs/reference/gotchas.md](docs/reference/gotchas.md) right then
-   (a few lines: what happened, how you knew it, the fix), AS IT HAPPENS, not only at the end. Memory you
-   don't write down is memory the next run pays for again.
+8. **Write it down — so the next agent never re-learns it.** Note snags **as they happen** in
+   [docs/reference/gotchas.md](docs/reference/gotchas.md) (a few lines: what happened, how you knew it, the
+   fix). Then, **after sign-off**, run the mandatory pass: check what the visit taught → analyze cause and
+   fix → learn into the skill / gotchas / AGENTS / loadable data. Do not leave that for the operator to
+   request. A new *kind* of task → `skills/<slug>/` (README + code/data). Memory you don't write down is
+   memory the next run pays for again.
 
 ## The rules, in one place
 
@@ -316,7 +328,10 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
   had to work out from the screen — a solver's one solution, the app saying done — save what it taught as
   **data a tool loads** next time (shapes, positions, colours), and be woken only when that data cannot
   decide. The shapes confirmed once read the next sudoku in ~10 ms. Count your own turns on a routine
-  task: the goal is one command, then the result.
+  task: the goal is one command, then the result. On Firefox/34123 that means pitch-locate + pad fill
+  inside the skill (not rediscovering geometry in chat) and `glyphs.local.json` after a real win — see
+  [docs/reference/gotchas.md](docs/reference/gotchas.md) §34123. If fill hits Game Over at 3/3, assume a
+  **silent glyph misread of clues** (not random presses): let `play` New-Game once; never learn that board.
 - **Consent is ongoing.** You were let in to do a job; a bigger or different claim — taking exclusive
   control, acting while someone's typing, a destructive action — is a new ask, not covered by the first
   Allow. Ask again, through chat. See [config/etiquette.md](config/etiquette.md).

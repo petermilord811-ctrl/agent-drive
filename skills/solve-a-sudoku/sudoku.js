@@ -10,6 +10,12 @@
 // machine. The model read the board off a screenshot (35-65 s, on every board), took more turns to write
 // the grid and start the solver (9-48 s), then had a full screenshot taken DURING the win animation (5-42 s,
 // one timed out) and read it to say "solved" (20-140 s). The machine's own part was seconds. So:
+//
+// FIREFOX / 34123 (2026-11-06/07): findGrid often drifts; locate by box-sep pitch (~55.3, origin ~500,342).
+// Prefer pad clicks at the shifted geometry when tiles still read INGAME — Digit keys drop presses.
+// SILENT MISREAD (2026-11-07): glyphs can name a clue wrong with 0 doubts; settle() still finds one
+// solution for that wrong grid; fill then burns 3 mistakes → Game Over. Never learnFrom that board.
+// play recovers once: New Game → re-read → refill. Agent visits: fast.js. Do not hand-read.
 //   look   one `shot` -- the only capture of the board
 //   read   the 81 cells from that picture, by glyph shapes learned from boards already proven right
 //          (glyph-reader.js, ~10 ms). A cell it is unsure of is settled by the solver, never guessed
@@ -102,6 +108,68 @@ function geometryOf(g) {
 const BASE_GEOM = { origin: BASE.origin, step: BASE.step, buttons: BASE.buttons, dx: 0, dy: 0, pad: BASE.pad, corners: BASE.corners };
 const secs = (s) => (s < 0.095 ? s.toFixed(2) : s.toFixed(1)) + ' s';
 
+// Firefox / windowed (live 34123): findGrid often grabs a partial non-square. Locate by box-separator
+// pitch instead (outer + 1/3 + 2/3 lines). Proven: pitch≈55.3, origin≈(500,342) under Firefox banners.
+function findGridByPitch(img) {
+  // Tight band for the TOP-LEFT corner (Chrome ~472,247; Firefox+banners ~472,314).
+  const dark = (x, y) => {
+    if (x < 0 || y < 0 || x >= img.w || y >= img.rows) return false;
+    const i = y * img.stride + x * img.bpp;
+    return (img.px[i] + img.px[i + 1] + img.px[i + 2]) / 3 < 90;
+  };
+  const colFrac = (x, y0, y1) => {
+    let n = 0, t = 0; for (let y = y0; y < y1; y += 2) { t++; if (dark(x, y)) n++; } return t ? n / t : 0;
+  };
+  const rowFrac = (y, x0, x1) => {
+    let n = 0, t = 0; for (let x = x0; x < x1; x += 2) { t++; if (dark(x, y)) n++; } return t ? n / t : 0;
+  };
+  let best = null;
+  for (const pitch of [55.0, 55.3, 55.5, 56.0]) {
+    const board = pitch * 9, sep = pitch * 3;
+    for (let x0 = 400; x0 <= 560; x0 += 2) {
+      if (x0 + board >= img.w - 10) break;
+      for (let y0 = 160; y0 <= 360; y0 += 2) {
+        if (y0 + board >= img.rows - 40) break;
+        const x1 = Math.round(x0 + board), y1 = Math.round(y0 + board);
+        let score = 0;
+        for (let k = 0; k < 4; k++) {
+          if (colFrac(Math.round(x0 + k * sep), y0 + 5, y1 - 5) > 0.45) score++;
+          if (rowFrac(Math.round(y0 + k * sep), x0 + 5, x1 - 5) > 0.45) score++;
+        }
+        if (score < 6) continue;
+        if (!best || score > best.score || (score === best.score && Math.abs(pitch - 55.3) < Math.abs(best.pitch - 55.3))) {
+          const sx = board / 9, sy = board / 9;
+          best = {
+            ok: true, n: 9, score, pitch, boxsep: 4, square: 1,
+            bbox: [x0, y0, x1, y1],
+            origin: [Math.round((x0 + sx / 2) * 100) / 100, Math.round((y0 + sy / 2) * 100) / 100],
+            step: [Math.round(sx * 100) / 100, Math.round(sy * 100) / 100],
+            how: 'pitch'
+          };
+        }
+      }
+    }
+  }
+  return best || { ok: false, why: 'no box-separator board at sudoku pitch' };
+}
+function locateBoard(img) {
+  const loose = findGridByPitch(img);
+  const g = reader.findGrid(img, { box: BASE.search });
+  // Prefer pitch when the page is shifted (Firefox banners): findGrid can look “confident” but
+  // its origin/step drifts enough that Digit clicks miss lower rows (live 34123).
+  if (loose.ok) {
+    const dy = loose.origin[1] - BASE.origin[1];
+    if (Math.abs(dy) > 30 || !confident(g)) return loose;
+  }
+  if (confident(g)) return g;
+  return loose.ok ? loose : (g && g.ok ? g : loose);
+}
+// Pad tiles match Chrome colours → click the pad. Firefox shift often misses the pad → Digit keys.
+function padInPlay(img, geom) {
+  const tiles = geom.corners.map(([x, y]) => eyes.probe(img, x, y));
+  return { tiles, ingame: tiles.includes(INGAME), ticks: tiles.every((t) => t === TICK) };
+}
+
 // ---- talking to the serve loop ----------------------------------------------------------------------
 // In-process (cmd-file.js's exchange), not a node process per command. Every action is quiet: the tree
 // below is the narration, and a "Clicking" line must never stomp it.
@@ -191,12 +259,17 @@ function show(rect, line) {
 function screenState(img) {
   const won = winPanel(img);
   if (won) return { kind: 'won', dy: won.dy };
-  const g = reader.findGrid(img, { box: BASE.search });
-  if (!confident(g)) return { kind: 'other', why: g.ok ? 'something grid-like, but not surely a board (square ' + g.square + ', box lines ' + g.boxsep + ')' : g.why };
-  const geom = geometryOf(g), tiles = geom.corners.map(([x, y]) => eyes.probe(img, x, y));
-  if (tiles.includes(INGAME)) return { kind: 'game', g, geom };
-  if (tiles.every((t) => t === TICK)) return { kind: 'ticks', g, geom };
-  return { kind: 'other', why: 'a board, but its number pad is not in play (' + tiles.join(' ') + ')' };
+  const g = locateBoard(img);
+  if (!g || !g.ok || (!(g.how === 'pitch') && !confident(g))) {
+    return { kind: 'other', why: (g && g.ok) ? 'something grid-like, but not surely a board (square ' + g.square + ', box lines ' + g.boxsep + ')' : ((g && g.why) || 'no board') };
+  }
+  const geom = geometryOf(g), pad = padInPlay(img, geom);
+  // Pitch locate fixes Firefox board origin; pad usually still reads INGAME after the same shift — use pad clicks.
+  // Digit keys are a fallback only when pad colours miss (live: Digits sometimes never land in Firefox).
+  if (pad.ticks) return { kind: 'ticks', g, geom };
+  if (pad.ingame) return { kind: 'game', g, geom, digitFill: false };
+  if (g.how === 'pitch' || g.ok) return { kind: 'game', g, geom, digitFill: true };
+  return { kind: 'other', why: 'a board, but its number pad is not in play (' + pad.tiles.join(' ') + ')' };
 }
 // The win panel: blue from its top edge ~550 px down the column x=470 -- a highlighted cell in a game is
 // blue there too, but one cell tall -- with the white New Game button where the shift says it must be.
@@ -209,6 +282,41 @@ function winPanel(img) {
     return eyes.probe(img, BASE.winWhite[0], BASE.winWhite[1] + dy) === '#ffffff' ? { dy } : null;
   }
   return null;
+}
+// "Game Over / 3 mistakes" white modal with blue Second Chance (live 34123, 2026-11-07). Not the win panel.
+function gameOverOn(img) {
+  if (!img || !img.ready || winPanel(img)) return null;
+  let whiteY = null;
+  for (let y = 260; y < 520; y += 4) {
+    let w = 0;
+    for (let x = 700; x < 1200; x += 3) {
+      const h = eyes.probe(img, x, y);
+      if (h && parseInt(h.slice(1, 3), 16) > 240 && parseInt(h.slice(3, 5), 16) > 240 && parseInt(h.slice(5, 7), 16) > 240) w++;
+    }
+    if (w > 80) { whiteY = y; break; }
+  }
+  if (whiteY == null) return null;
+  for (let y = whiteY + 40; y < whiteY + 240; y += 3) {
+    let b = 0;
+    for (let x = 820; x < 1100; x += 2) {
+      const h = eyes.probe(img, x, y); if (!h) continue;
+      const R = parseInt(h.slice(1, 3), 16), G = parseInt(h.slice(3, 5), 16), B = parseInt(h.slice(5, 7), 16);
+      if (B > R + 40 && B > 120 && G < B) b++;
+    }
+    if (b > 40) return { whiteY, blueY: y };
+  }
+  return null;
+}
+// Leave a lost board: New Game under Second Chance, confirm OK if asked, Escape ad interstitials.
+// Do NOT learn glyphs from the board that just lost — those reads were wrong.
+function recoverFromGameOver(go) {
+  const linkY = go && go.blueY ? go.blueY + 72 : 590;
+  act({ do: 'plan', steps: [
+    { do: 'click', x: 960, y: linkY }, { do: 'hold' }, { do: 'hold' }, { do: 'hold' },
+    { do: 'click', x: 880, y: 545 }, { do: 'hold' }, { do: 'hold' }, { do: 'hold' }, { do: 'hold' }
+  ] });
+  act({ do: 'press', code: 'Escape' });
+  act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }, { do: 'hold' }] });
 }
 
 // sudoku.com's FIRST-VISIT HINT -- "Select a cell, then tap a number to fill in the cell" -- lies over the
@@ -226,10 +334,44 @@ function hintOn(img, g) {
 // capture, is the beat). The game is up when its pad is -- asked of the pad's top row rather than one
 // pixel, because the pointer now rests on the pad and a tile under it need not read INGAME. Then two more
 // beats for the board and its "Loading game" overlay, so the picture never catches a half-drawn board.
+function findWhiteNewGame(img) {
+  // Wide white row on the blue win panel (Firefox Excellent / score card) — live 34123: ~y 834.
+  let best = null;
+  for (let y = 560; y < Math.min(img.rows - 20, 950); y += 2) {
+    let run = 0, x0 = 0;
+    for (let x = 700; x < 1300; x++) {
+      const h = eyes.probe(img, x, y);
+      const wh = h && parseInt(h.slice(1, 3), 16) > 240 && parseInt(h.slice(3, 5), 16) > 240 && parseInt(h.slice(5, 7), 16) > 240;
+      if (wh) { if (!run) x0 = x; run++; }
+      else { if (run > 180 && (!best || run > best.w)) best = { x0, x1: x, y, w: run }; run = 0; }
+    }
+  }
+  return best ? { x: Math.round((best.x0 + best.x1) / 2), y: best.y + 18 } : null;
+}
 function newGame(d, dy) {
-  act({ do: 'plan', steps: [{ do: 'click', x: BASE.newGame[0], y: BASE.newGame[1] + dy }, { do: 'hold' }, { do: 'hold' }, { do: 'click', x: BASE.diffX, y: DIFF[d] + dy }] });
+  dy = Math.round(dy || 0);
+  let nx = BASE.newGame[0], ny = BASE.newGame[1] + dy;
+  try {
+    const img = eyes.decode(fs.readFileSync(path.join(dir, 'board_raw.png')));
+    const white = findWhiteNewGame(img);
+    if (white) { nx = white.x; ny = white.y; }
+    else {
+      const box = newGameBox(img, dy);
+      nx = Math.round((box[0] + box[2]) / 2); ny = Math.round((box[1] + box[3]) / 2);
+    }
+  } catch (_) {}
+  act({ do: 'plan', steps: [
+    { do: 'click', x: nx, y: ny }, { do: 'hold' }, { do: 'hold' },
+    { do: 'click', x: BASE.diffX, y: DIFF[d] + dy },
+    { do: 'hold' }, { do: 'hold' }
+  ] });
   let w = null;
-  try { w = act({ do: 'wait', until: { any: { rect: { x: BASE.pad.x, y: BASE.pad.y + dy, w: BASE.pad.w, h: 98 }, is: INGAME } }, timeout: 6000, poll: 250 }); } catch (e) { if (e.operator) throw e; }
+  try {
+    w = act({ do: 'wait', until: { any: { rect: { x: BASE.pad.x, y: BASE.pad.y + dy, w: BASE.pad.w, h: 120 }, is: INGAME } }, timeout: 8000, poll: 250 });
+  } catch (e) { if (e.operator) throw e; }
+  if (!w || !w.ok) {
+    try { w = act({ do: 'wait', until: { any: { rect: { x: BASE.pad.x, y: BASE.pad.y, w: BASE.pad.w, h: 200 }, is: INGAME } }, timeout: 4000, poll: 250 }); } catch (e) { if (e.operator) throw e; }
+  }
   act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }] });
   return !!(w && w.ok);
 }
@@ -300,7 +442,8 @@ function lastTwoDiffer(fills) {
 // early (three mistakes) would otherwise look exactly like a solved one to the check after it. Then the
 // check itself: no tile left in play -- ticks, then the win panel -- is the game saying solved.
 // `beforeCheck` runs between the two (--show circles the pad there).
-function fillAndCheck(geom, fills, node, beforeCheck) {
+function fillAndCheck(geom, fills, node, beforeCheck, opts) {
+  const digitFill = !!(opts && opts.digitFill);
   const cellX = (c) => Math.round(geom.origin[0] + c * geom.step[0]);
   const cellY = (r) => Math.round(geom.origin[1] + r * geom.step[1]);
   const order = lastTwoDiffer(fills), n = order.length, steps = [];
@@ -308,17 +451,25 @@ function fillAndCheck(geom, fills, node, beforeCheck) {
     node.k = [{ t: k < n ? 'Entered ' + k + ' of ' + n + ' numbers' : 'Entered all ' + n + ' numbers', s: k < n ? 'doing' : 'done' }];
     return { do: 'status', tree: snap(), text: 'Filling in answers — ' + k + ' of ' + n };
   };
-  steps.push(count(0));
+  if (!digitFill) steps.push(count(0));
+  else steps.push({ do: 'status', tree: snap(), text: 'Filling in ' + n + ' answers (Digit keys)' });
   order.forEach(([r, c, v], i) => {
-    // Before each chunk (and before the last answer), confirm the number pad is still on screen. If an
-    // ad, an interstitial, or a navigation stole the page mid-fill, the plan STOPS at this expect instead
-    // of blind-clicking the rest -- a blind run once hit an ad and opened a dozen tabs. The plan halts at
-    // the first failed step, so one guard per chunk bounds how far a stray page can be clicked into.
-    if (i % CHUNK === 0 || (i === n - 1 && n > 1 && order[n - 2][2] !== v)) steps.push({ do: 'expect', until: { any: { rect: geom.pad, is: INGAME } } });
-    const b = geom.buttons[String(v)];
-    steps.push({ do: 'click', x: cellX(c), y: cellY(r), fast: 1 }, { do: 'click', x: b[0], y: b[1], fast: 1 });
-    if ((i + 1) % CHUNK === 0 || i === n - 1) steps.push(count(i + 1));
+    // Pad expect only when we click the pad — Digit fill skips it (Firefox pad colours/geometry miss).
+    if (!digitFill && (i % CHUNK === 0 || (i === n - 1 && n > 1 && order[n - 2][2] !== v))) {
+      steps.push({ do: 'expect', until: { any: { rect: geom.pad, is: INGAME } } });
+    }
+    if (digitFill) {
+      // No fast:1 — Firefox drops Digit presses when cell focus is not settled (live: 7.8s “fill” left half empty).
+      steps.push({ do: 'click', x: cellX(c), y: cellY(r) });
+      steps.push({ do: 'press', code: 'Digit' + v });
+      if ((i + 1) % 9 === 0) steps.push({ do: 'hold' }); // one settle per row
+    } else {
+      const b = geom.buttons[String(v)];
+      steps.push({ do: 'click', x: cellX(c), y: cellY(r), fast: 1 }, { do: 'click', x: b[0], y: b[1], fast: 1 });
+    }
+    if (!digitFill && ((i + 1) % CHUNK === 0 || i === n - 1)) steps.push(count(i + 1));
   });
+  if (digitFill) steps.push(count(n));
   const t0 = Date.now(), p = act({ do: 'plan', steps });
   const fillS = (Date.now() - t0) / 1000;
   if (!p || !p.ok) {
@@ -329,8 +480,39 @@ function fillAndCheck(geom, fills, node, beforeCheck) {
   if (beforeCheck) beforeCheck();
   const t1 = Date.now();
   let w = null;
-  try { w = act({ do: 'wait', until: { none: { rect: geom.pad, is: INGAME } }, timeout: 15000, poll: 250 }); }
-  catch (e) { if (e.operator) throw e; return { solved: false, fillS, checkS: (Date.now() - t1) / 1000, why: 'no answer from the host while the game finished (' + e.message + ')' }; }
+  try {
+    if (digitFill) {
+      // Exact win-blue waits miss (capture colour ≠ #325aaf). One settle + cropped look (~fast).
+      act({ do: 'hold' });
+      const vOut = path.join(dir, 'verify_look.png');
+      act({ do: 'look', out: vOut, rect: { x: 380, y: 120, w: 700, h: 700 }, max: 700 });
+      const shot = eyes.decode(fs.readFileSync(vOut));
+      let streak = false, bluePanel = false;
+      if (shot && shot.ready) {
+        for (const [lx, ly] of [[220, 160], [300, 180], [250, 220], [200, 380], [320, 420], [100, 100]]) {
+          const h = eyes.probe(shot, lx, ly); if (!h) continue;
+          const R = parseInt(h.slice(1, 3), 16), G = parseInt(h.slice(3, 5), 16), B = parseInt(h.slice(5, 7), 16);
+          if (R > 80 && B > 140 && G < R) streak = true;
+          if (B - R > 50 && B > 100) bluePanel = true;
+        }
+      }
+      w = { ok: !!(streak || bluePanel) };
+      if (!w.ok) {
+        const full = capture('verify_raw.png');
+        w = { ok: !!(winPanel(full) || padInPlay(full, geom).ticks) };
+      }
+    } else {
+      // Short wait — win panel / streak often covers the pad before every tile ticks.
+      w = act({ do: 'wait', until: { none: { rect: geom.pad, is: INGAME } }, timeout: 5000, poll: 200 });
+      if (!w || !w.ok) {
+        act({ do: 'hold' });
+        const full = capture('verify_raw.png');
+        const h = eyes.probe(full, 600, 300);
+        const streak = !!(h && parseInt(h.slice(1, 3), 16) > 80 && parseInt(h.slice(5, 7), 16) > 140);
+        w = { ok: !!(winPanel(full) || streak || padInPlay(full, geom).ticks) };
+      }
+    }
+  } catch (e) { if (e.operator) throw e; return { solved: false, fillS, checkS: (Date.now() - t1) / 1000, why: 'no answer from the host while the game finished (' + e.message + ')' }; }
   const checkS = (Date.now() - t1) / 1000;
   if (!w || !w.ok) return { solved: false, fillS, checkS, why: 'the game is still running after the last answer -- a number is in the wrong cell, or the board was misread' };
   return { solved: true, fillS, checkS };
@@ -356,9 +538,7 @@ function loadGrid(file) {
 }
 // a saved picture: a full screen is searched where a board can be; anything else (a crop) whole
 function gridIn(img) {
-  let g = img.w >= 1600 ? reader.findGrid(img, { box: BASE.search }) : null;
-  if (!confident(g)) g = reader.findGrid(img);
-  return g;
+  return locateBoard(img);
 }
 
 // ==== the commands ======================================================================================
@@ -373,6 +553,23 @@ if (cmd === 'play') {
   firstPush('Looking at the screen');
   show(screenBox(), 'Spotlighting the screen — capturing it next');
   let t = Date.now(), s = SHOWN, img = capture('board_raw.png'), st = screenState(img);
+  // Lost board from a prior misread fill (Game Over modal) — start fresh before reading anything.
+  let go0 = gameOverOn(img);
+  if (go0) {
+    pushTree('Game Over on screen — New Game (do not learn the lost board)');
+    recoverFromGameOver(go0);
+    img = capture('board_raw.png'); st = screenState(img);
+  }
+  // Video-ad interstitial / "Loading game" (live 34123): poll until a board or win panel appears.
+  if (st.kind === 'other') {
+    pushTree('Waiting for the board (ad or loading)');
+    for (let i = 0; i < 12 && st.kind === 'other'; i++) {
+      act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }, { do: 'hold' }] });
+      img = capture('board_raw.png'); st = screenState(img);
+      const goWait = gameOverOn(img);
+      if (goWait) { recoverFromGameOver(goWait); img = capture('board_raw.png'); st = screenState(img); }
+    }
+  }
   if (st.kind === 'ticks') {                     // just solved: the win panel is on its way
     let w = null;
     try { w = act({ do: 'wait', until: { px: { x: BASE.winBlue[0], y: BASE.winBlue[1] + st.geom.dy, is: BASE.winBlue[2] } }, timeout: 10000, poll: 400 }); } catch (e) { if (e.operator) throw e; }
@@ -397,7 +594,8 @@ if (cmd === 'play') {
     t = Date.now(); s = SHOWN; img = capture('board_raw.png'); st = screenState(img);
   }
   const hint = st.kind === 'game' && hintOn(img, st.g);
-  if (hint) {                                    // selecting a cell is what the hint asks for, and closes it
+  if (hint) {
+    // First-visit hint — selecting a cell clears it.
     show(hint, 'Spotlighting a hint over the board — closing it next');
     pushTree('Closing the hint over the board');
     act({ do: 'click', x: Math.round(st.geom.origin[0]), y: Math.round(st.geom.origin[1]) });
@@ -409,45 +607,82 @@ if (cmd === 'play') {
   T.look = since(t, s);
   if (st.kind !== 'game') {
     N.look.s = 'warn';
-    pushTree('This is not a sudoku.com game', { warn: 'Not a sudoku.com game or win screen: ' + st.why });
-    console.error('[x] not a sudoku.com game or win screen (' + st.why + ') -- see ' + path.join(dir, 'board_raw.png'));
-    record({ solved: false, why: st.why, s: T });
+    const why = st.why || (st.kind === 'won' ? 'still on the win screen after New Game' : ('screen is “' + st.kind + '”'));
+    pushTree('This is not a sudoku.com game', { warn: 'Not a sudoku.com game or win screen: ' + why });
+    console.error('[x] not a sudoku.com game or win screen (' + why + ') -- see ' + path.join(dir, 'board_raw.png'));
+    record({ solved: false, why, s: T });
     process.exit(3);
   }
   N.look.s = 'done'; N.read.s = 'doing';
-  show(st.g.bbox, 'Spotlighting the grid — reading it next');
-  pushTree('Reading the board');
-  const r = readBoard(img, st.g, loadShapes());
-  T.read = r.readMs / 1000;
-  if (!r.ok) {
-    N.read.s = 'warn';
-    const msg = askModel(img, st.g, r, r.why);
-    pushTree('Need help reading this board', { warn: 'I could not read every cell for sure: ' + r.why + '.' });
-    console.log(msg);
-    record({ solved: false, read: 'needs-model', why: r.why, s: T });
-    process.exit(10);
+  let r = null, fills = null, res = null, misreadRetry = 0;
+  for (;;) {
+    show(st.g.bbox, 'Spotlighting the grid — reading it next');
+    pushTree(misreadRetry ? 'Re-reading after Game Over (prior read was wrong — not learning it)' : 'Reading the board');
+    r = readBoard(img, st.g, loadShapes());
+    // One retry after a fresh click: tip banners sometimes leave ink that confuses a first glyph read.
+    if (!r.ok) {
+      act({ do: 'click', x: Math.round(st.geom.origin[0] + st.geom.step[0]), y: Math.round(st.geom.origin[1]) });
+      act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }] });
+      img = capture('board_raw.png'); st = screenState(img);
+      if (st.kind === 'game') r = readBoard(img, st.g, loadShapes());
+    }
+    T.read = r.readMs / 1000;
+    if (!r.ok) {
+      N.read.s = 'warn';
+      const msg = askModel(img, st.g, r, r.why);
+      pushTree('Need help reading this board', { warn: 'I could not read every cell for sure: ' + r.why + '.' });
+      console.log(msg);
+      record({ solved: false, read: 'needs-model', why: r.why, s: T });
+      process.exit(10);
+    }
+    fills = sudoku.fillsOf(r.grid, r.solution);
+    T.solve = (r.solveMs || 0) / 1000;
+    N.read.t = 'Read the 81 cells: ' + r.rd.filled + ' givens' + (r.settled ? ', ' + r.settled + ' settled by the solver' : '');
+    N.read.s = 'done'; N.solve.t = 'Solve the puzzle: one solution, ' + fills.length + ' answers'; N.solve.s = 'done'; N.fill.s = 'doing';
+    fs.writeFileSync(path.join(dir, 'grid.json'), JSON.stringify(r.grid));
+    show(union(st.g.bbox, padBox(st.geom)), 'Spotlighting the board and number pad — filling in next');
+    pushTree('Filling in ' + fills.length + ' answers', { next: 'check the game says solved' });
+    res = fillAndCheck(st.geom, fills, N.fill, () => { N.fill.s = 'done'; N.check.s = 'doing'; show(padBox(st.geom), 'Spotlighting the number pad — checking the game says solved'); }, { digitFill: !!st.digitFill });
+    T.fill = (T.fill || 0) + res.fillS; T.check = res.checkS;
+    N.fill.s = 'done';
+    if (res.solved) break;
+    // Silent glyph misread: unique solution on a wrong grid → 3 mistakes → Game Over. Recover once.
+    const ev = evidence(st.geom);
+    let go = null;
+    try { go = gameOverOn(eyes.decode(fs.readFileSync(path.join(dir, 'verify_raw.png')))); } catch (_) {}
+    if (!go) {
+      try { go = gameOverOn(capture('board_raw.png')); } catch (_) {}
+    }
+    if (!go || misreadRetry >= 1) {
+      N.check.s = 'warn';
+      pushTree('The game did not say solved', { warn: res.why });
+      console.error('[x] NOT SOLVED: ' + res.why + (go ? ' (glyph misread → Game Over; already retried once)' : '') + ' -- see ' + ev);
+      record({ solved: false, why: res.why, misread: !!go, s: T, total: (Date.now() - start) / 1000 });
+      process.exit(4);
+    }
+    misreadRetry++;
+    console.error('[!] glyph misread ended the game (wrong clues, not random clicks) — New Game and retry once; not learning that board');
+    pushTree('Game Over from misread — New Game, re-read (no learn)');
+    recoverFromGameOver(go);
+    N.read.s = 'doing'; N.solve.s = 'todo'; N.fill.s = 'todo'; N.check.s = 'todo';
+    img = capture('board_raw.png'); st = screenState(img);
+    if (st.kind === 'other') {
+      for (let i = 0; i < 8 && st.kind === 'other'; i++) {
+        act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }] });
+        img = capture('board_raw.png'); st = screenState(img);
+      }
+    }
+    if (st.kind !== 'game') {
+      N.check.s = 'warn';
+      console.error('[x] NOT SOLVED: after Game Over recovery, screen is “' + st.kind + '” -- see ' + path.join(dir, 'board_raw.png'));
+      record({ solved: false, why: 'recovery-failed:' + st.kind, s: T, total: (Date.now() - start) / 1000 });
+      process.exit(4);
+    }
   }
-  const fills = sudoku.fillsOf(r.grid, r.solution);
-  T.solve = (r.solveMs || 0) / 1000;
-  N.read.t = 'Read the 81 cells: ' + r.rd.filled + ' givens' + (r.settled ? ', ' + r.settled + ' settled by the solver' : '');
-  N.read.s = 'done'; N.solve.t = 'Solve the puzzle: one solution, ' + fills.length + ' answers'; N.solve.s = 'done'; N.fill.s = 'doing';
-  fs.writeFileSync(path.join(dir, 'grid.json'), JSON.stringify(r.grid));
-  show(union(st.g.bbox, padBox(st.geom)), 'Spotlighting the board and number pad — filling in next');
-  pushTree('Filling in ' + fills.length + ' answers', { next: 'check the game says solved' });
-  const res = fillAndCheck(st.geom, fills, N.fill, () => { N.fill.s = 'done'; N.check.s = 'doing'; show(padBox(st.geom), 'Spotlighting the number pad — checking the game says solved'); });
-  T.fill = res.fillS; T.check = res.checkS;
-  N.fill.s = 'done';
   const total = (Date.now() - start) / 1000;
   T.show = SHOWN;
   const times = [T.start != null ? 'new game ' + secs(T.start) : null, 'look ' + secs(T.look), 'read ' + secs(T.read), 'solve ' + secs(T.solve), 'fill ' + secs(T.fill), 'check ' + secs(T.check),
-                 SHOWN ? 'spotlights ' + secs(SHOWN) : null].filter(Boolean).join(' · ');
-  if (!res.solved) {
-    N.check.s = 'warn';
-    pushTree('The game did not say solved', { warn: res.why });
-    console.error('[x] NOT SOLVED: ' + res.why + ' -- see ' + evidence(st.geom));
-    record({ solved: false, why: res.why, s: T, total });
-    process.exit(4);
-  }
+                 SHOWN ? 'spotlights ' + secs(SHOWN) : null, misreadRetry ? 'misread-retry ' + misreadRetry : null].filter(Boolean).join(' · ');
   const learned = learnFrom(img, st.g, r.grid);
   N.check.s = 'done';
   const line = 'Solved in ' + secs(total) + ' (' + times + ')';
@@ -459,8 +694,8 @@ if (cmd === 'play') {
     '- **Filled** in ' + fills.length + ' numbers · ' + secs(T.fill) + '\n' +
     '- **Checked** — the game says solved · ' + secs(T.check) +
     (learned ? '\n- **Learned** ' + learned + ' new digit shape' + (learned === 1 ? '' : 's') + ' from this board' : ''));
-  console.log('SOLVED' + (T.start != null ? ' a new ' + d + ' game' : ' the game on screen') + ': ' + line + ' -- read from pixels' + (r.settled ? ', ' + r.settled + ' doubtful cell(s) settled by the solver' : '') + (learned ? ', learned ' + learned + ' new shape(s)' : ''));
-  record({ solved: true, read: 'pixels', settled: r.settled, learned, fills: fills.length, s: T, total });
+  console.log('SOLVED' + (T.start != null ? ' a new ' + d + ' game' : ' the game on screen') + ': ' + line + ' -- read from pixels' + (r.settled ? ', ' + r.settled + ' doubtful cell(s) settled by the solver' : '') + (misreadRetry ? ', after ' + misreadRetry + ' misread Game Over recovery' : '') + (learned ? ', learned ' + learned + ' new shape(s)' : ''));
+  record({ solved: true, read: 'pixels', settled: r.settled, learned, fills: fills.length, misreadRetry, s: T, total });
 } else if (cmd === 'newgame') {
   // The first half of the two-step flow: a new game from the win screen, and its board read -- by the
   // learned shapes when they are sure (grid.json written), else left to a model (board.png).

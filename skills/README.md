@@ -22,7 +22,8 @@ contributing at once don't conflict.
 ```
 skills/solve-a-sudoku/
   README.md          when to use it, the steps, the pitfalls        (frontmatter: name/when/tags/run)
-  sudoku.js          the one command that does the job              (@tool / @run lines in its header)
+  fast.js            agent visit: open → play → proof (prefer this)
+  sudoku.js          core play / solve / read / learn               (@tool / @run lines in its header)
   sudoku-solve.js    its own library
   glyphs.json        data it learned and ships (glyphs.local.json: what this machine added, gitignored)
   *.example.json     sample inputs

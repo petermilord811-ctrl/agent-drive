@@ -116,3 +116,43 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   `Ctrl+A` then type to REPLACE it (a stray `Delete`/append left the old code and caused a `SyntaxError:
   unmatched ')'`); and the page can **scroll away from the editor** or a stray key can **switch tabs**, so
   shot-and-check between steps. Two verified one-liners: prime sum below 10000 = 5736396; 8-queens count = 92.
+
+## Process — after every visit (operator, 2026-11-07)
+- **After sign-off: check → analyze → learn is MUST**, not optional and not “when asked.” Whatever you
+  faced while solving (wrong fills, ads, misreads, slow paths) gets a short review and is written into
+  the skill / this file / AGENTS before you stop. Waiting for “learn it” has been a repeated miss.
+
+## More from a live run (host 34123, 2026-11-06/07) — Master sudoku in Firefox
+- **`F11` fullscreen blanks the capture the same way maximize does.** Window chrome may still draw; the
+  page goes white/`#fff8f7`. Stay windowed. Exit F11 if you already toggled it; if capture stays blank,
+  restart that browser.
+- **Chrome died under sudoku.com ads mid-`play`** (white page at `sudoku.com/evil/`). Reload did not bring
+  the board back — switch to **Firefox** (taskbar), open a fresh tab to the puzzle. Do not dig through
+  other open Chrome tabs (mail, banking) on the way.
+- **Speed = no model in the loop.** Hand-reading boards and mission `chat-wait` before finish turned
+  18 s Chrome solves into 5–15 min visits. Use `node skills/solve-a-sudoku/fast.js ./work master` (or
+  `sudoku.js … play master`). One host `plan` for all fills — never 100 top-level click/press commands
+  (burns the 100-step budget). Proven wall when the board is up: **~30–40 s** total.
+- **Locate with box-sep pitch (≈55.3), not Chrome `findGrid` alone.** Windowed Firefox + banners:
+  `findGrid` grabs a partial square or a confident-but-drifted origin; lower-row clicks then miss.
+  Pitch origin under banners ≈ **(500, 342)**. `sudoku.js play` does this fallback itself now.
+- **Fill: shifted pad clicks first; Digit keys only if pad colours miss.** After pitch shift, pad tiles
+  still often read `#eaeef4` — pad clicks work. Digit presses on Firefox were flaky (a “fast” fill
+  reported success while the board stayed empty). Older note preferred Digit; **superseded 2026-11-07**.
+- **Glyphs:** Chrome `glyphs.json` may fail on Firefox (`play` exit 10). After a **game-confirmed** win,
+  shapes land in `glyphs.local.json`. Thin banks (e.g. digit `5`) cause misreads → mistakes. Never
+  “learn” from a failed fill.
+- **Silent confident misread → “wrong answers” (34123, 2026-11-07):** glyphs can label a **clue** wrong
+  with **0 doubts**; `settle()` still finds one solution for that wrong grid; fill then conflicts with
+  the real clues → sudoku.com Game Over at 3/3. That looks like random wrong presses — it isn’t. Do **not**
+  refill the poisoned board. `play` now detects the Game Over modal, starts **New Game** once, re-reads,
+  and only `learnFrom` after a confirmed win. If asked why: misread clues, not click noise.
+- **New Game on the Excellent / score panel** is a wide **white** button (~screen y **834** on 34123),
+  not baseline `643+dy`. `play` scans for that white row. Difficulty menu still uses `DIFF[d]+dy`.
+- **Ads / crash:** “Play Ad”, “Loading game”, tab crash (“Restore This Tab”) — wait or F5; don’t
+  invent a hand-solve through an interstitial. `play` polls a few holds when no board is found.
+- **Win path:** streak / “Almost There!” / “Keep Going” / “I'm In!” means solved; then the blue score
+  panel. Exact `#325aaf` waits often miss — check streak purple or win panel heuristics.
+- **No Tesseract on 34123** — `clickText` often fails; click by `lx/ly` or screen pixels.
+- **Desktop toasts can cover the taskbar** (e.g. Gmail "Enable notifications") so Firefox icon clicks
+  miss — dismiss the toast first, then click the icon (orange/purple blob ~look x 129 on a 900-wide look).
