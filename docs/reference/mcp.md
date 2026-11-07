@@ -28,6 +28,11 @@ Any other MCP client (the usual `mcpServers` config, e.g. `.mcp.json` or `claude
 }
 ```
 
+Its icon is ScreenMirror's mark: the server sends `mcp/icon-32.png` and `mcp/icon-64.png` as PNG `data:` URIs in
+`serverInfo.icons` to a client that speaks MCP 2025-11-25 (an older one is not sent the field). A client that draws
+server icons shows it instead of its generic one; not every client draws them yet, and one that kept the server's
+first answer shows it once the server is restarted.
+
 ## What it needs
 
 | variable | |

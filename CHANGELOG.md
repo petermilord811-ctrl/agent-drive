@@ -71,6 +71,8 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   and a new one replaces the last one's `conf` and `next` too.
 - CI is green again: the tests know the sudoku skill's one command is its fast path now (`fast.js`), the
   DataAnnotation skill's two Python checks carry their `@tool` / `@run` lines, and the map names `.cursor/`.
+- The MCP server sends ScreenMirror's icon (`serverInfo.icons`, MCP 2025-11-25: 32 and 64 px PNGs as `data:`
+  URIs) to a client that speaks that revision, for one that draws a server's icon beside its tools.
 
 ## 1.0.0 — 2026-11-06
 
