@@ -10,7 +10,7 @@ When creating a DataAnnotation.tech worker account (any host, especially 34123):
 1. **Use the skill first:** `node kit.js skills dataannotation` →
    - Through passwords/Terms only (practice / before captcha): `fast-pre-captcha.js`
    - Full create: `create-dataannotation-account.js`
-   MCP: after Continue with Email, Tab between fields (`keys human:0`); Terms `(530,481)`; never touch captcha in a pre-captcha run.
+   MCP: after Continue with Email, Tab between fields with **auto-type** `keys` (never `human:0`); Terms `(530,481)`; never touch captcha in a pre-captcha run.
 
 2. **One window only.** Before any `keys`: list windows named DataAnnotation; close Chrome duplicates; focus the Firefox form. Wrong window = First name stays empty.
 
