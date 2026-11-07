@@ -114,9 +114,14 @@ for (const meta of roles) {
 
 const byFamily = {};
 for (const r of indexRows) {
-  byFamily[r.assessmentId] = byFamily[r.assessmentId] || { captured: 0, stub: 0, n: 0 };
+  byFamily[r.assessmentId] = byFamily[r.assessmentId] || {
+    captured: 0,
+    stub: 0,
+    incomplete: 0,
+    n: 0,
+  };
   byFamily[r.assessmentId].n += 1;
-  byFamily[r.assessmentId][r.status] += 1;
+  byFamily[r.assessmentId][r.status] = (byFamily[r.assessmentId][r.status] || 0) + 1;
 }
 
 const readme = `---
