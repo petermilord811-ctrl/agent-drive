@@ -12,16 +12,16 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 
 | Status | Count |
 |--------|-------|
-| stub | 103 |
-| captured | 0 |
+| stub | 100 |
+| captured | 3 |
 
 ## By assessment family
 
 | Family id | Roles | stub | captured |
 |-----------|------:|-----:|---------:|
-| `generalist` | 1 | 1 | 0 |
-| `coding` | 5 | 5 | 0 |
-| `data-ml` | 2 | 2 | 0 |
+| `generalist` | 1 | 0 | 1 |
+| `coding` | 5 | 4 | 1 |
+| `data-ml` | 2 | 1 | 1 |
 | `cybersecurity` | 4 | 4 | 0 |
 | `finance` | 14 | 14 | 0 |
 | `accounting` | 7 | 7 | 0 |
@@ -41,13 +41,13 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 
 | Role | File | Status | Family |
 |------|------|--------|--------|
-| Generalist | [`problems-generalist.md`](./problems-generalist.md) | stub | `generalist` |
-| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | stub | `coding` |
+| Generalist | [`problems-generalist.md`](./problems-generalist.md) | captured | `generalist` |
+| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | captured | `coding` |
 | Frontend Engineer | [`problems-frontend-engineer.md`](./problems-frontend-engineer.md) | stub | `coding` |
 | DevOps Engineer | [`problems-devops-engineer.md`](./problems-devops-engineer.md) | stub | `coding` |
 | Backend Engineer | [`problems-backend-engineer.md`](./problems-backend-engineer.md) | stub | `coding` |
 | Full Stack Engineer | [`problems-full-stack-engineer.md`](./problems-full-stack-engineer.md) | stub | `coding` |
-| Data Scientist | [`problems-data-scientist.md`](./problems-data-scientist.md) | stub | `data-ml` |
+| Data Scientist | [`problems-data-scientist.md`](./problems-data-scientist.md) | captured | `data-ml` |
 | Machine Learning Engineer | [`problems-machine-learning-engineer.md`](./problems-machine-learning-engineer.md) | stub | `data-ml` |
 | Cybersecurity Expert | [`problems-cybersecurity-expert.md`](./problems-cybersecurity-expert.md) | stub | `cybersecurity` |
 | Penetration Tester | [`problems-penetration-tester.md`](./problems-penetration-tester.md) | stub | `cybersecurity` |

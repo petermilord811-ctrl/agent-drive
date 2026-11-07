@@ -1,67 +1,54 @@
-# Generalist — Generalist Assessment assessment
+# Generalist — Generalist Assessment
 
-- **Captured:** PENDING-CAPTURE
+- **Captured:** 2026-11-07 (bio/requirements from role overview; questions pending)
 - **Role:** Generalist
 - **Category:** General
 - **Slug:** `generalist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation Browse roles → role overview (host 34123, bio loop)
 
 ## Bio
 
 **Role:** Generalist  
 **Category:** General  
-**Hiring cue:** _pending_
+**Hiring cue:** 452 hired recently
 
 ### Overview
 
-_Not captured yet. Open the role card and fill Bio / Requirements / Instructions / Questions._
+Most of what models get wrong isn't specialist knowledge. This role is careful reading, clear writing, and common-sense judgment — reviewing and rating AI responses across everyday topics. No technical background required.
 
 ### What you’ll actually do
 
-- _pending_
-- …
-- _pending_
+- Review AI responses for accuracy, helpfulness, and tone.
+- Rank and rate outputs against rubrics, explaining judgments.
+- Write better responses when the model falls short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Strong reading comprehension and attention to detail.
+- Clear, natural written English.
+- No degree required.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Generalist
+- AI Reviewer
 
 ## Requirements
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
+- **Pay:** Up to $20/hour
+- **Location:** Remote
+- **Commitment:** Flexible hours
+- **Type:** Independent contractor
+- **Payouts:** Weekly
+- **Typical completion:** _pending (assessment intro — not entered; bio loop only)_
 - **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
 
 ## Instructions
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
+_pending — bio loop does not press Continue / Start assessment_
 
 ## Questions
 
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
 _pending_
 
-## Question 2
-
-_…_
-
-<!-- roles: Generalist | assessmentId: generalist -->
-
+<!-- role: Generalist | assessmentId: generalist | category: General -->

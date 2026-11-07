@@ -1,67 +1,56 @@
-# Data Scientist — Data & ML Assessment assessment
+# Data Scientist — Data & ML Assessment
 
-- **Captured:** PENDING-CAPTURE
+- **Captured:** 2026-11-07 (bio/requirements from role overview; questions pending)
 - **Role:** Data Scientist
 - **Category:** Data & ML
 - **Slug:** `data-scientist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation Browse roles → role overview (host 34123, bio loop)
 
 ## Bio
 
 **Role:** Data Scientist  
 **Category:** Data & ML  
-**Hiring cue:** _pending_
+**Hiring cue:** 92 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+The newest models can spin up a full analysis in minutes — load the data, pick methods, write conclusions. As a Data Scientist you'll evaluate AI-generated analyses on real datasets, stress-test the reasoning behind them, and write the judgments that teach the next generation of models what rigorous data work looks like.
 
 ### What you’ll actually do
 
-- _pending_
-- …
-- _pending_
+- Evaluate AI-built analyses on real datasets (method choice, assumptions, conclusions).
+- Red-team statistics to expose leakage, p-hacking, and confounded comparisons.
+- Write better analyses when models fall short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Professional or academic experience in real data analysis.
+- Fluency with standard toolkits (Python, SQL, and notebooks).
+- Clear written English.
+- No degree required. We care about what you can do, not where you learned it.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Data Scientist
+- Data Analyst
+- Analytics Engineer
 
 ## Requirements
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
+- **Pay:** Up to $150+/hour
+- **Location:** Remote
+- **Commitment:** Flexible hours
+- **Type:** Independent contractor
+- **Payouts:** Weekly
+- **Typical completion:** _pending (assessment intro — bio loop only)_
 - **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
 
 ## Instructions
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
+_pending — bio loop does not press Continue / Start assessment_
 
 ## Questions
 
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
 _pending_
 
-## Question 2
-
-_…_
-
 <!-- role: Data Scientist | assessmentId: data-ml | category: Data & ML -->
-
