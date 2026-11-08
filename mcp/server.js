@@ -17,8 +17,13 @@
 //   look, or an act + look:{}   the picture rides back as an image block after the answer
 //   disconnect {text?}          `done` (a sign-off) or `quit`, then the client process exits
 //
+// SEVERAL MACHINES AT ONCE: a visit per machine, each its own client, serve and queue of calls, so agents on different
+// machines work side by side -- an editor (Cursor, Claude) shares ONE server between all its chats. Every tool takes
+// `host`: with one visit open a call without it goes there; with several it must say which (see pickVisit).
+//
 // JSON-RPC 2.0 over stdio, one message per line. STDOUT CARRIES NOTHING ELSE: logs, and everything the client
-// process prints, go to stderr. One visit at a time; the serve takes one command at a time, so calls are queued.
+// process prints, go to stderr. A visit's serve takes one command at a time, so ITS calls are queued -- another
+// visit's are not.
 // A person still presses Allow for every visit -- the key in the environment only lets this ask.
 // No dependencies.
 // =================================================================================================
@@ -31,7 +36,8 @@ console.log = console.info = console.debug = (...a) => console.error(...a);
 process.stdout.on('error', () => {});   // the client went away mid-write (EPIPE): shutdown follows from stdin's end
 
 const KIT = path.join(__dirname, '..');
-const CLIENT = path.join(KIT, 'core', 'agent-join.js');
+// the client a visit runs: the kit's own (SM_MCP_CLIENT points a test at a stand-in that speaks the serve's files)
+const CLIENT = process.env.SM_MCP_CLIENT ? path.resolve(process.env.SM_MCP_CLIENT) : path.join(KIT, 'core', 'agent-join.js');
 const verbs = require(path.join(KIT, 'core', 'verbs.js'));
 const { putCmd, budgetOf } = require(path.join(KIT, 'core', 'cmd-file.js'));
 
@@ -58,6 +64,10 @@ const LOOK_MAX = Math.max(0, Number(process.env.SM_MCP_LOOK_MAX) || 0);
 const FLIGHT_WAIT = 30000;     // how long a call waits for a command this server stopped waiting for
 const TAKE_BACK_GRACE = 1500;  // after taking a command back, how long its answer may still turn up (read in that instant)
 const MARGIN = 15000;          // on top of what a verb may take by its own rules
+// How many machines this server holds at once -- every chat's together, since an editor shares one server. Each is a
+// client process with a connection of its own. (The relay lets three asks for Allow wait at once from one address.)
+// SM_MCP_MAX_VISITS changes it.
+const MAX_VISITS = Math.max(1, Math.min(32, Number(process.env.SM_MCP_MAX_VISITS) || 8));
 
 const log = (s) => { try { process.stderr.write('[agent-drive mcp] ' + s + '\n'); } catch (_) {} };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -173,6 +183,9 @@ const COMMON_FIELDS = {
   expect: { type: 'object', description: 'a predicate that must hold afterwards, e.g. {"px":{"x":10,"y":20,"is":"#ffffff"}}' },
 };
 const COMMON = verbs.COMMON.filter((k) => k !== 'do' && k !== '__vetted');
+// WHICH MACHINE a call is for -- on every tool, so visits to several machines run side by side (pickVisit). It is this
+// server's, never the serve's: it is taken off before the command is handed over.
+const HOST_FIELD = { type: 'string', pattern: '^[0-9]{5}$', description: 'the machine this is for: the number you connected to (needed once this server has had more than one visit open)' };
 // More than the table's one line, where the MCP side changes what a call does or how long it may take.
 const EXTRA = {
   look: 'The picture comes back in this answer with its scale: click what you see in ITS pixels with lx/ly. out is optional.',
@@ -196,6 +209,7 @@ function verbTool(verb, name) {
   const properties = {};
   for (const f of fields) properties[f] = JSON.parse(JSON.stringify(own[f] || FIELDS[f] || {}));
   for (const c of COMMON) if (!(c in properties)) properties[c] = JSON.parse(JSON.stringify(COMMON_FIELDS[c] || {}));
+  properties.host = JSON.parse(JSON.stringify(HOST_FIELD));
   let description = sentence(spec.what || verb) + ' Fields: ' + (fields.length ? fields.join(', ') : 'none') + '.';
   if (EXTRA[verb]) description += ' ' + EXTRA[verb];
   else if (fields.includes('look')) description += ' look:{} returns a picture of the result in the same answer.';
@@ -206,7 +220,8 @@ const CONNECT_TOOL = {
   description: 'Ask to be let onto ONE machine and hold the visit open. A person who can see that machine is shown your task ' +
     'and a code, and must press Allow (the code expires in about two minutes; it is sent as progress, and is in the answer ' +
     'if nobody presses). Answers {w, h, host, dir}: the screen size every x/y is measured in, and the visit\'s folder. ' +
-    'One visit at a time; end it with disconnect.',
+    'This server may hold visits to several machines at once, one each, and other agents may share it: give host on every ' +
+    'call (needed once more than one visit has been open). End yours with disconnect {host}.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -227,8 +242,9 @@ const CONNECT_TOOL = {
 const DISCONNECT_TOOL = {
   name: 'disconnect',
   description: 'End the visit and hand the grant back: with text, a sign-off said in the room (the done verb); without, ' +
-    'quietly (quit). Waits for the client to exit. Only once the operator is finished -- it hangs up on them.',
-  inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'a sign-off for the room' } }, additionalProperties: false },
+    'quietly (quit). Waits for the client to exit. Only once the operator is finished -- it hangs up on them -- and only ' +
+    'a visit you opened: name it with host.',
+  inputSchema: { type: 'object', properties: { text: { type: 'string', description: 'a sign-off for the room' }, host: HOST_FIELD }, additionalProperties: false },
 };
 // A JOB ASKED FOR IN PLAIN WORDS (core/intake.js): "connect 10004 and do my sticky notes" -> the machine, the skill, the
 // access to ask for, and connect's own fields. Reads nothing but the kit's skills; connects to nothing.
@@ -265,7 +281,8 @@ const INSTRUCTIONS = [
   '3. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); room (what the people watching did on the board: a pause, a stop, an answer, an undo -- act on it first); paused / hold / approval (wait in chat_wait, then send again); remind and hint (do those first).',
   '4. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '5. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply.',
-  '6. disconnect only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
+  '6. Several machines at once: connect to each -- one visit per machine, side by side. This server may be shared with other agents (an editor\'s chats share it): give host on every call -- once more than one visit has been open, a call without it is refused, never guessed -- and every answer says which host it came from. Never disconnect a visit you did not open.',
+  '7. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
 ].join('\n');
 
 // ---- how long a command may take -------------------------------------------------------------------------
@@ -315,11 +332,60 @@ function planMs(steps, depth) {
 }
 const budgetFor = (c) => Math.min(6 * 3600000, Math.max(budgetOf(c), stepMs(c) + MARGIN));
 
-// ---- the visit -------------------------------------------------------------------------------------------
-// One at a time: { host, dir, child, pid, err (the client's recent stderr), code (the Allow code it printed),
-// exited, ready, w, h, flight (a command this server stopped waiting for, still running), late (answers that came
-// after nobody was waiting, for the next result), told (reconnect codes already given to the model), looks }.
-let visit = null;
+// ---- the visits ------------------------------------------------------------------------------------------
+// One per machine, by its number: { host, dir, child, pid, err (the client's recent stderr), code (the Allow code it
+// printed), exited, ready, w, h, flight (a command this server stopped waiting for, still running), late (answers that
+// came after nobody was waiting, for the next result), told (reconnect codes already given to the model), looks,
+// queue (this visit's calls, one after another) }.
+//
+// SEVERAL AT ONCE. It was one, and an editor shares one server between all its chats: a second chat's connect was
+// refused with "disconnect it first" -- and it did, ending the FIRST chat's visit to take the machine slot for its own
+// (seen live: the second chat said it was switching machines and leaving the first one's, and every call of the first
+// chat failed from then on). Now each
+// machine is a visit of its own, with its own client and its own queue, so neither waits on the other; a refusal never
+// tells one agent to end another's visit; and a call that does not say which machine is never guessed.
+const visits = new Map();
+const forget = (v) => { if (visits.get(v.host) === v) visits.delete(v.host); };
+const openHosts = () => [...visits.keys()];
+const liveCount = () => [...visits.values()].filter((v) => !v.exited).length;
+// this visit's calls run one after another (its serve takes one command at a time); another visit's run alongside
+function onVisit(v, fn) { const run = v.queue.then(fn, fn); v.queue = run.then(() => {}, () => {}); return run; }
+// WHICH VISIT A CALL IS FOR: the one its `host` names, or -- with exactly one here -- that one. With several here and none
+// named, it is refused, never guessed: the chat that calls may not be the one that opened them.
+// An ENDED visit stays here until its own agent hears why (its next call gets died()) -- or for ten minutes: until then
+// it still counts, so an agent whose visit ended is never handed someone else's by a call that names no machine.
+// And a visit that has SHARED this server with another always needs its host, even once it is the only one left: the
+// agent whose visit just ended may be the one calling, and it must not be handed the visit that stayed.
+const ENDED_KEEP = 10 * 60000;
+const prune = () => { for (const v of [...visits.values()]) if (v.exited && Date.now() - (v.exitedAt || 0) > ENDED_KEEP) forget(v); };
+function pickVisit(args) {
+  prune();
+  const want = args.host == null ? '' : String(args.host).trim();
+  if (want) {
+    const v = visits.get(want);
+    return v ? { v } : { err: errResult('no visit to machine ' + want + ' is open on this server -- connect {host:"' + want + '", task} first', { host: want, open: openHosts() }) };
+  }
+  if (!visits.size) return { err: errResult('no visit is open -- connect first: connect {host, task}; a person at the machine presses Allow') };
+  const only = visits.size === 1 ? visits.values().next().value : null;
+  if (only && !only.shared) return { v: only };
+  if (only) {
+    return { err: errResult('this server has had more than one visit open, so every call names its machine with host. The one open now is ' + only.host +
+      ': if it is yours, call again with host "' + only.host + '"; if your visit ended, connect again.', { open: openHosts() }) };
+  }
+  const ended = [...visits.values()].filter((v) => v.exited).map((v) => v.host);
+  return { err: errResult('this server has ' + visits.size + ' visits (' + openHosts().join(', ') + (ended.length ? '; ended: ' + ended.join(', ') : '') +
+    '): say which machine with host -- every call takes it. Use the one you connected to: the others may be other agents\' visits.', { open: openHosts(), ended: ended.length ? ended : undefined }) };
+}
+// every answer of a visit says which machine it came from, so an agent can tell its own visit's answers apart
+function stampHost(res, host) {
+  try {
+    const b = res && res.content && res.content[0];
+    if (!b || b.type !== 'text') return res;
+    const o = JSON.parse(b.text);
+    if (o && typeof o === 'object' && !Array.isArray(o) && o.host == null) { o.host = host; b.text = JSON.stringify(o); }
+  } catch (_) {}
+  return res;
+}
 // The client's exit codes, as its header gives them. Its last "[x]" line is the precise reason and goes first; this
 // is the gist. (No such machine, nobody to ask and an expired code used to fall through to 3; they are 2 now.)
 const EXIT_MEANS = {
@@ -349,10 +415,10 @@ function watchChild(v) {
   }
   // 'close', not 'exit': by then its last words (the "[x] why" line) have been read
   v.child.on('close', (code, signal) => {
-    if (!v.exited) v.exited = { code, signal };
+    if (!v.exited) { v.exited = { code, signal }; v.exitedAt = Date.now(); }
     log('machine ' + v.host + ': the client exited (code ' + code + (signal ? ', ' + signal : '') + ')');
   });
-  v.child.on('error', (e) => { v.err += '[x] ' + e.message + '\n'; if (!v.exited) v.exited = { code: null, signal: null }; });
+  v.child.on('error', (e) => { v.err += '[x] ' + e.message + '\n'; if (!v.exited) { v.exited = { code: null, signal: null }; v.exitedAt = Date.now(); } });
 }
 // End the client: a serving one is asked to quit (it hands the grant back itself); then, or otherwise, it is stopped.
 async function stopChild(v, ms) {
@@ -361,7 +427,7 @@ async function stopChild(v, ms) {
   if (!v.exited) { try { v.child.kill(); } catch (_) {} await until(() => v.exited, 3000); }
 }
 function died(v) {
-  if (visit === v) visit = null;
+  forget(v);
   const code = v.exited ? v.exited.code : null;
   const stop = readJson(path.join(v.dir, 'stopped.json')), stall = readJson(path.join(v.dir, 'stalled.json'));
   const lw = lastWords(v);
@@ -389,11 +455,23 @@ function progress(ctx, message) {
 const allowAsk = (v, code) => 'code ' + code + ' -- a person who can see machine ' + v.host + ' must press Allow on the card that shows it (it expires in about two minutes)';
 
 // ---- connect -----------------------------------------------------------------------------------------------
+// A visit to ANOTHER machine is no obstacle: it opens alongside. One to the SAME machine already here is refused -- and
+// never with "disconnect it first": in a shared server it may well be another agent's.
 async function connect(args, ctx) {
-  if (visit && !visit.exited) return errResult('a visit to machine ' + visit.host + ' is already open -- one visit at a time: disconnect it first', { host: visit.host, dir: visit.dir });
-  visit = null;
   const host = String(args.host == null ? '' : args.host).trim();
   if (!/^[0-9]{5}$/.test(host)) return errResult('host is the five-digit machine number (got "' + host + '")');
+  prune();
+  const have = visits.get(host);
+  if (have && !have.exited) {
+    return errResult('a visit to machine ' + host + ' is already open on this server' + (have.ready ? '' : ' (still waiting for Allow)') +
+      ' -- calls with host "' + host + '" go to it. If you opened it, use it; if not, it is another agent\'s: leave it, and do not disconnect it.',
+      { host, dir: have.dir, task: have.task, open: openHosts() });
+  }
+  if (have) forget(have);
+  if (liveCount() >= MAX_VISITS) {
+    return errResult('this server already holds ' + liveCount() + ' visits (' + openHosts().join(', ') + '), its limit (SM_MCP_MAX_VISITS) -- ' +
+      'end one of YOURS with disconnect {host} first', { open: openHosts() });
+  }
   // one line (the card shows it), and never mistaken for a flag by the client's argument reader
   const task = String(args.task == null ? '' : args.task).replace(/\s+/g, ' ').trim().replace(/^-+\s*/, '');
   if (!task) return errResult('task is one line saying what this visit is for -- the person deciding reads it on the Allow card');
@@ -424,10 +502,17 @@ async function connect(args, ctx) {
   try { child = spawn(process.execPath, argv, { cwd: dir, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }); }
   catch (e) { return errResult('could not start the client: ' + e.message); }
   const v = { host, task, dir, child, pid: child.pid, err: '', code: '', exited: null, ready: false, w: 0, h: 0, at: 0,
-              flight: null, late: [], told: new Set(), looks: 0, control, shell };
-  visit = v;
+              flight: null, late: [], told: new Set(), looks: 0, control, shell, queue: Promise.resolve(), shared: false };
+  // company: from now on every visit here -- this one and those already open -- needs its host on every call (pickVisit)
+  if (visits.size) { v.shared = true; for (const u of visits.values()) u.shared = true; }
+  visits.set(host, v);
   watchChild(v);
-  log('asking to join machine ' + host + ' -- the visit folder is ' + dir);
+  log('asking to join machine ' + host + ' -- the visit folder is ' + dir + (visits.size > 1 ? ' (visits open: ' + openHosts().join(', ') + ')' : ''));
+  // the wait for Allow is this visit's first call: a call for this machine that comes meanwhile queues behind it
+  return onVisit(v, () => waitAllowed(v, ctx));
+}
+async function waitAllowed(v, ctx) {
+  const { host, dir, control, shell, child } = v;
   const t0 = Date.now();
   let shown = '';
   for (;;) {
@@ -438,19 +523,23 @@ async function connect(args, ctx) {
     if (ready && Number(ready.w) > 0) {
       v.ready = true; v.w = Number(ready.w); v.h = Number(ready.h); v.at = ready.at || Date.now();
       log('machine ' + host + ' is open: ' + v.w + 'x' + v.h);
-      if (ctx.cancelled) { await stopChild(v); if (visit === v) visit = null; return null; }
+      if (ctx.cancelled) { await stopChild(v); forget(v); return null; }
+      const others = openHosts().filter((h) => h !== host);
       return okResult({ ok: true, host, w: v.w, h: v.h, dir, code: v.code || undefined, at: v.at, control, shell, pid: child.pid,
-        next: 'every x/y is a screen pixel at ' + v.w + 'x' + v.h + '. look first -- the picture comes back inline -- and click what you see with lx/ly. Every answer carries inbox: when the operator writes, answer in chat.' });
+        open: v.shared ? openHosts() : undefined,
+        next: 'every x/y is a screen pixel at ' + v.w + 'x' + v.h + '. look first -- the picture comes back inline -- and click what you see with lx/ly. Every answer carries inbox: when the operator writes, answer in chat.' +
+          (v.shared ? ' This server ' + (others.length ? 'also has a visit to ' + others.join(', ') + ' open' : 'has had other visits open') +
+            ' (another agent\'s, or another of yours): give host "' + host + '" on every call for this machine.' : '') });
     }
     if (v.exited) {
-      if (visit === v) visit = null;
+      forget(v);
       const lw = lastWords(v), code = v.exited.code;
       return errResult('not let in: ' + (lw.reason || 'the client exited'), { exit: code, means: EXIT_MEANS[code], code: v.code || undefined, host, stderr: lw.tail || undefined });
     }
-    if (ctx.cancelled) { await stopChild(v); if (visit === v) visit = null; return null; }
+    if (ctx.cancelled) { await stopChild(v); forget(v); return null; }
     if (Date.now() - t0 > CONNECT_MS) {
       await stopChild(v);
-      if (visit === v) visit = null;
+      forget(v);
       return errResult('nobody pressed Allow within ' + Math.round(CONNECT_MS / 1000) + ' s' + (v.code ? ' -- the code was ' + v.code : '') +
         '. Ask the person at machine ' + host + ' to watch for the card, then connect again.', { timedOut: true, code: v.code || undefined, host });
     }
@@ -592,7 +681,7 @@ async function answerOf(v, cmd, a) {
   }
   if ((cmd.do === 'done' || cmd.do === 'quit') && !(a && a.refused)) {
     if (!(await until(() => v.exited, 10000))) await stopChild(v, 1000);
-    if (visit === v) visit = null;
+    forget(v);
     more.push(textBlock({ ended: true, exit: v.exited ? v.exited.code : null, dir: v.dir }));
   }
   const res = { content: [textBlock(a)].concat(more) };
@@ -601,12 +690,11 @@ async function answerOf(v, cmd, a) {
 }
 
 // ---- a verb tool -------------------------------------------------------------------------------------------
-async function callVerb(verb, args, ctx) {
-  const v = visit;
-  if (!v) return errResult('no visit is open -- connect first: connect {host, task}; a person at the machine presses Allow');
+async function callVerb(v, verb, args, ctx) {
   if (v.exited) return died(v);
   const cmd = { do: verb };
-  for (const k of Object.keys(args)) if (k !== 'do' && k !== '__vetted') cmd[k] = args[k];
+  // `host` chose the visit (pickVisit): it is this server's, not a field of the serve's verb
+  for (const k of Object.keys(args)) if (k !== 'do' && k !== '__vetted' && k !== 'host') cmd[k] = args[k];
   // the picture this server hands back inline is written in the visit folder unless the call says where
   const fresh = (stem) => path.join(v.dir, stem + '-' + (++v.looks) + '.png');
   if (verb === 'look') {
@@ -622,16 +710,14 @@ async function callVerb(verb, args, ctx) {
   return exchange(v, cmd, ctx);
 }
 
-async function disconnect(args, ctx) {
-  const v = visit;
-  if (!v) return errResult('no visit is open -- nothing to end');
+async function disconnect(v, args, ctx) {
   if (v.exited) return died(v);
   const text = args.text == null ? '' : String(args.text).trim();
   const r = await exchange(v, text ? { do: 'done', text } : { do: 'quit' }, ctx);
-  if (v.exited) { if (visit === v) visit = null; return r; }
+  if (v.exited) { forget(v); return r; }
   // the serve could not take it (busy, or no answer): end the client anyway -- its grant goes when its connection does
   await stopChild(v, 2000);
-  if (visit === v) visit = null;
+  forget(v);
   if (r) r.content.push(textBlock({ ended: true, forced: true, exit: v.exited ? v.exited.code : null, why: 'the serve did not take the sign-off, so the client was stopped' }));
   return r;
 }
@@ -641,9 +727,8 @@ function send(msg) { try { process.stdout.write(JSON.stringify(msg) + '\n'); } c
 const reply = (id, result) => ({ jsonrpc: '2.0', id, result });
 const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id: id === undefined ? null : id, error: { code, message } });
 
-// Tool calls run one after another: the serve takes one command at a time, and there is one visit.
-let queue = Promise.resolve();
-function serial(fn) { const run = queue.then(fn, fn); queue = run.then(() => {}, () => {}); return run; }
+// A visit's calls run one after another (onVisit: its serve takes one command at a time); calls for different
+// machines run side by side.
 const calls = new Map();   // request id -> its call, while it runs (for notifications/cancelled)
 
 async function toolsCall(id, params) {
@@ -657,12 +742,21 @@ async function toolsCall(id, params) {
   if (name === 'intake') { try { return reply(id, intakeCall(args)); } catch (e) { return reply(id, errResult('intake failed: ' + ((e && e.message) || e))); } }
   calls.set(id, ctx);
   try {
-    const r = await serial(async () => {
-      if (ctx.cancelled || shuttingDown) return null;
-      if (name === 'connect') return connect(args, ctx);
-      if (name === 'disconnect') return disconnect(args, ctx);
-      return callVerb(TOOL_VERB.get(name), args, ctx);
-    });
+    let r;
+    if (shuttingDown) r = null;
+    else if (name === 'connect') r = await connect(args, ctx);   // it queues its own wait on its new visit
+    else {
+      const pick = pickVisit(args);
+      if (pick.err) r = pick.err;
+      else {
+        const v = pick.v;
+        r = await onVisit(v, async () => {
+          if (ctx.cancelled || shuttingDown) return null;
+          return name === 'disconnect' ? disconnect(v, args, ctx) : callVerb(v, TOOL_VERB.get(name), args, ctx);
+        });
+        if (r) r = stampHost(r, v.host);
+      }
+    }
     return r && !ctx.cancelled ? reply(id, r) : null;   // a cancelled request gets no answer
   } catch (e) {
     log('tools/call ' + name + ' failed: ' + ((e && e.stack) || e));
@@ -712,18 +806,17 @@ function onLine(line) {
 }
 
 // ---- leaving -----------------------------------------------------------------------------------------------
-// However this server ends, the visit's client goes with it -- a serving one hands its grant back first.
+// However this server ends, every visit's client goes with it -- a serving one hands its grant back first.
 let shuttingDown = false;
 async function shutdown(why) {
   if (shuttingDown) return;
   shuttingDown = true;
-  log('shutting down (' + why + ')');
-  const v = visit;
-  if (v && !v.exited) await stopChild(v, 5000);
+  log('shutting down (' + why + ')' + (visits.size ? ': ending the visits to ' + openHosts().join(', ') : ''));
+  await Promise.all([...visits.values()].filter((v) => !v.exited).map((v) => stopChild(v, 5000)));
   await new Promise((r) => { try { process.stdout.write('', () => r()); } catch (_) { r(); } setTimeout(r, 500); });
   process.exit(0);
 }
-process.on('exit', () => { const v = visit; if (v && !v.exited) { try { v.child.kill(); } catch (_) {} } });
+process.on('exit', () => { for (const v of visits.values()) if (!v.exited) { try { v.child.kill(); } catch (_) {} } });
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('uncaughtException', (e) => log('uncaught: ' + ((e && e.stack) || e)));
