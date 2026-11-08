@@ -73,6 +73,13 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   DataAnnotation skill's two Python checks carry their `@tool` / `@run` lines, and the map names `.cursor/`.
 - The MCP server sends ScreenMirror's icon (`serverInfo.icons`, MCP 2025-11-25: 32 and 64 px PNGs as `data:`
   URIs) to a client that speaks that revision, for one that draws a server's icon beside its tools.
+- **Several machines at once** through one MCP server, which is how an editor runs it for all its chats. Each
+  machine is a visit with its own client, serve and queue, so agents on different machines work side by side.
+  - Every tool takes `host`. Once several visits have been open, a call must name its machine; it is refused, never
+    guessed. Answers say which `host` they came from.
+  - A second `connect` opens alongside the first. It used to be refused with "disconnect it first", and an agent
+    obeyed: it ended another chat's visit.
+  - `SM_MCP_MAX_VISITS` sets the limit (8 by default).
 
 ## 1.0.0 — 2026-11-06
 

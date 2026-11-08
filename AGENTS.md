@@ -119,6 +119,9 @@ file explains them.
   listening is deaf, and the operator's next message is lost.
 - **Never answer the operator only in your own terminal.** They are in the session chat.
 - **Never `done` right after answering**, or while they're mid-conversation — `done` hangs up.
+- **Never end a visit you did not open.** Several agents may share one MCP server (an editor's chats do), each on
+  its own machine: `connect` opens yours beside theirs, and every call names its machine with `host`. A refusal that
+  mentions another machine's visit is not yours to clear.
 - **Never treat sign-off as “nothing left to do.”** Skipping the post-sign-off gate (or waiting for
   “learn it”) means the next visit pays the same tax again.
 - **Never close a post-sign-off learn with gotchas/AGENTS alone** when the visit was a **new kind of

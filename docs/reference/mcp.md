@@ -64,6 +64,8 @@ what makes the MCP row use the same mark; see the install script's comments and 
 | `SM_MCP_WORK` | where visit folders go (default `work/`; each visit gets a fresh `mcp-<time>` folder) |
 | `SM_MCP_CONNECT_MS` | how long `connect` waits for Allow (default 170000) |
 | `SM_MCP_LOOK_MAX` | the long edge of a `look` that names no `max` (default: the serve's 1280; see below) |
+| `SM_MCP_MAX_VISITS` | how many machines the server holds at once, every chat's together (default 8, at most 32) |
+| `SM_MCP_CLIENT` | the client a visit runs (default `core/agent-join.js`); tests point it at a stand-in |
 
 ## A person still presses Allow, for every visit
 
@@ -86,12 +88,23 @@ unless someone presses Allow on it. The code goes out as an MCP progress notific
 | one tool per verb in `core/verbs.js` | Generated at startup, with `-` turned into `_` (`chat_wait`, `note_add`, `spotlight_off`). A call becomes `{do: <verb>, ...arguments}`, and the result is done.json's JSON as text. `ok:false` comes back as `isError`. The schema is the verb's own fields plus the common ones, with `additionalProperties:false`. The serve's verb table still has the last word: an unknown field is `refused` (and nothing is sent), and a common slip is renamed and reported in `fixed`. |
 | `look {rect?, max?, settle?, out?}` | Returns `[text: the answer, image: the PNG]`. `out` is optional. Click what you see in **its** pixels with `click {lx, ly}`. |
 | any acting verb with `look:{}` | Acts, then returns the picture of the result in the same answer. |
-| `disconnect {text?}` | With `text`, signs off in the room (`done`); without it, leaves quietly (`quit`). Waits for the client process to exit. |
+| `disconnect {text?, host?}` | With `text`, signs off in the room (`done`); without it, leaves quietly (`quit`). Waits for the client process to exit. With several visits open it ends only the one `host` names. |
 | `intake {text}` | A job asked for in plain words ("connect 10004 and do my sticky notes") read by `core/intake.js`: `{host, skill, others, task, needs, why}` and, when it found a machine and a task, `connect` — the fields to call `connect` with (the least access the words justify). Connects to nothing; answered at once, outside the visit's queue. |
 
-- **Timing.** One visit runs at a time, and the serve takes one command at a time, so calls queue. Verbs that wait
-  for a person or for the screen (`chat_wait`, `captcha`, `confirm`, `access`, `wait`, `plan`) are given their own
-  timeout plus a margin.
+- **Several machines at once.** The server holds a visit per machine (8 by default, `SM_MCP_MAX_VISITS`), each with its
+  own client and serve. An editor shares one server between all its chats, so this is also how two agents work on two
+  machines side by side.
+  - Every tool takes `host`, the machine it is for. With one visit open, a call without `host` goes to it, as before.
+  - Once several have been open, a call without `host` is refused, never guessed. That holds even when only one is
+    left: the call may come from the agent whose own visit just ended, and it must not reach the one that stayed.
+    Every answer says which `host` it came from.
+  - `connect` to another machine opens alongside the visits already here. A `connect` to a machine already open here is
+    refused, with a reminder that it may be another agent's visit: a refusal never tells one agent to end another's.
+  - The relay lets three asks for Allow wait at once from one address. A fourth, while three are still waiting,
+    replaces the oldest code.
+- **Timing.** A visit's serve takes one command at a time, so ITS calls queue. Another visit's calls run alongside
+  them. Verbs that wait for a person or for the screen (`chat_wait`, `captcha`, `confirm`, `access`, `wait`, `plan`)
+  are given their own timeout plus a margin.
 - **Relative paths.** Relative paths (`out`, `file`) resolve inside the visit folder, which is the client's working
   folder. Pictures are deleted when the visit ends unless `keep:1`.
 - **Cancelling.** A cancelled call gets no answer. If the serve has not read the command yet, it is taken back and
@@ -100,7 +113,7 @@ unless someone presses Allow on it. The code goes out as an MCP progress notific
   - If the connection drops, the next call answers `isError` with the new Allow code (`reconnecting`), sends nothing,
     and sends the code as progress.
   - If the client process dies, the next call says so: its exit code and its reason.
-  - If the server's stdin closes, the server ends the visit (the grant is handed back) and stops the client.
+  - If the server's stdin closes, the server ends every visit (each grant is handed back) and stops their clients.
 
 ## Picture size
 
