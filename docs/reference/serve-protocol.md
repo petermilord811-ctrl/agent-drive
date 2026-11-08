@@ -100,7 +100,6 @@ it explain each verb.
 | `warn` | `text` | a caution line on the panel |  |
 | `confirm` | `text` | ask before something hard to undo; a no always wins | `message`→`text`, `msg`→`text`, `question`→`text` |
 | `captcha` | `text` | a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one | `recaptcha`, `hcaptcha` |
-| `budget` | `steps` `minutes` `more` | the task's budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room |  |
 | `done` | `text` `file` `w` `h` | sign off (with a picture) and hand the grant back |  |
 | `note-list` | — | the host's sticky notes |  |
 | `note-add` | `text` `x` `y` | leave a sticky note | `message`→`text` |
@@ -215,7 +214,7 @@ achieved ones), said in the room, and written to `<serve-dir>/mission.json` afte
 
 | op | fields | what it does |
 |---|---|---|
-| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?, checkpoint?}]}`, `why?`, `preview?`, `checkpoints?`, `timeout?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. **`preview:1`** posts it as a question ("Shall I go ahead?") and waits `timeout` (default 60 s): the answer carries `preview {verdict, replies, auto}`, and anything but a yes HOLDS the job (`waiting:true`). **`checkpoints:1`** (or `checkpoint:true` on a milestone) asks after each milestone the same way. A new plan is a new task: its budget starts again. |
+| `plan` | `plan:{goal, done?, milestones:[{t, done, check?, steps?, skill?, checkpoint?}]}`, `why?`, `preview?`, `checkpoints?`, `timeout?` | Takes the plan — refused unless every milestone has a `done` (what will be on the screen). Posts it to the room, draws it, starts the first milestone. Over a plan already under way it needs a `why`, and keeps what was already achieved. **`preview:1`** posts it as a question ("Shall I go ahead?") and waits `timeout` (default 60 s): the answer carries `preview {verdict, replies, auto}`, and anything but a yes HOLDS the job (`waiting:true`). **`checkpoints:1`** (or `checkpoint:true` on a milestone) asks after each milestone the same way. A new plan is a new task. |
 | `ask` | `why?`, `timeout?` | The job is held (a preview, a checkpoint): ask the room again. A yes they gave after the last question counts; a new `why` re-posts the question with it. `{verdict, replies, waiting}`. |
 | `step` | `t` | Begin a short step of the current milestone (one nobody planned is added where the work is); `t:""` ends it. |
 | `steps` | `m?`, `steps:[…]`, `why?` | Rewrite a milestone's short steps. |
@@ -332,7 +331,7 @@ serve honours each **itself**, so a button works while you are busy or thinking.
   `approval {id, q}` (the autonomy dial asks before this command: wait for the answer, then send the SAME command again —
   the yes runs it once), `checkpoint` (a step ended in 'checkpoints' mode: wait for the go-ahead). Looking, talking, the
   panel and finishing are never held.
-- **Questions carry ids.** `confirm`, `captcha`, `budget {more}`, a mission's preview or checkpoint and `undo`'s question are
+- **Questions carry ids.** `confirm`, `captcha`, a mission's preview or checkpoint and `undo`'s question are
   on the panel with buttons; a button answers only the question it was shown for. A yes counts only from the person who
   let you in (the relay tells the serve); anyone's no still wins.
 - **The serve does some things itself, between your commands**: an Undo the room asked for (`↩ Undo c3`), saving the job

@@ -36,7 +36,7 @@ the absolute `dir` from connect.
 **Speed rules learned live (34123, 2026-11-06/07):**
 1. **Locate** with box-sep **pitch ≈55.3** when `findGrid` is wrong (Firefox banners → origin ≈500,342).
 2. **Fill** with **shifted pad clicks** when pad tiles still read `#eaeef4` — Digit keys are flaky there.
-3. **One** host-side `plan` for all fills (never 100 separate click/press commands — burns the budget).
+3. **One** host-side `plan` for all fills (never 100 separate click/press commands — a hundred round trips).
 4. Learn into `glyphs.local.json` only after the **game** confirms a win; thin digit banks (e.g. `5`) misread.
 5. Post proof after `play` (`fast.js` does it); do **not** `chat-wait` until `finish`/`status fin` is done.
 6. **Silent misread → Game Over:** a wrong clue read can still yield one solver solution (0 doubts) and

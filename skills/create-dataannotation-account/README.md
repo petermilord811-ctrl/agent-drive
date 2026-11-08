@@ -112,7 +112,7 @@ Also remembered in `.cursor/rules/dataannotation-signup.mdc` (alwaysApply) and g
 - Duplicate titled windows steal keystrokes — close extras first.
 - Field mid_y from **this** look only; one band down = wrong field.
 - Append into existing text → wrong values / password mismatch.
-- `type-text.js` (one key per command) burns the step budget — prefer one `keys` call with auto-type.
+- `type-text.js` (one key per command) costs a round trip per key — prefer one `keys` call with auto-type.
 - Never `human:0` on DA signup fields (operator: always ScreenMirror auto-type).
 - `captcha.solved:true` ≠ checkbox checked — always look.
 - Agent solves reCAPTCHA by default (click checkbox; handle image grid if shown). Do not call

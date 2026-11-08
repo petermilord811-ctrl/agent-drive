@@ -67,10 +67,6 @@ file explains them.
 - **Say a failure plainly** — a `⚠` or `✗` status line. Never pass a miss off as done.
 - **Ask before anything hard to undo** — restart, shut down, log off, delete, overwrite, stop a service,
   sign out: `confirm`, and go ahead only on `approved`. A stop always wins.
-- **Stop when the budget is spent.** Every task has one (`budget`: by default 100 acting steps or 30 minutes; a
-  `plan` batch is one step, and time spent waiting on people does not count). When it is spent, acting commands
-  are refused and the room is asked whether you may go on: `budget {more:1, why}` hears their answer. Don't
-  route around it — an agent that has used its budget has usually lost the thread.
 - **Ask before taking over** from a person using the machine. Release `lock` the moment you're done.
 - **Say what you changed, and put it back when asked.** The serve records what each command changed on the
   machine (core/undo.js) and tells the room at the finish. Record what you change by CLICKING yourself —

@@ -139,7 +139,7 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **Speed = no model in the loop.** Hand-reading boards and mission `chat-wait` before finish turned
   18 s Chrome solves into 5–15 min visits. Use `node skills/solve-a-sudoku/fast.js ./work master` (or
   `sudoku.js … play master`). One host `plan` for all fills — never 100 top-level click/press commands
-  (burns the 100-step budget). Proven wall when the board is up: **~30–40 s** total.
+  (a hundred round trips, each one a turn). Proven wall when the board is up: **~30–40 s** total.
 - **Locate with box-sep pitch (≈55.3), not Chrome `findGrid` alone.** Windowed Firefox + banners:
   `findGrid` grabs a partial square or a confident-but-drifted origin; lower-row clicks then miss.
   Pitch origin under banners ≈ **(500, 342)**. `sudoku.js play` does this fallback itself now.

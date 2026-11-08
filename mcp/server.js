@@ -183,7 +183,6 @@ const EXTRA = {
   confirm: 'Says it to everyone and waits (timeout ms, default 20000): go ahead only on verdict "approved".',
   captcha: 'Blocks until the operator replies (timeout ms, default 10 min).',
   access: 'Blocks while a person decides on the new Allow card (about two minutes).',
-  budget: 'more:1 (and a higher limit) asks the room and blocks for their answer (timeout ms, default 60000). When the budget is spent, acting tools are refused until they say yes.',
   mission: 'op plan with preview:1, op achieve at a checkpoint, and op ask wait for the room\'s yes (timeout ms, default 60000); while the job waits, acting tools are refused (waiting:true).',
   exec: 'Needs a grant that may run commands: connect {shell:true}, or access {shell:true}.',
   done: 'Ends the visit, like disconnect.',
@@ -290,7 +289,6 @@ function stepMs(c) {
     // a preview, a checkpoint and `ask` wait for the ROOM (60 s by default); an achieve at a checkpoint may poll its
     // check and then ask, so it gets both
     case 'mission': ms = (c.op === 'plan' && c.preview) || c.op === 'ask' || c.op === 'achieve' ? 2 * clamp(t || 60000, 2000, 300000) + 45000 : clamp(t || 2000, 0, 30000) + 45000; break;
-    case 'budget': ms = clamp(t || 60000, 2000, 300000) + 15000; break;
     // a photo or a recording asks the room first (60 s by default), then captures and reads it back
     case 'camera': case 'audio': ms = clamp(t || 60000, 2000, 300000) + 90000; break;
     // a file is one command per chunk: minutes for a big one (and a send may ask before replacing a file)
