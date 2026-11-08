@@ -23,7 +23,7 @@ needed. Both have since shipped.
 ## The board — the panel as the room's control surface (2026-11-06) ✅ BUILT
 
 [07 — the board](07-the-board.md): the watchers answer the agent's questions, pause it, stop it at three strengths, turn
-the autonomy dial, put its changes back and see its goal, budget, time, proofs and what it saw — from the panel, through
+the autonomy dial, put its changes back and see its goal, time, proofs and what it saw — from the panel, through
 the session chat, honoured by the serve itself. The relay keeps each visit's run for a late viewer, and a short History.
 
 ## Missions — the big plan, milestones, proof (2026-10-27) ✅ BUILT
@@ -78,8 +78,9 @@ in [reference/screenmirror-features.md](../reference/screenmirror-features.md));
   made, deleted; services; registry; typed text; apps started; a file `send` put there) and how it goes back; the finish
   tells the room, `changes` lists it, `undo` puts one back after a yes (or because they asked: "undo c3"). Capture before
   change (2026-11-06): overwrites, deletes, registry values, startup types, modes and ACLs are kept first, so they go back too.
-- **Budgets.** ✅ 2026-11-06: core/budget.js -- 100 acting steps or 30 minutes a task by default; when spent, acting
-  commands are refused and the room is asked (`budget {more:1}`).
+- **Budgets.** Built 2026-11-06 (core/budget.js: 100 acting steps or 30 minutes a task, then acting commands refused
+  until the room said go on), removed 2026-11-07: not useful in practice. The room's own brakes stay -- pause, three
+  strengths of stop, the autonomy dial, a plan's preview and checkpoints.
 - **Self-updating skills.** ✅ 2026-11-06: a planned job that finishes proven, that no skill did and that was not a
   replay, is drafted into `skills/_drafts/<name>/` (gitignored); `node drive/replay.js promote <name> --yes` adds a
   reviewed draft to the library -- a recipe stores typed text, so a person reads it first.

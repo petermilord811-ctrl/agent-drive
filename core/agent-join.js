@@ -69,9 +69,6 @@
 //                                     deferral or hesitation wins any time, only a short clear yes approves
 //                                     (core/consent.js); --auto-confirm: only a window NOBODY answered is a yes
 //            captcha {text,timeout}   a CAPTCHA is for a person: ask the operator in chat to solve it, and wait
-//            budget {steps,minutes,more,why}  the task's budget of acting steps and minutes (core/budget.js):
-//                                     when it is spent acting commands are refused and the room is asked; a
-//                                     lower limit is taken, a higher one or more:1 is asked of the room
 //            done {text,file}         sign off (with a picture) and hand the grant back
 //   NOTES    note-list                the host's sticky notes -> {notes:[{id,text,name,resolved,...}]}
 //            note-add {text,x,y}       leave a sticky note (x,y are 0..1; default top-left)
@@ -143,7 +140,6 @@ const relayAddr = require('./relay-addr.js');   // a relay's last IP, dialled wh
 const consent = require('./consent.js');   // what a reply to `confirm` means: yes / no / unclear; pure, offline, tested
 const mission = require('./mission.js');   // the job's big plan: milestones, proof, replanning out loud; pure, tested
 const verbs = require('./verbs.js');       // what each command may say, checked before it runs; pure, tested
-const budget = require('./budget.js');     // a task's steps and minutes, then stop and ask; pure, tested
 const intake = require('./intake.js');     // a job asked for in plain words -> the skill that does it; tested
 const undo = require('./undo.js');         // what a command changed on the host, and how it is put back; pure, tested
 const board = require('./board.js');       // the watchers' board: its buttons' requests, autonomy, risk, time; pure, tested
@@ -252,12 +248,6 @@ const QUIET = has('quiet');
 // standing consent that etiquette.md and plan 05 describe, made mechanical. It never touches the door:
 // a person still pressed Allow to grant control/shell in the first place.
 const AUTO_CONFIRM = has('auto-confirm') || /^(1|true|yes|on)$/i.test(String(process.env.SM_AUTO_CONFIRM || '').trim());
-// A TASK'S BUDGET (core/budget.js): this many acting steps and minutes, then the agent stops and asks the room
-// whether to go on. --budget-steps / SM_BUDGET_STEPS and --budget-min / SM_BUDGET_MIN; 0 turns one off. The
-// defaults are a lost agent's half hour -- at the measured 46 s a decision, 30 minutes is about forty of them.
-const budgetNum = (f, env, dflt) => { const v = flag(f, '') !== '' ? flag(f, '') : (process.env[env] || '').trim(); const n = Number(v); return v !== '' && Number.isFinite(n) && n >= 0 ? n : dflt; };
-const BUDGET_STEPS = budgetNum('budget-steps', 'SM_BUDGET_STEPS', 100);
-const BUDGET_MIN = budgetNum('budget-min', 'SM_BUDGET_MIN', 30);
 let KEY = process.env.SM_JOIN_KEY || '';
 if (flag('key', '')) {
   KEY = flag('key', '');
@@ -1172,7 +1162,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         }
         case 'yes': case 'no': case 'solved': {
           // the answer to the question on the panel, by its id. A question the serve waits on (askRoom, captcha) hears it in
-          // its own wait; those nobody waits on -- an approval, a checkpoint, a budget asked at the gate -- are settled here
+          // its own wait; those nobody waits on -- an approval, a checkpoint -- are settled here
           if (!ask || !mk.q || mk.q !== ask.id || ask.waited) break;
           const yes = mk.kind !== 'no';
           if (yes && !yesFrom(who)) { try { roomNote('Only ' + inviter + ', who let me in, can say yes to that.'); } catch (_) {} break; }
@@ -1184,9 +1174,6 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             cpAsk = '';
             if (yes) roomNotes.push(who + ' said go on at the checkpoint');
             else { hold = { k: 'task', by: clipS(who, 60) }; roomNotes.push(who + ' said no at the checkpoint: stop this task -- report what is done (status {fin:1, say}), then wait'); }
-          } else if (ask.k === 'budget') {
-            if (yes) { BUD.more(mk.arg && typeof mk.arg === 'object' ? mk.arg : {}); budgetAskedAt = 0; roomNotes.push(who + ' gave this task more room: ' + JSON.stringify(BUD.brief())); }
-            else roomNotes.push(who + ' said no to more budget: finish the task (status {fin:1, say, file})');
           } else break;
           closeAsk(ask.id);
           break;
@@ -1349,12 +1336,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // anything counts as achieved, and every change said out loud. The panel draws it (the action tree in plan
     // mode), the room hears it, mission.json keeps it, and every answer carries where the job stands.
     const MS = mission.create();
-    // THE TASK'S BUDGET (core/budget.js): acting steps and minutes, then stop and ask. A new task starts it again --
-    // a mission's plan, a status naming another task, new work after a finish. `budgetAskedAt`: when the room was
-    // last asked to let a spent budget go on, so `budget {more:1}` hears an answer they already gave.
-    const BUD = budget.create({ steps: BUDGET_STEPS, minutes: BUDGET_MIN });
-    BUD.start(TASK);
-    let budgetAskedAt = 0;
+    // THE TASK IT IS ON, by name: a mission's plan, a status naming another task and new work after a finish each start
+    // a new one, which resets the board's clock, failures, stop and approvals (newTask, below)
+    const taskKey = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 120);
+    let curTask = taskKey(TASK);
     // THE CHANGE RECORD (core/undo.js): what this visit changed on the machine -- moved, renamed, made, deleted, a
     // service flipped, text typed, an app started, a file put there -- each with how it is put back. The finish of a
     // task says that task's changes to the room, `changes` lists them, and `undo` puts one back after the room's yes
@@ -1373,7 +1358,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const taskChanges = () => { const g = gone(); return changes.filter((e) => e.task === changeTask && !e.undone && !g.has(e.id) && e.kind !== 'typed' && e.kind !== 'launched'); };
     const saveChanges = () => { try { fs.writeFileSync(changesFile, JSON.stringify(changes, null, 1)); } catch (_) {} };
     // ...and its board: the clock that splits its time, its failures, a stop the room asked of the last task, approvals
-    const newTask = (name) => { BUD.start(name || ''); budgetAskedAt = 0; changeTask++; TS.reset(Date.now()); failsThisTask = 0; hold = null; cpAsk = ''; APPROVE.clear(); };
+    const newTask = (name) => { curTask = taskKey(name); changeTask++; TS.reset(Date.now()); failsThisTask = 0; hold = null; cpAsk = ''; APPROVE.clear(); };
     const missionFile = path.join(dir, 'mission.json');
     // EVERY SUCCESSFUL COMMAND, AS SENT, for drive/replay.js -- one JSON line each with the milestone that was
     // current, so a proven job can run again with no driver turns. Only what DOES something on the machine or
@@ -1428,13 +1413,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (m.tree) treeOut = true;
       if (lastDrive.fin) m.fin = 1;   // display-only "this task finished" (panel goes green) -- NOT a hang-up
       // THE BOARD'S FIELDS (core/board.js; the relay forwards each one bounded, and an older viewer ignores them): the job's
-      // goal and finish line, its budget, where its time went, the question on the panel, what it changed (and put back), a
-      // pause or a stop, the autonomy dial, exclusive control, and its failures
+      // goal and finish line, where its time went, the question on the panel, what it changed (and put back), a pause or
+      // a stop, the autonomy dial, exclusive control, and its failures
       try {
         const g = MS.brief();
         if (g) m.goal = { g: clipS(g.goal, 100), w: clipS(g.when, 140), at: clipS(g.at, 90), n: Number(g.done) || 0, of: Number(g.of) || 0 };
-        const b = BUD.brief();
-        if (b) m.bud = { s: b.steps.used, sl: b.steps.limit || 0, mi: b.minutes.used, ml: b.minutes.limit || 0 };
         m.tm = TS.brief(Date.now());
         if (ask) { m.ask = { k: ask.k, q: ask.q, id: ask.id }; if (ask.plan) m.ask.plan = ask.plan; }
         const cl = changes.filter((e) => e.task === changeTask && e.kind !== 'typed');
@@ -2169,8 +2152,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         await sleep(400);
       }
     }
-    // ASK THE ROOM, AND HEAR WHAT IT SAYS -- `confirm`'s window, for the serve's own questions too: a spent budget,
-    // a plan before it starts, a checkpoint, a webcam photo. The question goes to everyone; WHAT A REPLY MEANS is
+    // ASK THE ROOM, AND HEAR WHAT IT SAYS -- `confirm`'s window, for the serve's own questions too: a plan before it
+    // starts, a checkpoint, a webcam photo. The question goes to everyone; WHAT A REPLY MEANS is
     // core/consent.js -- a negation, deferral or hesitation anywhere is a no ("not sure", "go back first", "let me
     // think"), a yes is only a short reply of nothing but yes-words, anything else is unclear.
     //   ms       the window (2 s .. 5 min; 20 s by default)
@@ -2178,7 +2161,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     //   since    an EARLIER asking of the same question: what the room said after it counts too (the agent may come
     //            back to a question the room already answered)
     //   standing false refuses the standing yes: a webcam photo is never taken on silence
-    // A cancel wins at any point. Time spent here is time waiting on people, not the task's (core/budget.js).
+    // A cancel wins at any point.
     async function askRoom(text, o) {
       const opts = o || {};
       if (text) { ws.send({ type: 'chat', text }); try { fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} }
@@ -2194,7 +2177,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const grace = opts.grace === Infinity ? Infinity : Math.max(0, Number(opts.grace) || 1500);
       const t0 = Date.now(), deadline = t0 + ms, replies = [];
       const since0 = Math.min(t0, Number(opts.since) || t0);
-      let verdict = 'unclear', yesAt = 0, pressed = false, arg = null;
+      let verdict = 'unclear', yesAt = 0, pressed = false;
       const hear = (m) => {
         // A BOARD BUTTON is an answer to ONE question, by its id: a press on another question is not a reply to this one,
         // and a yes counts only from the person who let the agent in (anyone's no still wins). It ends the wait at once.
@@ -2204,7 +2187,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
           if (mk.kind === 'no') { verdict = 'cancelled'; return; }
           if (!yesFrom(m.name)) { try { roomNote('Only ' + inviter + ', who let me in, can say yes to that.'); } catch (_) {} return; }
-          if (verdict !== 'cancelled') { verdict = 'approved'; pressed = true; if (!yesAt) yesAt = Date.now(); if (mk.arg && typeof mk.arg === 'object') arg = mk.arg; }
+          if (verdict !== 'cancelled') { verdict = 'approved'; pressed = true; if (!yesAt) yesAt = Date.now(); }
           return;
         }
         replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
@@ -2231,9 +2214,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (replies.length && interrupt && (Number(interrupt.ts) || 0) >= since0) interrupt = null;
       // answered (or given up on): off the panel -- one left unanswered stays up for the next asking of it
       if (verdict !== 'unclear' || stopped) closeAsk(q.id); else q.waited = false;
-      BUD.rest(Date.now() - t0);
-      // `arg`: what a button's yes carried beyond yes (core/board.js: "50 more steps")
-      return { verdict, replies, auto, arg: verdict === 'approved' && arg ? arg : undefined };
+      return { verdict, replies, auto };
     }
     // the plan's milestones for the panel's preview checklist: each with what will be on the screen when it is done
     const planOf = () => { try { const J = MS.toJSON(); return J && Array.isArray(J.ms) ? J.ms.slice(0, 12).map((m) => ({ t: clipS(m.t, 80), w: clipS(m.done, 100) })) : undefined; } catch (_) { return undefined; } };
@@ -2256,7 +2237,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         let spec = cmd.plan && typeof cmd.plan === 'object' ? cmd.plan : cmd;
         if (spec !== cmd && cmd.checkpoints != null && spec.checkpoints == null) spec = Object.assign({}, spec, { checkpoints: cmd.checkpoints });
         const r = MS.plan(spec, why);
-        if (r.ok) { newTask(MS.goal); missionReplay = !!cmd.replay; }   // a planned job is a task of its own: its budget starts here
+        if (r.ok) { newTask(MS.goal); missionReplay = !!cmd.replay; }   // a planned job is a task of its own
         const preview = !!(cmd.preview || (spec && spec.preview)) && cmd.preview !== 0 && cmd.preview !== '0';
         if (!r.ok || !preview) return applied(r);
         // A PREVIEW: the plan goes to the room as a question, and nothing acts until they say yes (core/mission.js
@@ -2566,14 +2547,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // own echo and the relay's `system` notices are skipped, so this returns a person's answer.
           const since = Number(cmd.since) || Date.now();
           const ms = Math.max(1000, Math.min(600000, Number(cmd.timeout) || 120000));
-          const waited0 = Date.now();
           // ON THE BOARD (core/board.js): when the agent's last words to the room were a question, the panel says it is
           // waiting for their reply -- and "it needs you" reaches someone who is looking elsewhere
           const qa = (!ask && !paused && !lastDrive.fin && /\?\s*$/.test(lastSaid.text) && Date.now() - lastSaid.ts < 180000) ? openAsk('reply', lastSaid.text) : null;
           if (qa) qa.waited = true;
           const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && (Number(m.ts) || 0) >= since, ms));
           if (qa) closeAsk(qa.id);
-          BUD.rest(Date.now() - waited0);   // waiting on a person is not the agent grinding (core/budget.js)
           if (got) interrupt = null;   // the driver is attending to chat; let a paused plan resume
           if (!got) reply({ ok: false, why: stopped || 'nobody answered in time', timedOut: !stopped });
           else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
@@ -2637,8 +2616,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // is dropped, and the room is told. A bare finish with milestones still open is answered with a hint.
           // (A tool's own tree or flat plan takes the panel exactly as before.)
           let planHint = '';
-          // a task by another name is a new task: its budget starts again (core/budget.js)
-          if (depth === 0 && typeof cmd.task === 'string' && cmd.task.trim() && !BUD.same(cmd.task.trim())) newTask(cmd.task.trim());
+          // a task by another name is a new task: its board starts again
+          if (depth === 0 && typeof cmd.task === 'string' && cmd.task.trim() && taskKey(cmd.task) !== curTask) newTask(cmd.task.trim());
           if (MS.active() && depth === 0 && !(Array.isArray(cmd.tree) && cmd.tree.length) && !(Array.isArray(cmd.steps) && cmd.steps.length)) {
             if (typeof cmd.task === 'string' && cmd.task.trim() && cmd.task.trim() !== MS.goal) {
               const d = MS.drop('a new task was declared: ' + cmd.task.trim().slice(0, 80));
@@ -3048,7 +3027,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus('Running a command');
               // CAPTURE BEFORE CHANGE: what this command will overwrite, delete or re-set is kept or read first, and stamped
               // after, so the record can put it back and a restore never lands on something changed again (core/undo.js).
-              // Internal commands: not steps of the budget, nothing on the panel.
+              // Internal commands: nothing on the panel.
               let caps = [];
               try { const p = undo.prepare(cmd, { os: deskOsName || '', seq: changes.length + 1, now: Date.now(), visit: VISIT_ID }); caps = p && Array.isArray(p.captures) ? p.captures : []; } catch (_) { caps = []; }
               const captured = [];
@@ -3107,34 +3086,6 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // (askRoom below holds the window: the confirm verb keeps listening to its end, so a late cancel wins)
           const a = await askRoom(String(cmd.text || ''), { ms: cmd.timeout, grace: Infinity });
           reply({ ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto });
-        } else if (cmd.do === 'budget') {              // the task's budget: show it, lower it, or ask the room for more
-          // {} shows it. {steps, minutes}: a LOWER limit is simply taken; a higher one -- or none (0) -- is asked of
-          // the room, as going on is. {more:1, why}: the budget is spent (or nearly): ask whether to carry on. When
-          // the serve already asked (the first refused command does), a `more` without a new reason does not ask
-          // twice: it waits for the answer, and hears one the room already gave.
-          const why = cmd.why != null ? String(cmd.why).slice(0, 300) : '';
-          const ms = Number(cmd.timeout) || 60000;
-          if (cmd.more) {
-            const recent = budgetAskedAt && Date.now() - budgetAskedAt < 10 * 60000;
-            const a = await askRoom(recent && !why ? '' : BUD.question(why), { ms, since: recent ? budgetAskedAt : 0, kind: 'budget', q: BUD.question(why) });
-            if (a.verdict === 'approved') { BUD.more(a.arg || { steps: cmd.steps, minutes: cmd.minutes }); budgetAskedAt = 0; }
-            else budgetAskedAt = Date.now();   // heard: asking again listens to what comes after this answer
-            const out = { ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto, budget: BUD.brief() };
-            if (a.verdict === 'cancelled') out.hint = 'the room said no: finish the task -- status {fin:1, say, file}';
-            else if (a.verdict === 'unclear') out.hint = 'no clear answer yet: wait for the room (chat-wait), then ask again';
-            reply(out);
-          } else if (cmd.steps != null || cmd.minutes != null) {
-            const w = BUD.want({ steps: cmd.steps, minutes: cmd.minutes });
-            if (!w.raises) { BUD.set(w); reply({ ok: true, budget: BUD.brief() }); }
-            else {
-              const asks = [];
-              if (w.steps != null) asks.push(w.steps ? w.steps + ' steps' : 'no limit on steps');
-              if (w.minutes != null) asks.push(w.minutes ? w.minutes + ' minutes' : 'no time limit');
-              const a = await askRoom('⏱ May I give this task more room — ' + asks.join(' and ') + '?' + (why ? ' ' + why : ''), { ms, kind: 'budget' });
-              if (a.verdict === 'approved') BUD.set(w);
-              reply({ ok: true, verdict: a.verdict, replies: a.replies, auto: a.auto, budget: BUD.brief() });
-            }
-          } else reply({ ok: true, budget: BUD.brief() || { none: true, why: 'no budget: --budget-steps and --budget-min are 0' } });
         } else if (cmd.do === 'note-list') {           // the host's sticky notes, as the agent has them
           reply({ ok: true, notes: [...notesMap.values()] });
         } else if (cmd.do === 'note-add') {            // leave a sticky note on the host's board
@@ -3565,15 +3516,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         cmd = v.cmd; cmd.__vetted = 1;
         if (v.fixed.length) noteFixed(v.fixed);
       }
-      // A SPENT BUDGET (core/budget.js): the acting command is NOT run, and nothing of it reaches the panel. The first
-      // refusal asks the room itself, once, so the people watching hear that the agent has stopped and why; the agent
-      // then waits for their answer with `budget {more:1}`, which hears a yes they already gave. Looking, talking,
-      // the panel and finishing are never refused -- an agent out of budget can still see, report and sign off.
-      // ...and A PLAN WAITING FOR THE ROOM'S YES (a preview, a checkpoint -- core/mission.js) acts on nothing either.
-      // The agent may still look, talk, change the plan and ask again.
+      // A PLAN WAITING FOR THE ROOM'S YES (a preview, a checkpoint -- core/mission.js): the acting command is NOT run,
+      // and nothing of it reaches the panel. The agent may still look, talk, change the plan and ask again.
       {
         const g = MS.gate();
-        if (g && budget.isActing(cmd)) {
+        if (g && verbs.isActing(cmd)) {
           const what = g.kind === 'plan' ? 'the plan for “' + MS.goal + '” is waiting for the room\'s yes'
                                          : 'the job is at a checkpoint after “' + g.t + '”, waiting for the room\'s yes to go on';
           const r0 = { ok: false, refused: true, waiting: true, why: what + ' -- nothing was done. {"do":"mission","op":"ask"} asks again (and hears a yes they already gave); or change the plan as they asked.',
@@ -3585,33 +3532,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           continue;
         }
       }
-      {
-        const spent = BUD.check(cmd);
-        if (spent) {
-          if (!budgetAskedAt) {
-            budgetAskedAt = Date.now();
-            const q = BUD.question();
-            try { ws.send({ type: 'chat', text: q }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: q, mine: true, sent: true }) + '\n'); } catch (_) {}
-            // ...and on the board, with Go on / Stop here: nobody waits on this one, so onMark settles it (core/board.js)
-            if (!ask) openAsk('budget', q);
-          }
-          const why = spent.why + ' -- nothing was done. Stop here: the room has been asked whether to go on, and ' +
-                      '{"do":"budget","more":1,"why":"what is left, and why it will work now"} hears their answer. Or finish the task.';
-          const r0 = { ok: false, refused: true, budget: spent.budget, why, ms: 0, bytes: 0, trips: 0 };
-          ledger.push({ at: new Date().toISOString(), do: String(cmd.do || '?').slice(0, 40), ok: false, why: 'the task\'s budget is spent', ms: 0, bytes: 0, trips: 0 });
-          try { fs.writeFileSync(ledgerFile, JSON.stringify({ host: HOST, task: TASK, steps: ledger, totals: { bytes: wire, trips } }, null, 1)); } catch (_) {}
-          r0.inbox = { n: unreadIds.length, latest: lastOp };
-          if (MS.active()) r0.mission = MS.brief();
-          if (cmd.cid != null) r0.cid = cmd.cid;
-          writeOut(r0);
-          continue;
-        }
-      }
-      // THE ROOM'S HOLDS (core/board.js), after the plan's and the budget's: a pause, a task the room stopped, a checkpoint
+      // THE ROOM'S HOLDS (core/board.js), after the plan's: a pause, a task the room stopped, a checkpoint
       // waiting for its yes, and the autonomy dial's approvals. Looking, talking, the panel and finishing are never held --
       // the agent can always see, explain, ask and report. An approval answers the driver AT ONCE, refused with the
       // question (a held command would outlast the driver's own timeout); on the room's yes, the same command runs once.
-      if (budget.isActing(cmd)) {
+      if (verbs.isActing(cmd)) {
         let r0 = null;
         if (paused) r0 = { paused, waiting: true, why: 'paused by ' + paused.by + ' -- nothing was done. Wait in chat for “▶ Go on” ({"do":"chat-wait","timeout":600000}), then send this again.' };
         else if (hold && hold.k === 'task') r0 = { held: hold, why: hold.by + ' stopped this task -- nothing was done. Report what is done and what is not (status {fin:1, say:"…"}), then wait in chat.' };
@@ -3656,7 +3581,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         // anything the agent says to the room after "shall I sign off?" makes THAT the open question
         if (cmd.do === 'chat' || cmd.do === 'chat-img' || cmd.do === 'confirm') signoffAsked = false;
         if ((lastDrive.fin || lastDrive.over) && !cmd.quiet && !talk) {
-          // new work after a finish is a new task, with a budget of its own (core/budget.js)
+          // new work after a finish is a new task
           const wasFin = !!lastDrive.fin;
           retire();
           if (wasFin) newTask('');
@@ -3706,10 +3631,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const nChanges = changes.length;
       const r = (await step(cmd)) || { ok: false, why: 'that command answered nothing' };
       inFlight = false; lastCmdEnd = Date.now(); TS.end(lastCmdEnd);
-      BUD.count(cmd);   // a step of the task's budget, whatever its answer: a failed attempt is a turn spent too
       r.ms = Date.now() - t0; r.bytes = wire - w0; r.trips = trips - p0;
       // a failed action counts on the board ("2 failed"); a refusal or a stop is not a failure of the action
-      if (r.ok === false && !r.refused && !r.stopped && budget.isActing(cmd)) failsThisTask++;
+      if (r.ok === false && !r.refused && !r.stopped && verbs.isActing(cmd)) failsThisTask++;
       // The answer goes into the tree too (a look shows what it saw, an input whether it failed), and
       // every command re-arms the pause detector that ends a burst.
       // (the line is the action tree's only while it still owns the panel: a batch may have handed it to a plan)
@@ -3745,11 +3669,6 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const tc = taskChanges();
         if (tc.length) r.changes = { n: tc.length, list: tc.slice(0, 12).map((x) => x.id + ' ' + x.what + (x.undo && x.undo.kind === 'exec' ? '' : x.reversible ? ' (by hand)' : ' (cannot be put back)')),
                                      hint: 'the room was told what changed; if they ask, {"do":"undo","id":"c1"} puts one back' };
-      }
-      // ...AND SO DOES A BUDGET NEARLY SPENT, once per task (core/budget.js): time to wrap up, or to ask now
-      if (r && typeof r === 'object') {
-        const bh = BUD.hint();
-        if (bh) { if (!r.hint) r.hint = bh; else r.budgetHint = bh; r.budget = BUD.brief(); }
       }
       // ...AND SO DOES A MISSING RESULT PICTURE (see picOwed), on every answer while the finished task is still
       // the one on show. New work (the green lifting) ends it: the moment for that picture has passed.

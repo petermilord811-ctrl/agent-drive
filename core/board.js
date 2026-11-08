@@ -61,7 +61,7 @@ const quoted = (s) => { const m = /[“"]([^”"]{1,200})[”"]/.exec(String(s |
 
 // A line from the room -> what it asks, or null when it is not a board request.
 //   { kind, q: 'q7' | '', step: '<label>' | '', arg }   arg: 'c3' | 'all' (undo), a mode (autonomy),
-//   { steps: n } / { minutes: n } (a yes that raises the budget), a schedule phrase, or ''.
+//   a schedule phrase, or ''.
 function parseMark(text) {
   const s = String(text == null ? '' : text).replace(/^\s+/, '');
   if (!s) return null;
@@ -79,9 +79,6 @@ function parseMark(text) {
   } else if (kind === 'autonomy') {
     out.arg = /each action/i.test(rest) ? 'each' : /risky/i.test(rest) ? 'risky' : /checkpoint/i.test(rest) ? 'checkpoints'
             : /without asking|on your own|autonom/i.test(rest) ? 'auto' : '';
-  } else if (kind === 'yes') {
-    const st = /(\d{1,4})\s+more\s+steps?/i.exec(rest), mi = /(\d{1,4})\s+more\s+min/i.exec(rest);
-    if (st) out.arg = { steps: Number(st[1]) }; else if (mi) out.arg = { minutes: Number(mi[1]) };
   } else if (kind === 'schedule') {
     const m = /:\s*(.+?)\.?\s*$/.exec(rest);
     out.arg = m ? m[1].trim() : '';
@@ -90,7 +87,7 @@ function parseMark(text) {
 }
 
 // The line a board button sends -- written here once, so the panel (viewer.html, which carries the same strings) and
-// the tests agree on the wording. `o`: { q, step, id, mode, steps, minutes, when }.
+// the tests agree on the wording. `o`: { q, step, id, mode, when }.
 function markText(kind, o) {
   o = o || {};
   const m = MARK_OF.get(kind);
@@ -103,7 +100,7 @@ function markText(kind, o) {
     case 'stop-task': return m + ' Stop this task — say what is done, and wait.';
     case 'stop-after': return m + ' Stop after ' + (st || 'this step') + '.';
     case 'end': return m + ' Stop — please end the current task now.';
-    case 'yes': return m + (o.steps ? ' Go on: ' + o.steps + ' more steps.' : o.minutes ? ' Go on: ' + o.minutes + ' more minutes.' : ' Yes — go ahead.') + tag;
+    case 'yes': return m + ' Yes — go ahead.' + tag;
     case 'no': return m + ' No.' + tag;
     case 'solved': return m + ' Solved — the CAPTCHA is done.' + tag;
     case 'undo': return m + ' Undo ' + (o.id === 'all' ? 'all' : (o.id || '')) + '.';
@@ -167,7 +164,7 @@ function timeSplit(now0) {
   return {
     reset(now) { t0 = now || 0; acting = 0; waiting = 0; cur = null; },
     begin(cmd, now) { cur = { at: now || 0, wait: WAITING.has(cmd && cmd.do) }; },
-    // a command the serve itself turned into a wait on the room (a budget question, an approval) says so
+    // a command the serve itself turned into a wait on the room (a plan's preview, a checkpoint, an approval) says so
     waitNow() { if (cur) cur.wait = true; },
     end(now) { if (!cur) return; const d = Math.max(0, (now || 0) - cur.at); if (cur.wait) waiting += d; else acting += d; cur = null; },
     addWait(ms) { waiting += Math.max(0, Number(ms) || 0); },

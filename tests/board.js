@@ -22,10 +22,8 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.error('  FAIL: ' + 
   ok(BD.parseMark(BD.markText('undo', { id: 'c3' })).arg === 'c3', 'undo names the change');
   ok(BD.parseMark(BD.markText('undo', { id: 'all' })).arg === 'all', '...or all of them');
   for (const m of BD.MODES) ok(BD.parseMark(BD.markText('autonomy', { mode: m })).arg === m, 'autonomy reads back as ' + m);
-  const st = BD.parseMark(BD.markText('yes', { q: 'q2', steps: 50 }));
-  ok(st.kind === 'yes' && st.arg && st.arg.steps === 50, 'a yes that raises the budget says by how many steps');
-  const mi = BD.parseMark(BD.markText('yes', { q: 'q2', minutes: 15 }));
-  ok(mi.kind === 'yes' && mi.arg && mi.arg.minutes === 15, '...or minutes');
+  const ys = BD.parseMark(BD.markText('yes', { q: 'q2' }));
+  ok(ys.kind === 'yes' && ys.q === 'q2' && ys.arg === '', 'a yes answers its question and carries nothing more');
   ok(BD.parseMark(BD.markText('schedule', { when: 'weekdays at 08:30' })).arg === 'weekdays at 08:30', 'a schedule carries when');
 }
 
@@ -75,7 +73,7 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.error('  FAIL: ' + 
   const T = BD.timeSplit(0);
   T.begin({ do: 'click' }, 1000); T.end(1500);           // 0.5 s acting, after 1 s of thinking
   T.begin({ do: 'chat-wait' }, 3000); T.end(9000);       // 6 s waiting on people, after 1.5 s of thinking
-  T.begin({ do: 'budget' }, 9000); T.waitNow(); T.end(12000); // the serve asked the room: waiting
+  T.begin({ do: 'mission', op: 'ask' }, 9000); T.waitNow(); T.end(12000); // the serve asked the room: waiting
   const b = T.brief(12000);
   ok(b.a === 500 && b.w === 9000 && b.t === 2500, 'acting, waiting and thinking add up (' + JSON.stringify(b) + ')');
   T.begin({ do: 'click' }, 12000);

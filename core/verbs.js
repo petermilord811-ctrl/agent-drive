@@ -86,7 +86,6 @@ const V = {
   warn:        { f: ['text'], what: 'a caution line on the panel' },
   confirm:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'confirm needs text: what you are about to do, said to everyone', what: 'ask before something hard to undo; a no always wins' },
   captcha:     { f: ['text'], what: 'a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one' },
-  budget:      { f: ['steps', 'minutes', 'more'], what: 'the task\'s budget of acting steps and minutes: {} shows it; a lower limit is taken; a higher one, or more:1 once it is spent, is asked of the room' },
   done:        { f: ['text', 'file', 'w', 'h'], what: 'sign off (with a picture) and hand the grant back' },
   // ---- ScreenMirror's own features ----
   'note-list': { f: [], what: 'the host\'s sticky notes' },
@@ -189,6 +188,13 @@ const closest = (word, list) => {
 };
 
 const VERBS = Object.keys(V);
+// THE VERBS THAT ACT ON THE MACHINE -- what a plan waiting for the room's yes refuses, what the room's holds stop (a
+// pause, a stopped task, a checkpoint, the autonomy dial's approvals), and what counts as a failure on the board. A
+// `plan` of sixty clicks is one: it was one decision. Looking, talking, the panel and finishing are never among them,
+// so an agent that is held can still see, explain, ask and report.
+const ACTING = new Set(['click', 'clicks', 'dbl', 'right', 'clickText', 'keys', 'press', 'chord', 'open', 'scroll',
+  'stroke', 'strokes', 'exec', 'terminal', 'launch', 'focus', 'plan', 'send', 'undo']);
+const isActing = (cmd) => !!cmd && typeof cmd === 'object' && typeof cmd.do === 'string' && ACTING.has(cmd.do);
 function vet(input, opts) {
   try { return vetInner(input, opts); }
   catch (e) { return { ok: false, why: 'the command could not be read: ' + ((e && e.message) || 'bad value') }; }
@@ -313,4 +319,4 @@ function withDocBlock(doc) {
   return s.replace(/\s*$/, '\n\n') + markdown() + '\n';
 }
 
-module.exports = { vet, vetPlan, keyCode, modCodes, markdown, withDocBlock, DOC_BEGIN, DOC_END, VERBS, V, VERB_ALIAS, FIELD_ALIAS, COMMON, CONTROL_KEYS };
+module.exports = { vet, vetPlan, keyCode, modCodes, markdown, withDocBlock, DOC_BEGIN, DOC_END, VERBS, V, VERB_ALIAS, FIELD_ALIAS, COMMON, CONTROL_KEYS, ACTING, isActing };

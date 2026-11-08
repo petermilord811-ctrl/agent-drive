@@ -13,14 +13,10 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   is auto-typing", with its progress), exactly as a colleague's Type window raises it, and it comes down when the
   typing ends. A person who presses a key stops the run, as they would stop a colleague's
   (`stoppedAt.tookKeyboard`). `autotype.run` takes an `onStep` callback.
-- **Budgets** (`core/budget.js`): each task may take so many acting steps (a `plan` batch is one) and minutes —
-  100 and 30 by default, `--budget-steps` / `--budget-min` to change them, 0 for none. When the budget is spent,
-  acting commands are refused and the room is asked whether to go on; `budget {more:1, why}` hears their answer.
-  Time spent waiting on people does not count, and a new task starts again.
 - **Plan previews and checkpoints**: `mission plan … preview:1` asks the room before the job starts;
   `checkpoints:1` (or `checkpoint:true` on a milestone) asks after each milestone. A no, or no answer, holds the
   job — acting commands are refused until a yes; `mission ask` asks again and hears a yes already given.
-- The serve's own questions (a budget, a preview, a checkpoint) use `confirm`'s rules for what a reply means.
+- The serve's own questions (a preview, a checkpoint) use `confirm`'s rules for what a reply means.
 - **Skills that write themselves**: a planned job that finishes proven — nothing failed, no skill already did it,
   not a replay — is saved as a draft skill in `skills/_drafts/<name>/` (gitignored), and the `finish` answer says
   so with the typed text it stores. `node drive/replay.js promote <name> --yes` puts a reviewed draft in the
@@ -63,7 +59,7 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   post chat lines with marks only the panel sends, honoured by the serve itself: pause / go on, stop the task, stop after
   a step, answers by question id (the inviter's yes only; anyone's no), Undo, the autonomy dial (each action / risky
   actions / checkpoints), skip / redo, save as a skill, schedule, "are you still there?". A person taking the mouse pauses
-  the agent. New panel fields: goal and done-when, budget, where the time went, the question, changes, pause / stop, the
+  the agent. New panel fields: goal and done-when, where the time went, the question, changes, pause / stop, the
   dial, failures, row badges; frames of what the agent saw (`drive-eye`) and its proofs (`drive-proof`); clicks ring on
   the watchers' picture. Answers carry `room`, `paused`, `hold`, `autonomy`; refusals say `paused` / `held` / `approval`.
 - `why:"…"` on any command (or batch step) is the panel's thought — the reason, shown above the plan, at no
