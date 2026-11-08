@@ -1,0 +1,22 @@
+{
+  "slug": "generalist",
+  "total": 14,
+  "captured": "2026-11-08",
+  "host": "34123",
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Before you begin: I certify that..." },
+    { "step": 3, "label": "About how many employees d..." },
+    { "step": 4, "label": "Question 1:" },
+    { "step": 5, "label": "Question 2:" },
+    { "step": 6, "label": "Question 3:" },
+    { "step": 7, "label": "Question 4:" },
+    { "step": 8, "label": "Question 5:" },
+    { "step": 9, "label": "Question 6:" },
+    { "step": 10, "label": "Question 7:" },
+    { "step": 11, "label": "Question 8:" },
+    { "step": 12, "label": "Please select the option that b..." },
+    { "step": 13, "label": "How many years of experienc..." },
+    { "step": 14, "label": "(Optional) Any other comments?" }
+  ]
+}

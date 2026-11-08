@@ -13,36 +13,38 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 | Status | Count |
 |--------|-------|
 | stub | 100 |
-| captured | 0 |
+| incomplete | 1 |
+| nearly-full | 2 |
+| full / captured | 0 |
 
 ## By assessment family
 
-| Family id | Roles | stub | captured |
-|-----------|------:|-----:|---------:|
-| `generalist` | 1 | 0 | 0 |
-| `coding` | 5 | 4 | 0 |
-| `data-ml` | 2 | 1 | 0 |
-| `cybersecurity` | 4 | 4 | 0 |
-| `finance` | 14 | 14 | 0 |
-| `accounting` | 7 | 7 | 0 |
-| `economics` | 4 | 4 | 0 |
-| `legal` | 8 | 8 | 0 |
-| `medical` | 19 | 19 | 0 |
-| `healthcare-ops` | 6 | 6 | 0 |
-| `engineering-mechanical` | 6 | 6 | 0 |
-| `engineering-civil` | 2 | 2 | 0 |
-| `engineering-electrical` | 4 | 4 | 0 |
-| `stem` | 7 | 7 | 0 |
-| `languages` | 5 | 5 | 0 |
-| `design` | 1 | 1 | 0 |
-| `project-based` | 8 | 8 | 0 |
+| Family id | Roles | stub | incomplete | nearly-full |
+|-----------|------:|-----:|-----------:|------------:|
+| `generalist` | 1 | 0 | 0 | 1 |
+| `coding` | 5 | 4 | 0 | 1 |
+| `data-ml` | 2 | 1 | 1 | 0 |
+| `cybersecurity` | 4 | 4 | 0 | 0 |
+| `finance` | 14 | 14 | 0 | 0 |
+| `accounting` | 7 | 7 | 0 | 0 |
+| `economics` | 4 | 4 | 0 | 0 |
+| `legal` | 8 | 8 | 0 | 0 |
+| `medical` | 19 | 19 | 0 | 0 |
+| `healthcare-ops` | 6 | 6 | 0 | 0 |
+| `engineering-mechanical` | 6 | 6 | 0 | 0 |
+| `engineering-civil` | 2 | 2 | 0 | 0 |
+| `engineering-electrical` | 4 | 4 | 0 | 0 |
+| `stem` | 7 | 7 | 0 | 0 |
+| `languages` | 5 | 5 | 0 | 0 |
+| `design` | 1 | 1 | 0 | 0 |
+| `project-based` | 8 | 8 | 0 | 0 |
 
 ## All roles
 
 | Role | File | Status | Family |
 |------|------|--------|--------|
-| Generalist | [`problems-generalist.md`](./problems-generalist.md) | incomplete | `generalist` |
-| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | incomplete | `coding` |
+| Generalist | [`problems-generalist.md`](./problems-generalist.md) | nearly-full | `generalist` |
+| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | nearly-full | `coding` |
 | Frontend Engineer | [`problems-frontend-engineer.md`](./problems-frontend-engineer.md) | stub | `coding` |
 | DevOps Engineer | [`problems-devops-engineer.md`](./problems-devops-engineer.md) | stub | `coding` |
 | Backend Engineer | [`problems-backend-engineer.md`](./problems-backend-engineer.md) | stub | `coding` |

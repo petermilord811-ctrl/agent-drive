@@ -1,17 +1,31 @@
 # Data Scientist — Data & ML Assessment
 
-- **Captured:** 2026-11-07
-- **captureStatus:** incomplete — MUST re-capture verbatim (summarized / Bio-1-only; missing Bio 2 + questions)
+### Bank
+
+- **captureStatus:** bio-only
+- **Captured:** 2026-11-07; Bio1+Bio2 re-verified 2026-11-08 host **99588** (Daniel Herman workflow test)
+- **Gaps:** assessment steps pending (do not Submit)
+- **Rule:** never Submit while fetching
+
+### Role
+
 - **Role:** Data Scientist
 - **Category:** Data & ML
 - **Slug:** `data-scientist`
-- **Source:** DataAnnotation Browse roles → role overview (host 34123, bio loop)
+- **Source:** DataAnnotation UI (99588 Browse → role card via look-ocr → Continue)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. _(Steps pending — Start not pressed)_
+
+---
 
 ## Bio
 
 **Role:** Data Scientist  
 **Category:** Data & ML  
-**Hiring cue:** 92 hired recently
+**Hiring cue:** Data & ML • 92 hired recently
 
 ### Overview
 
@@ -36,19 +50,51 @@ The newest models can spin up a full analysis in minutes — load the data, pick
 - Data Analyst
 - Analytics Engineer
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** Up to $150+/hour
-- **Location:** Remote
-- **Commitment:** Flexible hours
-- **Type:** Independent contractor
-- **Payouts:** Weekly
-- **Typical completion:** _pending (assessment intro — bio loop only)_
-- **Task window:** _pending_
+- Up to $150+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
+
+### Assets
+
+- `work/mcp-20261108-011709-262/look-10.png` *(Bio 1 live)*
+
+## Bio (assessment intro)
+
+**Title:** Data Scientist  
+**Track line:** Data Science Projects assessment
+
+### Pay / hours strip
+
+- Up to $150+ per hour
+- Your hours: remote, no minimum
+
+### What it takes
+
+- People who pass usually spend **1 hour or more**. Take the time you need.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
+
+<!-- Omitted: Do your own work. No LLMs unless a task says otherwise, and we check. -->
+
+### What happens next
+
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
+
+### Assets
+
+- `work/mcp-20261108-011709-262/look-11.png` *(Bio 2 live; Start CTA ~393,544 @1280)*
+
+---
 
 ## Instructions
 
-_pending — bio loop does not press Continue / Start assessment_
+_pending — Start assessment not pressed during 99588 workflow test (operator gate)_
 
 ## Questions
 

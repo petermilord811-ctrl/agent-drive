@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agent-drive": {
+      "command": "node",
+      "args": ["<ABS_PATH_TO_REPO>/mcp/server.js"],
+      "env": {
+        "SM_ENV_FILE": "<ABS_PATH_TO_REPO>/.env"
+      }
+    }
+  }
+}

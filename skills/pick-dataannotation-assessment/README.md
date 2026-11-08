@@ -19,11 +19,13 @@ Canonical list (families + roles + keywords):
 Re-run scoring after catalog edits:
 
 ```bash
-# Prefer plain-text extract of the resume
-node skills/dataannotation-assessment-workflow/pick-assessment.js --resume ./work/resume.txt --top 5
+# PDF/DOCX are extracted (never read as binary). TXT/MD also fine.
+node skills/dataannotation-assessment-workflow/pick-assessment.js --resume "path/Resume.pdf" --top 5
 ```
 
-Output JSON: `pick.role`, `pick.assessment`, `pick.category`, `alternatives[]`.
+Output JSON: `pick.role`, `pick.assessment`, `pick.category`, `alternatives[]`, `extracted`.
+
+**HARD (99588 / Daniel Herman):** Do not `fs.readFileSync` a PDF as utf8 — short tokens like `ui` false-hit Designer. Script uses `extract-resume-text.py` + whole-token keyword match (`chemist` must not match `biochemistry`).
 
 ## Mission milestones
 
@@ -57,6 +59,7 @@ Output JSON: `pick.role`, `pick.assessment`, `pick.category`, `alternatives[]`.
 - First visible cards (Software Engineer, Generalist, …) are not automatic picks.
 - Category pill alone is not enough — open the **role** the scorer named.
 - Keep `assessments.json` updated when the platform adds roles (operator list is source of truth).
+- On 99588, OCR `clickText` often sees only chrome — use `locate-click.py <look> role "Data Scientist"` (dbl). Gray titles need `CARD_TITLE_DARK`; never heuristic-click col2 without a measure (opened SE by mistake).
 
 ## Evidence
 

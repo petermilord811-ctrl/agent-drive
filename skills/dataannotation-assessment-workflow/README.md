@@ -34,7 +34,7 @@ Before starting (session chat or flags):
     { "t": "1 Create account", "done": "confirm_email or signed-in onboarding" },
     { "t": "2 Setup profile", "done": "Availability done; left learn-about-you / ready for projects" },
     { "t": "3 Pick assessment", "done": "Chosen role card opened / assessment started for best match" },
-    { "t": "4 Real assessment", "done": "skills/.../problems/problems-{slug}.md current; assessment submitted" }
+    { "t": "4 Real assessment", "done": "bank full + profile answer.md filled/rechecked; operator reviewed; Submit only on yes" }
   ]
 }
 ```
@@ -89,13 +89,23 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
 
 ## Step 4 — Real assessment (summary)
 
+**Part A — Fetch**
+
 1. **Verbatim** capture into `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md`
    (103 roles): Bio page 1 + Bio page 2 (skip only No-LLMs) + after Start assessment every step,
    including answer-variant cases and scrolled content. **Never Submit** while fetching.
 2. Re-catch → `.capture.md` → `compare-problems.js --slug …` → update if the **exact** text drifted.
-3. **Answer**/Submit only when taking the assessment for real (separate from fetch).
+   Mark `captureStatus: full` only when reconcile + bios are complete.
 
-Details: `skills/take-dataannotation-assessment/README.md`.
+**Part B — Answer** (last step)
+
+```bash
+node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full
+```
+
+Follow `session.json` → [`PREFLIGHT.md`](../take-dataannotation-assessment/PREFLIGHT.md) → [`ANSWER.md`](../take-dataannotation-assessment/ANSWER.md). Autofill from `answer.playbook.json` only. **Never Submit** until operator yes.
+
+Details: `skills/take-dataannotation-assessment/README.md` + `ANSWER.md` + `PREFLIGHT.md`.
 
 ## Pitfalls
 
@@ -105,9 +115,12 @@ Details: `skills/take-dataannotation-assessment/README.md`.
   (`files` or `send` / shell copy — request access if needed).
 - Role pick must use `assessments.json` + resume scoring, not a gut click on the first card.
 - Never skip problem capture / re-catch on step 4; never paste No-LLMs boilerplate into the bank.
+- Before machine resume on step 4: run `prepare-answer.js --strict-full` and read `PREFLIGHT.md`.
+- PDF resumes must be extracted (not binary-scored). OCR `clickText` is unreliable on some hosts.
 
 ## Evidence
 
 Configured 2026-11-07 from operator workflow spec + Welcome / Browse roles screenshots
 (`learn-about-you`, `workers/projects`). Step 4 skeleton from Physician/Medical bio + requirements
-+ instructions example. Step 1 proven on host 34123; steps 2–4 live pass pending.
++ instructions example. Step 1 proven on host 34123. Step 4 Part B upgraded 2026-11-08 after
+host **99588 / Daniel Herman** feel-test (pick/click/radio/preflight/playbook).

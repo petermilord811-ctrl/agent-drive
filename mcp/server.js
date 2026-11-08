@@ -192,7 +192,7 @@ const EXTRA = {
   shot: 'Writes the file only (out is optional) -- to see the screen, use look.',
   wait: 'Blocks until it holds, or timeout ms (default 15000).',
   plan: 'One call, many steps on the machine.',
-  'chat-wait': 'Blocks until a person replies: timeout ms (default 120000, at most 600000).',
+  'chat-wait': 'Blocks until a person replies. Use timeout:45000 while the visit is live (Cursor MCP often aborts longer calls). timedOut/listening/busy means call chat_wait again immediately in the same turn — never end the turn.',
   confirm: 'Says it to everyone and waits (timeout ms, default 20000): go ahead only on verdict "approved".',
   captcha: 'Blocks until the operator replies (timeout ms, default 10 min).',
   access: 'Blocks while a person decides on the new Allow card (about two minutes).',
@@ -282,7 +282,9 @@ const INSTRUCTIONS = [
   '4. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '5. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply.',
   '6. Several machines at once: connect to each -- one visit per machine, side by side. This server may be shared with other agents (an editor\'s chats share it): give host on every call -- once more than one visit has been open, a call without it is refused, never guessed -- and every answer says which host it came from. Never disconnect a visit you did not open.',
-  '7. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
+  '7. LISTEN LOOP (HARD): while the visit is live, never end your turn without chat_wait. Use timeout:45000 (Cursor MCP often aborts longer tools). If chat_wait returns timedOut / listening / busy:chat-wait, call chat_wait again immediately in the SAME turn — loop. Cursor does not auto-wake on ScreenMirror inbox; ending the turn makes you deaf. Only stop listening after done/bye or disconnect.',
+  '8. When inbox.n > 0 or remind says the operator wrote: seen + typing + chat in session chat BEFORE any screen act. Editor transcript alone is not a reply.',
+  '9. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
 ].join('\n');
 
 // ---- how long a command may take -------------------------------------------------------------------------
@@ -598,16 +600,44 @@ const visitState = (v) => {
 async function exchange(v, cmd, ctx) {
   if (v.exited) return died(v);
   if (ctx.cancelled) return null;
-  // 1. a command this server stopped waiting for goes first -- its late answer rides on whatever this call answers
+  // 1. a command this server stopped waiting for goes first -- its late answer rides on whatever this call answers.
+  // LIVE MISS: Cursor MCP often kills long chat-wait (~60s) while the serve keeps listening; the next call then
+  // saw busy and the agent ended the turn. For a live chat-wait flight, keep waiting WITH progress heartbeats
+  // (keeps the editor client alive) until it settles, instead of a short refuse.
   if (v.flight) {
     const g = v.flight;
-    if (!g.settled) await Promise.race([g.done, sleep(FLIGHT_WAIT)]);
+    if (!g.settled) {
+      const resumeChat = g.cmd && g.cmd.do === 'chat-wait';
+      const waitMs = resumeChat ? Math.min(budgetFor(g.cmd), 120000) : FLIGHT_WAIT;
+      const tFlight = Date.now();
+      let beat = 0;
+      while (!g.settled && Date.now() - tFlight < waitMs) {
+        if (ctx.cancelled) break;
+        if (resumeChat && Date.now() - beat > 10000) {
+          beat = Date.now();
+          progress(ctx, 'still listening in session chat… ' + Math.round((Date.now() - tFlight) / 1000) + 's (prior chat-wait)');
+        }
+        await Promise.race([g.done, sleep(resumeChat ? 1000 : Math.min(1000, waitMs))]);
+      }
+    }
     if (!g.settled) {
       return told(v, errResult('the previous command (' + g.cmd.do + ') is still running on the machine: this server stopped waiting for it, and the serve takes one ' +
-        'command at a time. Nothing was sent -- try again shortly.', Object.assign({ busy: g.cmd.do, sent: false }, visitState(v))));
+        'command at a time. Nothing was sent -- try again shortly.', Object.assign({
+          busy: g.cmd.do, sent: false, listening: g.cmd.do === 'chat-wait',
+          remind: g.cmd.do === 'chat-wait'
+            ? 'Prior chat-wait still listening on the machine — call chat_wait again (timeout:45000). Do NOT end your turn.'
+            : undefined,
+        }, visitState(v))));
     }
     v.flight = null;
-    if (ranAfterAll(g)) v.late.push({ previous: g.cmd.do, answeredLate: g.answer });
+    if (ranAfterAll(g)) {
+      // If the caller asked for another chat-wait and the prior one timed out, fall through to start a new wait.
+      // If the prior one GOT a reply, hand that answer back immediately (operator already spoke).
+      if (cmd.do === 'chat-wait' && g.answer && g.answer.ok && g.answer.text) {
+        return told(v, await answerOf(v, g.cmd, g.answer));
+      }
+      v.late.push({ previous: g.cmd.do, answeredLate: g.answer });
+    }
     if (g.died) return told(v, died(v));
   }
   if (ctx.cancelled) return null;
@@ -622,6 +652,7 @@ async function exchange(v, cmd, ctx) {
   const f = handOver(v, cmd);
   const budget = budgetFor(cmd), t0 = Date.now(), shown = new Set();
   let stop = '', stopCode = '';
+  let beat = 0;
   while (!f.settled) {
     // a code a person must see: the line dropped (reconnect.json), or this asked for more access (access.json)
     for (const name of ['reconnect.json', 'access.json']) {
@@ -642,6 +673,11 @@ async function exchange(v, cmd, ctx) {
     if (stop) break;
     if (ctx.cancelled) { stop = 'cancelled'; break; }
     if (Date.now() - t0 > budget) { stop = 'timeout'; break; }
+    // Heartbeat: Cursor's MCP client aborts long tools (~60s) without progress; chat-wait/captcha must stay alive.
+    if ((cmd.do === 'chat-wait' || cmd.do === 'captcha' || cmd.do === 'confirm') && Date.now() - beat > 10000) {
+      beat = Date.now();
+      progress(ctx, (cmd.do === 'chat-wait' ? 'listening in session chat… ' : cmd.do + ' waiting… ') + Math.round((Date.now() - t0) / 1000) + 's');
+    }
     await Promise.race([f.done, sleep(100)]);
   }
   if (!f.settled) {
@@ -684,8 +720,14 @@ async function answerOf(v, cmd, a) {
     forget(v);
     more.push(textBlock({ ended: true, exit: v.exited ? v.exited.code : null, dir: v.dir }));
   }
+  // chat-wait timedOut is not a failure to surface-and-stop — it is "keep listening". Mark soft so the
+  // model is less likely to abort the turn; remind/hint on the payload already say to re-call.
+  const listenAgain = a && a.timedOut && a.listening && cmd.do === 'chat-wait';
+  if (listenAgain && !a.remind) {
+    a.remind = 'VISIT STILL LIVE — call chat_wait again NOW with timeout:600000. Do NOT end your turn.';
+  }
   const res = { content: [textBlock(a)].concat(more) };
-  if (!a || a.ok === false) res.isError = true;
+  if ((!a || a.ok === false) && !listenAgain) res.isError = true;
   return res;
 }
 

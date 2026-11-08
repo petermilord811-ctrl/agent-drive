@@ -1,10 +1,25 @@
 # Clinical Documentation Specialist — Healthcare Operations Assessment assessment
 
+### Bank
+
+- **captureStatus:** stub
 - **Captured:** PENDING-CAPTURE
+- **Gaps:** Bio / Instructions / Questions not captured
+- **Rule:** never Submit while fetching
+
+### Role
+
 - **Role:** Clinical Documentation Specialist
 - **Category:** Healthcare Ops
 - **Slug:** `clinical-documentation-specialist`
 - **Source:** DataAnnotation assessment UI
+
+### Contents
+
+1. [Bio](#bio)
+2. _(Steps pending)_
+
+---
 
 ## Bio
 
@@ -41,7 +56,12 @@ _Not captured yet. Open this role on Browse roles and fill Bio / Requirements / 
 
 <!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
 
-## Instructions
+---
+
+## Step 1 · Instructions
+
+**Step:** _pending_
+**Type:** info
 
 _pending_
 
@@ -49,11 +69,9 @@ _pending_
 
 _pending or omit_
 
-## Questions
+## Steps (pending)
 
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
 
 ## Question 1a
 

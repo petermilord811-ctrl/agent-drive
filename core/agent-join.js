@@ -2554,8 +2554,24 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && (Number(m.ts) || 0) >= since, ms));
           if (qa) closeAsk(qa.id);
           if (got) interrupt = null;   // the driver is attending to chat; let a paused plan resume
-          if (!got) reply({ ok: false, why: stopped || 'nobody answered in time', timedOut: !stopped });
-          else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
+          if (!got) {
+            // LIVE MISS: agent ended the Cursor turn after a short chat-wait; operator replied minutes later
+            // in session chat; ScreenMirror delivered fine but nothing was listening. timedOut is not "stop" —
+            // it is "listen again". Cap is 10 min per call; loop until they reply or say bye.
+            reply({
+              ok: false,
+              why: stopped || 'nobody answered in time',
+              timedOut: !stopped,
+              listening: true,
+              remind: !stopped
+                ? 'VISIT STILL LIVE — call chat_wait again NOW with timeout:600000. Do NOT end your turn. Ending the turn makes you deaf to session chat (Cursor does not auto-wake on ScreenMirror inbox). Loop until they reply or say done/bye.'
+                : undefined,
+              hint: !stopped
+                ? 'chat_wait {timeout:600000} immediately — never finish a turn while the visit is live without listening'
+                : undefined,
+              next: !stopped ? 'chat_wait {timeout:600000}' : undefined,
+            });
+          } else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
         } else if (cmd.do === 'captcha') {             // a CAPTCHA is for a PERSON: say so in chat, and wait for them
           // The agent never solves, bypasses or clicks through a CAPTCHA ("I'm not a robot", a picture puzzle): it is a
           // check that a person is there, and an agent passing it would be passing for one. 10002's plan had a step
@@ -3652,6 +3668,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       // THE INBOX RIDES EVERY ANSWER. The driver reads done.json after each command; attaching pending
       // operator mail here means it cannot run the next step without seeing it (FIX 3). n=0 when empty.
       if (r && typeof r === 'object') r.inbox = { n: unreadIds.length, latest: lastOp };
+      // LIVE MISS: unread sat while the driver finished a turn / kept acting — operator saw delivery but no reply.
+      // Force answer-in-session-chat before the next act (remind is acted on first per AGENTS / MCP instructions).
+      if (r && typeof r === 'object' && unreadIds.length && cmd.do !== 'chat' && cmd.do !== 'chat-img' && cmd.do !== 'seen' && cmd.do !== 'typing' && cmd.do !== 'chat-wait') {
+        r.remind = 'OPERATOR WROTE IN SESSION CHAT — call seen + typing + chat with your reply NOW before any screen act. Do not only answer in the editor transcript.';
+        if (!r.hint) r.hint = 'inbox.latest is waiting — answer there first';
+      }
       // ...and so does every name the verb table corrected, once, so the next command is written right
       if (fixedNotes.length && r && typeof r === 'object') { r.fixed = fixedNotes.slice(); fixedNotes = []; }
       // ...AND SO DOES THE PLAN (core/mission.js): which milestone is current, what will prove it, the step --

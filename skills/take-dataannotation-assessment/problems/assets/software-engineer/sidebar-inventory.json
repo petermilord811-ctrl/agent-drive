@@ -1,0 +1,20 @@
+{
+  "total": 11,
+  "current": 6,
+  "host": "34123",
+  "capturedAt": "2026-11-08",
+  "note": "LEAF rows only — PART/section headers are not steps",
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Question 1: Evaluating Programming Best Practices" },
+    { "step": 3, "label": "Question 2: Identifying a function's time and space efficiency" },
+    { "step": 4, "label": "Question 3: Coding Task Problem Solving" },
+    { "step": 5, "label": "Question 4: Side By Side Response Comparisons - General Replies" },
+    { "step": 6, "label": "Question 5: Side By Side Response Comparisons - Coding Replies" },
+    { "step": 7, "label": "Problem" },
+    { "step": 8, "label": "To verify that your code works..." },
+    { "step": 9, "label": "Professional Experience" },
+    { "step": 10, "label": "Programming Languages" },
+    { "step": 11, "label": "(Optional) Any other comments?" }
+  ]
+}

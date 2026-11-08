@@ -35,7 +35,9 @@
       "roles": ["Data Scientist", "Machine Learning Engineer"],
       "keywords": [
         "data scientist", "machine learning", "ml engineer", "deep learning", "pytorch",
-        "tensorflow", "nlp", "pandas", "spark", "feature engineering", "model training"
+        "tensorflow", "nlp", "pandas", "spark", "feature engineering", "model training",
+        "data science", "biomedical informatics", "clinical prediction", "pathology",
+        "laboratory medicine", "bioinformatics", "statistics", "python"
       ]
     },
     {
@@ -235,8 +237,9 @@
         "Computational Biologist"
       ],
       "keywords": [
-        "chemist", "chemistry", "physicist", "physics", "mathematician", "biologist",
-        "biology", "drug discovery", "computational biology", "lab research", "phd"
+        "chemist", "organic chemistry", "physical chemistry", "analytical chemistry",
+        "physicist", "physics", "mathematician", "biologist", "molecular biology",
+        "cell biology", "drug discovery", "computational biology", "lab research", "phd"
       ]
     },
     {
@@ -261,7 +264,8 @@
       "category": "Design",
       "roles": ["Designer"],
       "keywords": [
-        "designer", "ux", "ui", "figma", "product design", "graphic design", "brand"
+        "designer", "ux designer", "ui designer", "ux/ui", "figma", "product design",
+        "graphic design", "brand design", "user experience", "user interface"
       ]
     },
     {

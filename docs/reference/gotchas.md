@@ -33,6 +33,15 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - For a solved board, a **unique solution is the proof you read the givens correctly** — if the solver
   reports 0 or >1 solutions, re-read.
 
+## Session chat / listen loop
+- **Ending the Cursor turn = deaf.** ScreenMirror delivers operator messages to `chat.json` / inbox
+  fine; Cursor does **not** auto-wake on that inbox. Live miss (99588 / Daniel Herman): operator sent
+  “Start fetch” 3× (~3.7 min after a short `chat-wait`); all landed; agent silent until a later editor
+  message. Fix: loop `chat_wait {timeout:600000}` until they reply or say bye; `timedOut` → listen again,
+  never stop. Serve now returns `listening` + `remind` on timeout; PREFLIGHT must not teach “short chat_wait”.
+- **`inbox.n > 0` → answer in session chat first** (`seen` / `typing` / `chat`). Editor transcript alone
+  is not a reply the operator sees.
+
 ## Tooling
 - **`python -c` with newlines breaks the pyenv-win batch shim.** Use a script file with `python -I`.
 - `shot` is slow (first ~15s). Each `drive.js` call waits up to 30s; a long `plan` via `fill.js` waits
@@ -191,6 +200,12 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   re-catch diffs). Save **both** bio pages (overview + post-Continue intro; skip only No-LLMs line).
   After Start assessment, loop **all** steps; for answer-dependent UI, press each radio/checkbox and
   save each case; scroll clipped content / attach images; **never Submit** while fetching.
+- **Assessment click stack (34123, fixed 2026-11-07):** Mis-clicks were systematic — no sidebar/content
+  split (x≈320 hit left-nav → jumped to Q5), stale Next Y, `role` always returned col 0, Browse cards
+  need **`dbl`**. Use zone-safe `locate-click.py` (`zones|next|radio N|role`) on the *current* look;
+  never invent `lx/ly`; never dense-sweep the left third. Writing: radio → Tab → keys. Contract +
+  regression: `skills/take-dataannotation-assessment/CLICK.md`, `test-locate-click.py`. Omit anti-AI
+  bodies on Instructions + certify. SE + Generalist banks `nearly-full`.
 - **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:

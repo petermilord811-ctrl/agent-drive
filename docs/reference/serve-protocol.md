@@ -185,7 +185,7 @@ reaching for the text verbs on that host.
 |------|--------------|
 | `chat {text, to?}` | say it in this host's session chat — the room (all viewers), or `to:"<tag>"` for a DM |
 | `chat-img {file, text?, to?}` | post an **image** (a cropped screenshot) to the room. The driver prepares a small PNG/JPEG **file** (`vision/crop.py`); this inlines it as a `data:` URL, capped at ~45 KB — name the crop `.jpg` and crop.py shrinks it to fit, or it's rejected with the size. Posting one pays a result picture a finish still owes (see `status` `file`). |
-| `chat-wait {timeout?, since?}` | block for the next human reply (not the agent's own echo, not system notices). Use it right after `chat` to ask a question and wait for the answer. |
+| `chat-wait {timeout?, since?}` | block for the next human reply (not the agent's own echo, not system notices). Use it right after `chat` to ask a question and wait for the answer. Prefer `timeout:600000` while the visit is live. On `timedOut` the answer carries `listening:true` + `remind` — **call `chat-wait` again immediately**; never end the Cursor turn (the editor does not auto-wake on session inbox). |
 | `seen {ids?}` | mark the operator's message(s) **read** — posts a receipt so their chat shows "seen". No `ids` = all unread. The incoming ids are logged in `chat.json`. |
 | `typing {on}` | show / hide **"Claude typing…"** while you compose a reply. It repeats on a beat until you send a message (`chat`/`chat-img`/`done` clear it) or `typing {on:false}`. |
 | `inbox` | the operator's recent messages (every answer also carries `inbox:{n,latest}`) |

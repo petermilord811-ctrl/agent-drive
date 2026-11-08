@@ -1,0 +1,79 @@
+{
+  "ok": true,
+  "source": "D:\\5.AI\\DA assessments\\agent-drive\\skills\\take-dataannotation-assessment\\examples\\sample-answer-snippet.md",
+  "meta": {
+    "slug": "chemist",
+    "profileDir": "7-Dustin Woods-Chemistry",
+    "resume": "Dustin Woods, PhD.pdf",
+    "problems": "skills/take-dataannotation-assessment/problems/problems-chemist.md",
+    "bioMinutes": {
+      "min": 30,
+      "max": 60
+    },
+    "generated": "2026-11-08",
+    "status": "draft"
+  },
+  "leaves": [
+    {
+      "title": "Question 1: Evaluating Reaction Mechanisms",
+      "step": 2,
+      "stepOf": 12,
+      "confidence": 0.91,
+      "fieldCount": 2
+    },
+    {
+      "title": "Question 4: Gas Exchange and Molar Fractions",
+      "step": 5,
+      "stepOf": 12,
+      "confidence": 0.88,
+      "fieldCount": 1
+    }
+  ],
+  "actions": [
+    {
+      "id": "q1_choice",
+      "leaf": "Question 1: Evaluating Reaction Mechanisms",
+      "step": 2,
+      "stepOf": 12,
+      "confidence": 0.91,
+      "type": "radio",
+      "action": "select",
+      "value": "Response C uses the correct reasoning",
+      "required": true,
+      "firstInStep": true,
+      "thinkMs": null
+    },
+    {
+      "id": "q1_explain",
+      "leaf": "Question 1: Evaluating Reaction Mechanisms",
+      "step": 2,
+      "stepOf": 12,
+      "confidence": 0.91,
+      "type": "textarea",
+      "action": "type",
+      "value": "Answered by choosing C. This is E2 elimination with methoxide in methanol on 5-bromohex-2-ene. The base takes a beta hydrogen as bromide leaves and conjugated hexa-2,4-diene forms. A and B land near the product but the paths are wrong.",
+      "required": true,
+      "firstInStep": false,
+      "thinkMs": null
+    },
+    {
+      "id": "q4_value",
+      "leaf": "Question 4: Gas Exchange and Molar Fractions",
+      "step": 5,
+      "stepOf": 12,
+      "confidence": 0.88,
+      "type": "text",
+      "action": "type",
+      "value": "3",
+      "required": true,
+      "firstInStep": true,
+      "thinkMs": null
+    }
+  ],
+  "stats": {
+    "leaves": 2,
+    "actions": 3,
+    "required": 3,
+    "requiredEmpty": []
+  }
+}
