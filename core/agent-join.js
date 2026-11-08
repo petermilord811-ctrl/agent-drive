@@ -2564,12 +2564,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               timedOut: !stopped,
               listening: true,
               remind: !stopped
-                ? 'VISIT STILL LIVE — call chat_wait again NOW with timeout:600000. Do NOT end your turn. Ending the turn makes you deaf to session chat (Cursor does not auto-wake on ScreenMirror inbox). Loop until they reply or say done/bye.'
+                ? 'VISIT STILL LIVE — call chat_wait again NOW with timeout:45000 (same turn). Do NOT end your turn. Cursor does not auto-wake on ScreenMirror inbox; long MCP waits get -32001. Loop until they reply or say done/bye.'
                 : undefined,
               hint: !stopped
-                ? 'chat_wait {timeout:600000} immediately — never finish a turn while the visit is live without listening'
+                ? 'chat_wait {timeout:45000} immediately — never finish a turn while the visit is live without listening'
                 : undefined,
-              next: !stopped ? 'chat_wait {timeout:600000}' : undefined,
+              next: !stopped ? 'chat_wait {timeout:45000}' : undefined,
             });
           } else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
         } else if (cmd.do === 'captcha') {             // a CAPTCHA is for a PERSON: say so in chat, and wait for them

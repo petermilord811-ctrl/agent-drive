@@ -724,7 +724,7 @@ async function answerOf(v, cmd, a) {
   // model is less likely to abort the turn; remind/hint on the payload already say to re-call.
   const listenAgain = a && a.timedOut && a.listening && cmd.do === 'chat-wait';
   if (listenAgain && !a.remind) {
-    a.remind = 'VISIT STILL LIVE — call chat_wait again NOW with timeout:600000. Do NOT end your turn.';
+    a.remind = 'VISIT STILL LIVE — call chat_wait again NOW with timeout:45000. Do NOT end your turn.';
   }
   const res = { content: [textBlock(a)].concat(more) };
   if ((!a || a.ok === false) && !listenAgain) res.isError = true;

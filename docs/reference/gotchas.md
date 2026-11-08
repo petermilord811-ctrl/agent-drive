@@ -37,8 +37,10 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **Ending the Cursor turn = deaf.** ScreenMirror delivers operator messages to `chat.json` / inbox
   fine; Cursor does **not** auto-wake on that inbox. Live miss (99588 / Daniel Herman): operator sent
   “Start fetch” 3× (~3.7 min after a short `chat-wait`); all landed; agent silent until a later editor
-  message. Fix: loop `chat_wait {timeout:600000}` until they reply or say bye; `timedOut` → listen again,
-  never stop. Serve now returns `listening` + `remind` on timeout; PREFLIGHT must not teach “short chat_wait”.
+  message. Fix: loop `chat_wait {timeout:45000}` in the same turn until they reply or say bye;
+  `timedOut` / `busy` / MCP `-32001` → listen again, never stop. (A single `timeout:600000` also failed:
+  Cursor killed the MCP call while serve kept listening → `busy:chat-wait`.) Serve returns `listening` +
+  `remind`; MCP heartbeats every 10s on chat-wait; PREFLIGHT must not abandon the listen loop.
 - **`inbox.n > 0` → answer in session chat first** (`seen` / `typing` / `chat`). Editor transcript alone
   is not a reply the operator sees.
 
