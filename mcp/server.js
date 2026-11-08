@@ -39,7 +39,7 @@ const KIT = path.join(__dirname, '..');
 // the client a visit runs: the kit's own (SM_MCP_CLIENT points a test at a stand-in that speaks the serve's files)
 const CLIENT = process.env.SM_MCP_CLIENT ? path.resolve(process.env.SM_MCP_CLIENT) : path.join(KIT, 'core', 'agent-join.js');
 const verbs = require(path.join(KIT, 'core', 'verbs.js'));
-const { putCmd, budgetOf } = require(path.join(KIT, 'core', 'cmd-file.js'));
+const { putCmd, budgetOf, typingMs } = require(path.join(KIT, 'core', 'cmd-file.js'));
 
 const SERVER = { name: 'agent-drive', title: 'ScreenMirror agent-drive', version: '1.0.0' };
 // THE ICON (MCP 2025-11-25 `icons`): ScreenMirror's own mark, so a client that draws a server's icon -- beside its tool
@@ -287,7 +287,7 @@ function intakeCall(args) {
 // captcha, done, think, access, undo), and ~18,000 tokens on every turn. So the verbs a job is made of are tools, the
 // ones the rules require first, and the rest are reached through ONE tool, `more {do:"<verb>", ...}` -- the same verb,
 // the same checks. SM_MCP_TOOLS=all brings back a tool per verb, for a client with no such limit.
-const CORE = ['look', 'click', 'keys', 'press', 'chord', 'open', 'scroll', 'clickText', 'dbl', 'right', 'find', 'ocr', 'wait', 'plan',
+const CORE = ['look', 'click', 'keys', 'press', 'chord', 'open', 'scroll', 'clickText', 'dbl', 'right', 'find', 'ocr', 'probe', 'wait', 'plan',
   'chat', 'chat-wait', 'inbox', 'status', 'think', 'confirm', 'captcha', 'mission', 'done', 'access', 'undo', 'exec', 'terminal', 'ping'];
 const ALL_TOOLS = /^all$/i.test(String(process.env.SM_MCP_TOOLS || ''));
 const toolName = (verb) => { const n = String(verb).replace(/-/g, '_'); return n === 'connect' || n === 'disconnect' || n === 'intake' || n === 'more' ? 'do_' + n : n; };
@@ -311,7 +311,7 @@ const INSTRUCTIONS = [
   '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size. Not pressed yet (waiting): call connect again with the same host to keep waiting. A request in plain words ("connect 10004 and do my sticky notes")? intake {text} reads it into connect\'s fields and finds the skill that does it.',
   '2. EVERY other call names its machine: host (the number you connected to). This server may be shared with other agents (an editor\'s chats share it), so a call never goes to a machine it did not name. Never disconnect a visit you did not open.',
   '3. The verbs a job is made of are tools (a "-" in a verb is "_" here: chat_wait); every other verb is more {do:"<verb>", host, ...}. look returns the picture inline. To click a button, a field, a box to tick or a link: look {marks:true} -- each gets a number on the picture -- and click {mark:N}, with nothing to estimate. Otherwise click what you see in the look\'s own pixels with click {lx,ly}. A click from a look is checked against the screen first and says what it hit (hit, near, snapped, moved): when hit is not what you meant, look again instead of clicking near it again. Any acting verb takes look:{} to act and see in one call.',
-  '4. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); room (what the people watching did on the board: a pause, a stop, an answer, an undo -- act on it first); paused / hold / approval (wait in chat_wait, then send again); pending (still running on the machine: ping {host} collects its answer); remind and hint (do those first).',
+  '4. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (new: what the operator wrote since your last answer -- answer in chat); room (what the people watching did on the board: a pause, a stop, an answer, an undo -- act on it first); paused / hold / approval (wait in chat_wait, then send again); pending (still running on the machine: ping {host} collects its answer); remind and hint (do those first).',
   '5. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '6. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply -- it listens about ' + LISTEN_S + ' s a call, so call it again while you wait.',
   '7. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
@@ -333,7 +333,8 @@ function stepMs(c) {
     case 'exec': ms = clamp(t || 30000, 1000, 120000) + 2000; break;
     case 'ping': ms = clamp(t || 6000, 1000, 20000); break;
     case 'pause': ms = clamp(Number(c.ms) || 0, 0, 30000); break;
-    case 'open': ms = (Number(c.wait) || 2500) + 5000; break;
+    case 'open': ms = (Number(c.wait) || 2500) + 5000 + typingMs(c); break;
+    case 'keys': ms = 5000 + typingMs(c); break;   // typing like a person takes a person's time (core/cmd-file.js)
     case 'spotlight': case 'beam': ms = c.forever ? 1800000 : 90000; break;
     // a preview, a checkpoint and `ask` wait for the ROOM (60 s by default); an achieve at a checkpoint may poll its
     // check and then ask, so it gets both
@@ -635,24 +636,35 @@ async function waitAllowed(v, ctx, again) {
 // this server stops waiting for -- out of time, or the call was cancelled -- is TAKEN BACK if the serve has not read
 // it yet (it then never runs), else it is left running as `flight` and the next call waits for its answer first,
 // so an answer can never be mistaken for the next command's.
+let cidSeq = 0;
 function handOver(v, cmd) {
   const outFile = path.join(v.dir, 'done.json');
   try { fs.unlinkSync(outFile); } catch (_) {}
+  // ITS OWN ID, echoed on its answer by the serve: an answer that carries another command's id is that one's, late
+  if (cmd.cid == null) cmd.cid = (process.pid % 10000) * 1000000 + (++cidSeq % 1000000);
   putCmd(path.join(v.dir, 'cmd.json'), cmd);
   const f = { cmd, at: Date.now(), settled: false, answer: null, died: false, takenBack: 0 };
   f.done = new Promise((resolve) => {
     let same = 0, last = '';
     const settle = () => { f.settled = true; resolve(f); };
     const tick = () => {
-      let txt = '';
+      let txt = '', other = false;
       try { txt = fs.readFileSync(outFile, 'utf8'); } catch (_) {}
       if (txt) {
-        try { f.answer = JSON.parse(txt); return settle(); } catch (_) {}
-        // caught half-written (the serve writes it in place): read again -- unless it stays broken
-        same = txt === last ? same + 1 : 0; last = txt;
-        if (same > 50) { f.answer = { ok: false, why: 'the answer in done.json could not be read: ' + txt.slice(0, 200) }; return settle(); }
-      } else if (f.takenBack && Date.now() - f.takenBack > TAKE_BACK_GRACE) return settle();
-      else if (v.exited) { f.died = true; return settle(); }
+        let a, parsed = false;
+        try { a = JSON.parse(txt); parsed = true; } catch (_) {}
+        if (parsed && a && typeof a === 'object' && a.cid != null && a.cid !== cmd.cid) other = true;   // another command's answer, late
+        else if (parsed) { f.answer = a; if (a && typeof a === 'object') delete a.cid; return settle(); }
+        else {
+          // caught half-written (the serve writes it in place): read again -- unless it stays broken
+          same = txt === last ? same + 1 : 0; last = txt;
+          if (same > 50) { f.answer = { ok: false, why: 'the answer in done.json could not be read: ' + txt.slice(0, 200) }; return settle(); }
+        }
+      }
+      if (!txt || other) {
+        if (f.takenBack && Date.now() - f.takenBack > TAKE_BACK_GRACE) return settle();
+        if (v.exited) { f.died = true; return settle(); }
+      }
       setTimeout(tick, 40);
     };
     tick();

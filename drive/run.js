@@ -20,7 +20,7 @@
 // predicate to check after (pass the predicate, with or without a wrapping {until:...}); `shot` = a path to
 // capture after; `note` = the live line. No dependencies; same cmd/done channel as drive.js / plan.js.
 const fs = require('fs'), path = require('path');
-const { putCmd } = require('../core/cmd-file.js');
+const { exchangeAsync } = require('../core/cmd-file.js');
 const [dir, src] = process.argv.slice(2);
 if (!dir || !src) { console.error('usage: node run.js <work-dir> <recipe.json | inline-json>'); process.exit(2); }
 let recipe;
@@ -42,13 +42,8 @@ const markAt = (sel) => {   // linear pre-order position: before=done, this+ance
 };
 const markWarn = (sel) => { if (sel == null) return; const rows = flat(tree, [], []), s = String(sel).toLowerCase(); const r = rows.find((x) => String(x.n.t || '').toLowerCase().includes(s)); if (r) r.n.s = 'warn'; };
 
-const budgetOf = (c) => { const b = Number(c.timeout) || 0; if (c.do === 'chat-wait') return (b || 120000) + 8000; if (c.do === 'plan' || c.do === 'strokes' || c.do === 'stroke') return Math.max(130000, b + 8000); return 35000; };
-const runCmd = (c) => new Promise((resolve, reject) => {
-  try { fs.unlinkSync(outFile); } catch (_) {}
-  putCmd(cmdFile, c);   // atomic: no mid-write read
-  const t0 = Date.now(), budget = budgetOf(c);
-  (function w() { if (fs.existsSync(outFile)) { let r = null; try { r = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch (_) {} resolve(r || {}); return; } if (Date.now() - t0 > budget) { reject(new Error('TIMEOUT ' + Math.round(budget / 1000) + 's')); return; } setTimeout(w, 80); })();
-});
+// each command with its own id, its answer the one that carries it back, its time the shared table's (core/cmd-file.js)
+const runCmd = (c) => exchangeAsync(dir, c).then((a) => (a.o && typeof a.o === 'object' ? a.o : { ok: false, why: 'the answer could not be read' }));
 const sendStatus = (note, extra) => runCmd(Object.assign({ do: 'status', tree }, note ? { text: String(note) } : {}, extra || {}));
 // Every step command runs QUIET so the serve loop's generic auto-phrase ("Clicking") can never stomp the
 // tree this recipe is driving. (The serve loop also suppresses the phrase while a tree is active, so this

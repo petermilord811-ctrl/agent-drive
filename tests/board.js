@@ -9,7 +9,7 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.error('  FAIL: ' + 
 
 // ---- every button's line reads back as what it asks, with the question it answers --------------------------------
 {
-  const kinds = ['pause', 'resume', 'stop-task', 'stop-after', 'end', 'yes', 'no', 'solved', 'undo', 'skip', 'redo', 'autonomy', 'save-skill', 'run-again', 'schedule', 'nudge'];
+  const kinds = ['pause', 'resume', 'stop-task', 'stop-after', 'end', 'yes', 'no', 'solved', 'undo', 'skip', 'redo', 'autonomy', 'save-skill', 'run-again', 'schedule', 'nudge', 'why'];
   for (const k of kinds) {
     const line = BD.markText(k, { q: 'q7', step: 'Attach the file', id: 'c3', mode: 'risky', when: 'every day at 09:00' });
     const p = BD.parseMark(line);
@@ -25,6 +25,24 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.error('  FAIL: ' + 
   const ys = BD.parseMark(BD.markText('yes', { q: 'q2' }));
   ok(ys.kind === 'yes' && ys.q === 'q2' && ys.arg === '', 'a yes answers its question and carries nothing more');
   ok(BD.parseMark(BD.markText('schedule', { when: 'weekdays at 08:30' })).arg === 'weekdays at 08:30', 'a schedule carries when');
+}
+
+// ---- "why this step?", and a line for ONE visit (two agents on one machine) -----------------------------------------
+{
+  const w = BD.parseMark(BD.markText('why', { step: 'Fill in the form', vt: '7f2a' }));
+  ok(!!w && w.kind === 'why' && w.step === 'Fill in the form' && w.vt === '7f2a', 'a why names its step, and its visit (' + JSON.stringify(w) + ')');
+  ok(BD.parseMark(BD.markText('why', {})).step === '' && /this step/.test(BD.markText('why', {})), '...or, with none, is about this step');
+  for (const k of ['pause', 'resume', 'stop-task', 'stop-after', 'end', 'undo', 'skip', 'redo', 'autonomy', 'save-skill', 'run-again', 'schedule', 'nudge']) {
+    const p = BD.parseMark(BD.markText(k, { vt: 'ab12', step: 'Attach the file', id: 'c3', mode: 'risky', when: 'every day at 09:00' }));
+    ok(!!p && p.kind === k && p.vt === 'ab12', k + ' carries the visit it is for');
+  }
+  ok(BD.parseMark(BD.markText('pause', {})).vt === '', 'a line with no visit tag is for every agent on the machine, as before');
+  const y = BD.parseMark(BD.markText('yes', { q: 'q3@7f2a' }));
+  ok(y.q === 'q3@7f2a' && y.vt === '7f2a', 'a yes names its question with its visit: [q3@7f2a]');
+  ok(BD.sameQ('q3@7f2a', 'q3@7f2a'), 'the same question is the same question');
+  ok(!BD.sameQ('q3@aaaa', 'q3@7f2a'), 'another visit\'s q3 is NOT this visit\'s q3 (each counts from q1)');
+  ok(BD.sameQ('q3', 'q3@7f2a') && !BD.sameQ('q4', 'q3@7f2a'), 'an older panel\'s untagged q3 still answers q3, and only q3');
+  ok(!BD.sameQ('', 'q3@7f2a') && !BD.sameQ('q3@7f2a', ''), 'no id answers nothing');
 }
 
 // ---- only a mark makes a request: words alone, a mark later in the line, or another emoji do not -------------------

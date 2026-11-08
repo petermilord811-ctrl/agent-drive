@@ -345,9 +345,15 @@ function open(url, via) {
     // that overtook an earlier one waited behind it -- and if that earlier wait timed out, sat queued until some
     // unrelated message happened to arrive.)
     const deliver = (o) => {
+      // WHEN IT CAME, by this machine's clock: a reply window opened here is measured against this, never against the
+      // relay's own timestamp -- a relay clock a few seconds off made a quick "no" to a confirm unheard (ours ahead), or
+      // an earlier "yes" count as the answer to a new question (ours behind)
+      if (o && typeof o === 'object') { try { Object.defineProperty(o, 'at', { value: Date.now(), enumerable: false, writable: true }); } catch (_) {} }
       for (const t of taps) { try { t(o); } catch (_) {} }
       const k = waiters.findIndex((w) => { try { return !!w.pred(o); } catch (_) { return false; } });
-      if (k < 0) { queue.push(o); return; }
+      // ...and what nobody waited for is kept for the next waitFor -- the newest few hundred, not a whole visit's worth
+      // (pointer frames and roster updates piled up for hours, and every wait scanned them all)
+      if (k < 0) { queue.push(o); if (queue.length > 400) queue.splice(0, queue.length - 400); return; }
       const w = waiters.splice(k, 1)[0];
       clearTimeout(w.timer); w.done(o);
     };
@@ -361,7 +367,8 @@ function open(url, via) {
       if (deadCb) { try { deadCb(deadReason); } catch (_) {} }
     };
     sock.on('error', (e) => { if (!up) reject(e); else died('the connection failed: ' + e.message); });
-    sock.on('close', () => { died('the connection closed'); });
+    // closed before it was ever up: the open fails (it used to hang for ever -- a redial, an access card, waiting on it)
+    sock.on('close', () => { if (!up) reject(new Error('the relay closed the connection before it was open')); died('the connection closed'); });
     sock.on('data', (d) => {
       buf = Buffer.concat([buf, d]);
       if (!up) {
@@ -408,10 +415,13 @@ function open(url, via) {
       // reconnect rather than killing the process from under a half-finished command.
       send: (o) => { try { sock.write(frame(JSON.stringify(o))); } catch (_) {} },
       close: () => { try { sock.end(); } catch (_) {} },
+      // ...and at once, for a redial: a graceful close on a half-open socket waits for a FIN that may never come
+      kill: () => { try { sock.destroy(); } catch (_) {} died('closed here, to dial again'); },
       on: (fn) => { taps.push(fn); },
       waitFor: (pred, ms) => new Promise((res) => {
         const i = queue.findIndex(pred);
         if (i >= 0) return res(queue.splice(i, 1)[0]);
+        if (deadReason) return res(null);   // a dead socket answers nothing: say so now, not after the whole wait
         const w = { pred, done: res };
         w.timer = setTimeout(() => { const k = waiters.indexOf(w); if (k >= 0) { waiters.splice(k, 1); res(null); } }, ms || 15000);
         waiters.push(w);
@@ -701,10 +711,20 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
   // the code goes in a FILE too (<serve-dir>/join.json), as a reconnect's does: a program driving this
   // (mcp/server.js) reads it there instead of parsing what this prints
   const joinFile = SERVE ? path.join(SERVE, 'join.json') : '';
+  // ...AND WHILE IT WAITS FOR ALLOW: a card whose driver has gone must not be pressable (it used to be let in, and
+  // only then notice and hand the grant back). Leaving closes the socket, and the relay drops the code with it.
+  let preWatch = null;
+  if (PARENT_PID) {
+    preWatch = setInterval(() => {
+      try { process.kill(PARENT_PID, 0); } catch (e) { if (e && e.code === 'ESRCH') { say('[.] the program driving this visit is gone -- not waiting for Allow any more'); process.exit(0); } }
+    }, 2000);
+    if (preWatch.unref) preWatch.unref();
+  }
   const dialed = await dialAndJoin(RELAYS, (code, relay) => {
     showCode(code, relay);
     if (joinFile) { try { fs.mkdirSync(SERVE, { recursive: true }); fs.writeFileSync(joinFile, JSON.stringify({ code, relay, host: HOST, at: Date.now() })); } catch (_) {} }
   }, false);
+  if (preWatch) clearInterval(preWatch);
   if (joinFile) { try { fs.unlinkSync(joinFile); } catch (_) {} }
   if (!dialed.ok) die(dialed.code || 1, dialed.why);
   // `ws` is a `let`: in serve mode a dropped socket is replaced in place by reconnect() below.
@@ -731,7 +751,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     }, 2000);
     if (parentWatch.unref) parentWatch.unref();
   }
-  process.on('SIGINT', () => { say('\n[.] handing the grant back'); leave(); setTimeout(() => process.exit(0), 300); });
+  // STOPPED, NOT ONLY INTERRUPTED: a SIGTERM (a parent stopping it, a service manager), a closed console window or
+  // Ctrl+Break hands the grant back and exits the same way -- through 'exit', so this visit's pictures are deleted too
+  // (a stop used to skip that and leave them)
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
+    try { process.on(sig, () => { say('\n[.] handing the grant back (' + sig + ')'); leave(); setTimeout(() => process.exit(0), 300); }); } catch (_) {}
+  }
   say('[+] machine ' + HOST + ' is open' + (WANT_CONTROL ? ' (with the keyboard and mouse)' : ' (watching only)') +
       (WANT_SHELL ? ' and may run commands' : ''));
 
@@ -953,6 +978,13 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // typing..." ping and the receipt are what make the agent read as a real participant when it answers
     // mid-task; both are logged into chat.json's `id` so the driver can target one if it wants.
     let unreadIds = [];
+    // ...and the lines themselves (a person's own words, never the board's buttons): handed to the driver with its next
+    // answer as inbox.new -- every one, not only the newest -- and when it was last handed an answer (chat-wait listens
+    // from there)
+    let unreadRecs = [], lastAnswerAt = 0;
+    // THIS VISIT'S TAG (core/board.js): on its questions' ids and its board frames, so with two agents on one machine a
+    // press on one's panel -- an answer, a pause -- is not one for the other
+    const VTAG = crypto.randomBytes(2).toString('hex');
     let typingTimer = 0;
     const stopTyping = () => { if (typingTimer) { clearInterval(typingTimer); typingTimer = 0; } };
     // FIX 3 -- the agent must SEE and HONOR the operator. `interrupt` is set the moment an operator (not
@@ -996,7 +1028,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       let lines = []; try { lines = String(fs.readFileSync(chatFile, 'utf8')).trim().split(/\n+/); } catch (_) { return []; }
       const out = [];
       for (const ln of lines) { let r; try { r = JSON.parse(ln); } catch (_) { continue; }
-        if (r && !r.mine && !r.system && r.text) out.push({ id: r.id || '', name: r.name || '', text: String(r.text), ts: r.ts || 0, dm: !!r.to }); }
+        if (r && !r.mine && !r.system && r.text) out.push({ id: r.id || '', from: r.from || '', name: r.name || '', text: String(r.text), ts: r.ts || 0, at: r.at || r.ts || 0, dm: !!r.to }); }
       return out.slice(-20);
     };
     // the kit's skills, read once per visit for skillAsked (a new skill mid-visit is seen by the next visit)
@@ -1010,17 +1042,28 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
     const onChat = (o) => {
       if (!o || o.type !== 'chat') return;
-      const rec = { ts: Number(o.ts) || Date.now(), id: String(o.id || ''), from: String(o.from || ''), name: String(o.name || ''),
+      const rec = { ts: Number(o.ts) || Date.now(), at: Number(o.at) || Date.now(), id: String(o.id || ''), from: String(o.from || ''), name: String(o.name || ''),
                     text: String(o.text || ''), to: o.to ? String(o.to) : '',
                     mine: String(o.name || '') === selfName, system: !!o.system };
-      if (!rec.mine && !rec.system && rec.text) {
+      // THE BOARD'S BUTTONS speak with a mark (core/board.js) -- and one that names ANOTHER visit on this machine is that visit's
+      const mk = (!rec.mine && !rec.system) ? board.parseMark(rec.text) : null;
+      const forOther = !!(mk && mk.vt && mk.vt !== VTAG);
+      if (!rec.mine && !rec.system && rec.text && !mk) {
+        // A PERSON'S OWN WORDS: handed to the driver (inbox), which answers in chat
         if (rec.id) unreadIds.push(rec.id);
-        lastOp = { id: rec.id, name: rec.name, text: rec.text, ts: rec.ts, dm: !!rec.to };
+        unreadRecs.push({ id: rec.id, name: rec.name, text: clipS(rec.text, 600), at: rec.at, dm: !!rec.to });
+        if (unreadRecs.length > 20) unreadRecs.splice(0, unreadRecs.length - 20);
+        lastOp = { id: rec.id, name: rec.name, text: rec.text, ts: rec.ts, at: rec.at, dm: !!rec.to };
         // A NEW JOB IN PLAIN WORDS ("now do my sticky notes")? The skill that already does it rides the inbox, so the
         // driver reads it before working the job out from nothing (core/intake.js; a "yes" or a "thanks" names none)
         const sk = skillAsked(rec.text);
         if (sk) lastOp.skill = sk;
-        interrupt = lastOp;   // a running plan / command loop breaks so the driver can read + answer this
+        interrupt = lastOp;   // a running plan / typing run breaks so the driver can read + answer this
+      } else if (mk && !forOther && (mk.kind === 'stop-task' || mk.kind === 'skip' || mk.kind === 'redo')) {
+        // A BUTTON is handled by the serve itself (onMark) and reaches the driver as `room` -- never as the operator's
+        // words, and never an interruption but for these, which are about the work in hand: a "why?", a 👋 or the dial
+        // cut a field mid-typing and a plan mid-step, and the board counted it as a failure
+        interrupt = { id: rec.id, name: rec.name, text: rec.text, ts: rec.ts, at: rec.at, mark: mk.kind };
       }
       // The agent's OWN lines are logged where they are sent (with what they were: a finish report, a picture, a
       // mission note); the relay's echo of each one was logged a second time here, so chat.json said everything twice.
@@ -1030,10 +1073,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       // someone watching, and the client honours it ITSELF -- stopNow ends the run and hands control back --
       // rather than only setting an interrupt the driver has to notice (which is why Stop "did nothing"
       // when the driver was busy). Plain "stop" TEXT stays a judgement call for the driver.
-      const mk = (!rec.mine && !rec.system) ? board.parseMark(rec.text) : null;
-      if (!rec.mine && !rec.system && /^\s*⛔/.test(rec.text)) stopNow('the operator pressed Stop in the panel');
+      if (!rec.mine && !rec.system && !forOther && /^\s*⛔/.test(rec.text)) stopNow('the operator pressed Stop in the panel');
       // THE BOARD'S OTHER BUTTONS (core/board.js): honoured the same self-handled way, the moment they arrive (onMark)
-      else if (mk) { try { onMark(mk, rec); } catch (e) { say('[!] board: ' + ((e && e.message) || e)); } }
+      else if (mk && !forOther) { try { onMark(mk, rec); } catch (e) { say('[!] board: ' + ((e && e.message) || e)); } }
+      else if (mk) { /* another visit's button: nothing for this one */ }
       // THE SIGN-OFF QUESTION answered. When a task finishes the client posts "… shall I sign off?" (the
       // fin edge below) and the panel sits GREEN (lastDrive.fin === 1). If the operator answers THAT with a
       // sign-off while it is still green, honour it HERE the same self-handled way as Stop -- otherwise the
@@ -1051,6 +1094,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text: bye, mine: true, sent: true }) + '\n');
         } catch (_) {}
         stopNow('the operator asked to sign off in chat');
+      }
+      // A TYPED yes / no to the question on the panel that nobody waits on -- an approval, a checkpoint -- settles it as
+      // its button would (they took buttons only: a typed "yes" left acting commands refused). Who may say yes is the same.
+      else if (!rec.mine && !rec.system && !mk && ask && !ask.waited && (ask.k === 'step' || ask.k === 'checkpoint')) {
+        const said = consent.confirmReply(rec.text);
+        if (said === 'yes' || said === 'no') { try { onMark({ kind: said, q: ask.id, vt: '' }, rec); } catch (_) {} }
       }
     };
     // TELLING THE WATCHERS WHAT IT IS DOING. `drive-status` is one short line the relay fans out to this
@@ -1098,13 +1147,13 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     //                         as a skill, schedule it): run between the driver's commands, never inside one
     //   roomNotes             what the driver must hear about all of it, on its next answer (`room`)
     let paused = null, hold = null, mode = 'auto', ask = null, askSeq = 0, approval = null, cpAsk = '', cpStep = '';
-    let inviter = '', lockOn = false, failsThisTask = 0, inFlight = false, lastCmdAt = 0, lastCmdEnd = 0, lastSaid = { text: '', ts: 0 }, lastDraft = null;
+    let inviter = '', lockOn = false, failsThisTask = 0, inFlight = false, curVerb = '', lastCmdAt = 0, lastCmdEnd = 0, lastSaid = { text: '', ts: 0 }, lastDraft = null;
     const roomJobs = [], roomNotes = [];
     const APPROVE = board.approvals();
     const TS = board.timeSplit(Date.now());
     const clipS = (s, n) => { const t = String(s == null ? '' : s).replace(/\*\*/g, '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
     // a question on the panel: what it asks, and the id its buttons answer by
-    const openAsk = (k, q, extra) => { ask = Object.assign({ k, q: clipS(q, 300), id: 'q' + (++askSeq) }, extra || {}); try { sendDrive(); } catch (_) {} return ask; };
+    const openAsk = (k, q, extra) => { ask = Object.assign({ k, q: clipS(q, 300), id: 'q' + (++askSeq) + '@' + VTAG }, extra || {}); try { sendDrive(); } catch (_) {} return ask; };
     const closeAsk = (id) => { if (ask && (!id || ask.id === id)) { ask = null; try { sendDrive(); } catch (_) {} } };
     // A YES IS THE INVITER'S: the person who let the agent in (the relay names them in `agent-grant`) answers the panel's
     // questions; anyone's NO still counts -- a cancel always wins. An inviter not known (an older relay): anyone, as before.
@@ -1113,7 +1162,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (paused || stopped) return false;
       paused = { by: clipS(by || 'someone watching', 60), at: Date.now() };
       if (why) paused.why = clipS(why, 60);
-      if (!interrupt) interrupt = lastOp || { id: '', name: paused.by, text: '⏸', ts: Date.now() };   // a running batch stops at its next step
+      if (!interrupt) interrupt = { id: '', name: paused.by, text: '⏸', ts: Date.now(), at: Date.now(), mark: 'pause' };   // a running batch stops at its next step
       // the person can drive now: an exclusive hold the agent took is let go of (it is the room's machine first)
       if (lockOn) { try { ws.send({ type: 'control-lock', on: false }); } catch (_) {} lockOn = false; }
       try { roomNote('**Paused** — ' + (why ? paused.by + ' ' + why + '. ' : '') + 'I won’t touch anything until you say “▶ Go on”.'); } catch (_) {}
@@ -1124,18 +1173,66 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // A STEP ENDED (a new one declared, or a mission's next milestone): "stop after this step" becomes a stop, and the dial's
     // 'checkpoints' mode asks the room before the next step's first action -- a mission asks through its own checkpoints
     // (the achieve below), so only a step declared by hand is asked about here
-    const stepEnded = (next, fromMission) => {
-      if (hold && hold.k === 'after') {
-        hold = { k: 'task', step: hold.step, by: hold.by };
-        try { roomNote('**“' + hold.step + '” is done — stopping here, as ' + hold.by + ' asked.**'); } catch (_) {}
-        roomNotes.push('STOP: “' + hold.step + '” ended, and ' + hold.by + ' asked you to stop after it -- report what is done (status {fin:1, say}), then wait in chat');
-        try { sendDrive(); } catch (_) {}
+    // the step and the sub-step on the panel now -- what "stop after “…”" names -- and whether a name is that step
+    let stepNow = '', subNow = '';
+    const normStep = (t) => String(t || '').toLowerCase().replace(/[“”"'.]/g, '').replace(/\s+/g, ' ').trim();
+    const sameStep = (a, b) => { a = normStep(a); b = normStep(b); return !!a && !!b && (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0); };
+    // "stop after" takes hold: the step it named has ended
+    const stopAfterNow = () => {
+      hold = { k: 'task', step: hold.step, by: hold.by };
+      try { roomNote('**“' + hold.step + '” is done — stopping here, as ' + hold.by + ' asked.**'); } catch (_) {}
+      roomNotes.push('STOP: “' + hold.step + '” ended, and ' + hold.by + ' asked you to stop after it -- report what is done (status {fin:1, say}), then wait in chat');
+      try { sendDrive(); } catch (_) {}
+    };
+    const stepEnded = (next, fromMission, level) => {
+      const sub = level === 'sub';
+      const endedStep = sub ? '' : stepNow, endedSub = subNow;
+      if (sub) subNow = clipS(next || '', 90); else { stepNow = clipS(next || '', 90); subNow = ''; }
+      // the stop the room asked for after a NAMED step takes hold when that step -- or a sub-step of that name -- ends; a
+      // sub-step moving on inside a milestone is not the milestone ending (it used to stop there, mid-milestone)
+      const named = hold && hold.k === 'after' ? String(hold.step || '') : '';
+      const anyStep = !named || /^(this step|the current step)$/i.test(named);
+      const ended = sub ? endedSub : endedStep;
+      if (hold && hold.k === 'after' && (anyStep ? !!(ended || !sub) : (sameStep(named, ended) || (!sub && sameStep(named, endedSub))))) {
+        stopAfterNow();
       } else if (mode === 'checkpoints' && !fromMission && !cpAsk && cpStep && next && next !== cpStep) {
         const a = openAsk('checkpoint', '“' + cpStep + '” is done. Shall I go on with “' + next + '”?');
         cpAsk = a.id;
         roomNotes.push('CHECKPOINT: the room is asked before “' + next + '”; acting commands wait for their yes (chat-wait)');
       }
       if (next) cpStep = clipS(next, 90);
+    };
+    // WHO IS LISTENING -- the board's badge, and the answer to 👋: working on a command; listening (waiting on the room: a
+    // reply, a question, a CAPTCHA, a new Allow); thinking (between commands, under a minute); away (no command for a
+    // minute: the driver's editor may have ended its turn -- a message waits until it is next prompted). It used to say
+    // "thinking about the next step" for an agent that had gone quiet for good.
+    const WAITING_ON_ROOM = new Set(['chat-wait', 'confirm', 'captcha', 'access']);
+    const listening = () => {
+      if (inFlight) return WAITING_ON_ROOM.has(curVerb) || (ask && ask.waited) ? 'listening' : 'working';
+      return lastCmdEnd && Date.now() - lastCmdEnd >= 60000 ? 'away' : 'thinking';
+    };
+    const listenWords = () => {
+      if (paused) return 'paused by ' + paused.by;
+      const l = listening(), quiet = lastCmdEnd ? Math.round((Date.now() - lastCmdEnd) / 1000) : 0;
+      if (l === 'working') return 'working: ' + clipS(atx(() => AT.line(), '') || lastDrive.text, 80);
+      if (l === 'listening') return 'listening for your reply';
+      if (l === 'thinking') return 'thinking about the next step' + (quiet ? ' (' + quiet + ' s since my last action)' : '');
+      return 'but my driver has not sent a command for ' + (quiet >= 120 ? Math.round(quiet / 60) + ' min' : quiet + ' s') +
+             ' -- its turn may be over; it reads your message when it is next prompted';
+    };
+    // THE REASONS GIVEN, by the step they were given in: what "why this step?" is answered from
+    const whyLog = [];
+    let whyLast = '';
+    const noteWhy = () => {
+      const t = lastDrive.thought;
+      if (!t || t === whyLast) return;
+      whyLast = t;
+      whyLog.push({ labels: [stepNow, subNow, atx(() => AT.line(), ''), lastDrive.text].filter(Boolean), why: t });
+      if (whyLog.length > 80) whyLog.shift();
+    };
+    const whyFor = (st) => {
+      for (let i = whyLog.length - 1; i >= 0; i--) if (whyLog[i].labels.some((l) => sameStep(l, st))) return whyLog[i].why;
+      return '';
     };
     // the request a board button made (core/board.js parseMark), and who made it
     const onMark = (mk, rec) => {
@@ -1149,13 +1246,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           break;
         case 'stop-task':
           hold = { k: 'task', by: clipS(who, 60) };
-          if (!interrupt) interrupt = lastOp;
+          if (!interrupt) interrupt = { id: rec.id, name: who, text: rec.text, ts: rec.ts, at: rec.at || Date.now(), mark: 'stop-task' };
           try { roomNote('**Stopping this task** — I’ll say what is done and what is not.'); } catch (_) {}
           roomNotes.push(who + ' STOPPED THIS TASK: do nothing more on the machine -- report what is done and what is not (status {fin:1, say:"…"}), then wait in chat');
           sendDrive();
           break;
         case 'stop-after': {
-          const st = clipS(mk.step || atx(() => AT.line(), '') || 'this step', 90);
+          // the step it names -- or the one declared now; never the live line (between steps that is "Planning the next
+          // step", a placeholder no step ever ends as, so the stop never took hold)
+          const named = mk.step && !/^planning the next step$/i.test(String(mk.step).trim()) ? mk.step : '';
+          const st = clipS(named || stepNow || 'this step', 90);
           hold = { k: 'after', step: st, by: clipS(who, 60) };
           try { roomNote('**I’ll stop after “' + st + '”.**'); } catch (_) {}
           roomNotes.push(who + ' asked you to stop after “' + st + '”: finish that step, then report (status {fin:1, say}) and wait');
@@ -1165,7 +1265,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         case 'yes': case 'no': case 'solved': {
           // the answer to the question on the panel, by its id. A question the serve waits on (askRoom, captcha) hears it in
           // its own wait; those nobody waits on -- an approval, a checkpoint -- are settled here
-          if (!ask || !mk.q || mk.q !== ask.id || ask.waited) break;
+          if (!ask || !mk.q || !board.sameQ(mk.q, ask.id) || ask.waited) {
+            // A PRESS ON A QUESTION NOBODY WAITS ON ANY MORE (a confirm that timed out, still on the panel): not dropped --
+            // the driver hears it, and asks again to act on it
+            if (ask && mk.q && board.sameQ(mk.q, ask.id) && !ask.waited && ask.k !== 'step' && ask.k !== 'checkpoint') {
+              roomNotes.push(who + ' answered your earlier question “' + clipS(ask.q, 120) + '” after its wait was over: ' + (mk.kind === 'no' ? 'NO' : 'yes') +
+                             ' -- ask again (confirm) to act on it');
+              closeAsk(ask.id);
+            }
+            break;
+          }
           const yes = mk.kind !== 'no';
           if (yes && !yesFrom(who)) { try { roomNote('Only ' + inviter + ', who let me in, can say yes to that.'); } catch (_) {} break; }
           if (ask.k === 'step' && approval) {
@@ -1202,11 +1311,23 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           break;
         case 'nudge': {
           // ANSWERED BY THE SERVE ITSELF: "are you still there?" is about the session, and the driver may be deep in thought --
-          // the serve knows what it is on, and how long it has been quiet
-          const line = paused ? 'paused by ' + paused.by : inFlight ? 'working: ' + clipS(atx(() => AT.line(), '') || lastDrive.text, 80)
-                     : 'thinking about the next step' + (lastCmdEnd ? ' (' + Math.round((Date.now() - lastCmdEnd) / 1000) + ' s since my last action)' : '');
-          try { roomNote('Still here — ' + line + '.'); } catch (_) {}
+          // or gone quiet, its editor's turn over: the serve knows which, and says so
+          try { roomNote('Still here — ' + listenWords() + '.'); } catch (_) {}
           roomNotes.push(who + ' asked if you are still there (the serve answered for you)');
+          break;
+        }
+        case 'why': {
+          // "WHY THIS STEP?" -- answered at once from the reason the agent gave when it took it (its `why`, its thought), and
+          // never an interruption; a step it gave no reason for is the driver's to answer, in chat, at its next call
+          const st = clipS(mk.step || stepNow || atx(() => AT.line(), '') || lastDrive.text || 'this step', 90);
+          const w = whyFor(st);
+          if (w) {
+            try { roomNote('**Why “' + st + '”:** ' + w); } catch (_) {}
+            roomNotes.push(who + ' asked why “' + st + '” -- the serve answered with the reason you gave (“' + clipS(w, 200) + '”); add to it in chat if there is more to say');
+          } else {
+            try { roomNote('I’ll answer that in a moment.'); } catch (_) {}
+            roomNotes.push(who + ' asked WHY “' + st + '” -- you gave no reason for it: answer in chat ({"do":"chat","text":"…"}) in a sentence or two, then go on');
+          }
           break;
         }
       }
@@ -1215,6 +1336,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // effects the change record can read before it runs (core/undo.js) -- read-only is not risky, what cannot be put back
     // is -- a file overwritten, a chord that can close unsaved work
     const riskOf = (cmd) => {
+      // A PLAN IS AS RISKY AS ITS RISKIEST STEP. The dial's "risky actions" looked at the outer command only, so a
+      // command it would have asked about ran unasked inside a plan: plan:[{do:"exec",cmd:"del ..."}].
+      if (cmd && cmd.do === 'plan') return planRisk(cmd.steps, 0);
       try {
         const x = {};
         if (cmd.do === 'exec' || (cmd.do === 'terminal' && cmd.input != null)) {
@@ -1225,6 +1349,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (cmd.do === 'chord') x.chord = actionTree.chordName(cmd);
         return board.riskOf(cmd, x);
       } catch (_) { return board.riskOf(cmd, {}); }
+    };
+    // ...every step, in every branch and loop body (bounded, as runSteps is)
+    const planRisk = (steps, depth) => {
+      if (!Array.isArray(steps) || depth > 8) return '';
+      for (const s of steps) {
+        if (!s || typeof s !== 'object') continue;
+        if (typeof s.do === 'string') { const r = riskOf(s); if (r) return r + ' (a step of the plan)'; continue; }
+        for (const k of ['steps', 'then', 'else']) { const r = planRisk(s[k], depth + 1); if (r) return r; }
+      }
+      return '';
     };
     // the words an approval asks in: what the next command does, in the panel's own phrases
     const actionWords = (cmd) => {
@@ -1421,7 +1555,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const g = MS.brief();
         if (g) m.goal = { g: clipS(g.goal, 100), w: clipS(g.when, 140), at: clipS(g.at, 90), n: Number(g.done) || 0, of: Number(g.of) || 0 };
         m.tm = TS.brief(Date.now());
-        if (ask) { m.ask = { k: ask.k, q: ask.q, id: ask.id }; if (ask.plan) m.ask.plan = ask.plan; }
+        // the id the panel shows is the plain qN -- every relay so far keeps only that shape -- and the visit's tag rides
+        // in `vt`: a panel that knows it answers [qN@vt], an older one [qN] (core/board.js sameQ takes both)
+        if (ask) { m.ask = { k: ask.k, q: ask.q, id: String(ask.id).split('@')[0] }; if (ask.plan) m.ask.plan = ask.plan; }
         const cl = changes.filter((e) => e.task === changeTask && e.kind !== 'typed');
         if (cl.length) m.chg = { n: cl.length, l: cl.slice(-10).map((e) => ({ id: e.id, w: clipS(e.what, 160), r: e.reversible && e.undo && e.undo.kind === 'exec' ? 1 : 0, k: e.undo && e.undo.risky ? 1 : 0, u: e.undone ? 1 : 0 })) };
         if (paused) m.pz = paused;
@@ -1429,7 +1565,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (mode !== 'auto') m.au = mode;
         if (lockOn) m.lock = 1;
         m.m.f = failsThisTask;
+        m.lis = listening();   // working / listening / thinking / away (an older relay drops it)
+        m.vt = VTAG;           // this visit's tag: the panel puts it on its buttons
       } catch (_) {}
+      try { noteWhy(); } catch (_) {}
       atLastSend = Date.now(); driveSends++;
       try { ws.send(m); } catch (_) {}
     };
@@ -1444,7 +1583,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const atArmIdle = () => {
       if (atIdleTimer) clearTimeout(atIdleTimer);
       // (the line follows: "Planning the next step", not the run that just ended, for the screen reader too)
-      atIdleTimer = setTimeout(() => { atIdleTimer = 0; if (atAuto() && atx(() => AT.idle(), false)) { atx(() => { lastDrive.text = AT.line(); }); atSend(); } }, AT_IDLE);
+      atIdleTimer = setTimeout(() => {
+        atIdleTimer = 0;
+        if (atAuto() && atx(() => AT.idle(), false)) {
+          atx(() => { lastDrive.text = AT.line(); });
+          // AD-HOC WORK HAS NO DECLARED STEPS: a burst of actions closing is its step ending -- the one "stop after this
+          // step" was pressed on (it never took hold here: only declared steps ever ended)
+          if (hold && hold.k === 'after' && !stepNow) { try { stopAfterNow(); } catch (_) {} }
+          atSend();
+        }
+      }, AT_IDLE);
       if (atIdleTimer.unref) atIdleTimer.unref();
     };
     // The nested PLAN TREE the agent can send -- {t:label, s?:done|doing|todo|warn, k?:[children]} -- bounded
@@ -1711,15 +1859,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (!name) return { ok: false, pred: null, saw: 'no expectation was given' };
       const rect = eyes.rectOf(pred);
       if (name === 'text' || name === 'notext') {
-        const n = await needFrame(); if (!n.ok) return { ok: false, pred: name, saw: n.why };
+        const n = await needFrame(); if (!n.ok) return { ok: false, pred: name, saw: n.why, error: true };
         const r = await readText(ws, frame, rect, LANG);
         trips++;
-        if (!r.ok) return { ok: false, pred: name, saw: r.why, stale: !!r.gone };
+        if (!r.ok) return { ok: false, pred: name, saw: r.why, stale: !!r.gone, error: true };
         return Object.assign(eyes.check(pred, { words: r.text }), { words: r.words });
       }
       const s = await lookAt(rect);
-      if (!s.ok) return { ok: false, pred: name, saw: s.why, stale: !!s.gone };
-      if ((name === 'changed' || name === 'stable') && !marked) return { ok: false, pred: name, saw: 'nothing to compare against -- `mark` first' };
+      if (!s.ok) return { ok: false, pred: name, saw: s.why, stale: !!s.gone, error: true };
+      if ((name === 'changed' || name === 'stable') && !marked) return { ok: false, pred: name, saw: 'nothing to compare against -- `mark` first', error: true };
       return eyes.check(pred, { image: img, before: marked });
     }
 
@@ -1783,7 +1931,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       castTyping(plan.total, 0);
       try {
         r = await at.run(plan, (m) => ws.send(m), {
-          stop: () => !!stopped || !!(interrupt && (Number(interrupt.ts) || 0) >= since) || atStopAt >= since,
+          stop: () => !!stopped || !!ws.dead || !!(interrupt && (Number(interrupt.at || interrupt.ts) || 0) >= since) || atStopAt >= since,
           onStep: (i, s) => {
             done = Math.min(plan.total, Math.max(done, Number(s.src) || 0));
             if (Date.now() - lastCast >= AT_CAST_MS) { lastCast = Date.now(); castTyping(plan.total, done); }
@@ -1792,10 +1940,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       } finally { castTyping(0, 0, true); }
       if (r.ok) return { ok: true, typed: text.length, ms: Date.now() - since, human, speed };
       const took = atStopAt >= since;
+      const dead = !stopped && !!ws.dead;
       const why = stopped ? stopped
+                : dead ? 'the connection dropped -- typing stopped after ' + done + ' of ' + plan.total + ' characters (the rest was not typed)'
                 : took ? 'a person took the keyboard (a viewer pressed a key) -- stopped after ' + done + ' of ' + plan.total + ' characters'
                 : 'the operator spoke -- stopped after ' + r.at + ' of ' + r.of + ' keys';
-      return { ok: false, why, stoppedAt: { at: r.at, of: r.of, chars: done, interrupted: !stopped, tookKeyboard: took || undefined } };
+      return { ok: false, why, dropped: dead || undefined, stoppedAt: { at: r.at, of: r.of, chars: done, interrupted: !stopped && !dead, tookKeyboard: took || undefined } };
     };
 
     // ---- the host's own shell, for windows / focus / launch / controls (core/desk.js) ----------------------------
@@ -1876,7 +2026,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (total > max) return { ok: false, why: full + ' is ' + humanBytes(total) + ' -- more than the ' + humanBytes(max) + ' a fetch copies' };
         const buf = Buffer.from(String(r.b64 || ''), 'base64');
         parts.push(buf); off += buf.length; wire += buf.length; trips++;
-        if (!buf.length || off >= total) break;
+        if (off >= total) break;
+        if (!buf.length) return { ok: false, why: full + ' came back short: ' + humanBytes(off) + ' of ' + humanBytes(total) + ' -- try again' };
       }
       return { ok: true, buf: Buffer.concat(parts), total, full };
     };
@@ -1935,8 +2086,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // a file `send` put at `to`, as a command core/undo.js reads as making (or, with force, replacing) that file
     const sentAs = (to, os, force) => os === 'linux' ? { do: 'exec', cmd: 'cp -- ' + shq('/tmp/agent-drive-sent') + ' ' + shq(to) }
       : { do: 'exec', cmd: 'powershell -NoProfile -Command "New-Item -ItemType File ' + (force ? '-Force ' : '') + '-Path ' + psq(to) + '"' };
-    async function noteChange(cmd, r) {
+    async function noteChange(cmd, r, acted) {
       try {
+        // THE ACT'S OWN ANSWER DECIDES: an expectation that failed afterwards, or a look that rode along, does not unmake
+        // what the command changed -- they replaced the answer, and with it the record and the copy kept to put it back
+        if (acted && acted !== r && acted.ok === true && r && r.ok !== true) r = Object.assign({}, r, { ok: true });
         if (!cmd || !r || r.ok !== true || typeof cmd.do !== 'string') return;
         if ((cmd.do === 'focus' || cmd.do === 'launch') && r.window && r.window.title) lastWindow = String(r.window.title).slice(0, 80);
         if (!['exec', 'terminal', 'keys', 'launch', 'send'].includes(cmd.do)) return;
@@ -1945,7 +2099,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const os = deskOsName;
         let c = cmd;
         const to = cmd.do === 'send' ? String(r.to || '') : '';
-        const cap = capturedFor.get(r) || null;
+        const cap = capturedFor.get(r) || (acted ? capturedFor.get(acted) : null) || null;
         if (cmd.do === 'send') {
           if (!to) return;
           // a replaced file whose old copy was kept (send's own capture) goes back like an overwrite; one not kept cannot
@@ -2208,6 +2362,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       let bad = null, ran = 0;
       for (let i = 0; i < list.length; i++) {
         const st = list[i] || {};
+        // A DEAD LINE ENDS THE PLAN: the rest would go into nothing, each step answering ok
+        if (ws.dead) { bad = { at: i, why: 'the connection to the machine dropped -- the rest of the plan was not run' }; break; }
+        // ...and so does a step that would end the visit in the middle of it (it said goodbye, and the visit went on)
+        if (st.do === 'done' || st.do === 'quit') { bad = { at: i, why: st.do + ' ends the visit: send it on its own, after the plan' }; break; }
         ran++;
         // a batch's live leaf in the action tree follows the sub-step it is on ("step 5/14: clicking (6,7)")
         if (top && atAuto() && atx(() => AT.tick(i, list.length, st), false)) atSend();
@@ -2225,6 +2383,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // held from before the last action is a choice about the past.
           if (st.fresh !== false) frame = null;
           const v = await evaluate(st.if);
+          // a condition that could not be CHECKED (no picture, no text reader, the line down) is no answer: the plan stops
+          // and says why -- it used to take the else branch as if the thing were false
+          if (v.error) { bad = { at: i, why: 'the condition could not be checked: ' + (v.saw || 'no picture') }; break; }
           const took = v.ok ? 'then' : 'else';
           const branch = Array.isArray(st[took]) ? st[took] : [];
           r = { took, saw: v.saw, pred: v.pred, ok: true };
@@ -2238,21 +2399,23 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           const max = Math.max(1, Math.min(500, Number(st.repeat) || 20));
           const body = Array.isArray(st.steps) ? st.steps : [];
           const poll = Math.max(0, Math.min(5000, Number(st.poll) || 0));
-          let n = 0, held = false, sub = null;
+          let n = 0, held = false, sub = null, unchecked = '';
           for (; n < max; n++) {
             if (st.until) {
               if (st.fresh !== false) frame = null;
               const v = await evaluate(st.until);
+              if (v.error) { unchecked = v.saw || 'no picture'; break; }   // not "not yet": it could not be looked at
               if (v.ok) { held = true; break; }
             }
-            if (stopped) break;
+            if (stopped || ws.dead) break;
             if (body.length) { sub = await runSteps(body); if (sub.bad) break; }
             if (poll) await sleep(poll);
           }
           r = { loops: n, held, ok: st.until ? held : !(sub && sub.bad) };
-          if (!r.ok) bad = { at: i, repeat: true,
-                             why: (sub && sub.bad && sub.bad.why) ||
-                                  ('it never became true, after ' + n + ' time' + (n === 1 ? '' : 's')) };
+          if (unchecked) { r.ok = false; bad = { at: i, repeat: true, why: 'the condition could not be checked: ' + unchecked }; }
+          else if (!r.ok) bad = { at: i, repeat: true,
+                             why: (sub && sub.bad && sub.bad.why) || (ws.dead ? 'the connection to the machine dropped' :
+                                  ('it never became true, after ' + n + ' time' + (n === 1 ? '' : 's'))) };
         } else {
           r = (await step(st)) || { ok: false, why: 'that step answered nothing' };
           if (!r.ok) bad = { at: i, do: st.do, why: r.why || (r.expect && r.expect.saw) || 'its expectation did not hold' };
@@ -2276,7 +2439,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (relabel) atx(() => AT.relabel(relabel.mid, relabel.t));
       // another milestone or short step is current: the reasoning given for the one before ends (dropThought), and a stop
       // the room asked for after the last step takes hold (stepEnded)
-      if (d && (typeof d.step === 'string' || d.step === null || typeof d.substep === 'string')) { dropThought(); stepEnded(String(d.substep || d.step || ''), true); }
+      if (d && (typeof d.step === 'string' || d.step === null || typeof d.substep === 'string')) {
+        dropThought();
+        const lvStep = typeof d.step === 'string' || d.step === null;
+        stepEnded(String(lvStep ? (d.step || '') : d.substep), true, lvStep ? 'step' : 'sub');
+      }
       if (d && (typeof d.step === 'string' || d.step === null)) atx(() => AT.mark({ step: d.step, mid: d.mid }, true, false));
       if (d && typeof d.substep === 'string') atx(() => AT.mark({ substep: d.substep }, true, false));
       if (d && (d.step || d.substep) && lastDrive.fin) lastDrive.fin = 0;
@@ -2342,43 +2509,54 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const t0 = Date.now(), deadline = t0 + ms, replies = [];
       const since0 = Math.min(t0, Number(opts.since) || t0);
       let verdict = 'unclear', yesAt = 0, pressed = false;
+      // THE QUESTION NEVER REACHED ANYONE when the line was down as it was asked, or went down while it waited: then the
+      // silence is nobody's -- never the standing yes (a relay blip used to approve a confirm, a preview, an overwrite)
+      let dropped = !!ws.dead;
       const hear = (m) => {
         // A BOARD BUTTON is an answer to ONE question, by its id: a press on another question is not a reply to this one,
         // and a yes counts only from the person who let the agent in (anyone's no still wins). It ends the wait at once.
         const mk = board.parseMark(String(m.text || ''));
         if (mk && (mk.kind === 'yes' || mk.kind === 'no' || mk.kind === 'solved')) {
-          if (mk.q !== q.id) return;
+          if (!board.sameQ(mk.q, q.id)) return;
           replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
           if (mk.kind === 'no') { verdict = 'cancelled'; return; }
           if (!yesFrom(m.name)) { try { roomNote('Only ' + inviter + ', who let me in, can say yes to that.'); } catch (_) {} return; }
           if (verdict !== 'cancelled') { verdict = 'approved'; pressed = true; if (!yesAt) yesAt = Date.now(); }
           return;
         }
+        // another board request (a pause, an undo, a why?) is that request -- handled as such, never an answer here
+        if (mk) return;
         replies.push({ name: String(m.name || ''), text: String(m.text || ''), ts: Number(m.ts) || 0 });
         const said = consent.confirmReply(String(m.text || ''));
         if (said === 'no') verdict = 'cancelled';                                   // a cancel wins immediately
-        else if (said === 'yes' && verdict !== 'cancelled') { verdict = 'approved'; if (!yesAt) yesAt = Date.now(); }   // ...a yes waits out the grace
+        // ...a TYPED yes counts from the same person a pressed one does: the one who let the agent in (it counted from
+        // anyone watching -- a photo, a file overwritten -- while the button refused them)
+        else if (said === 'yes' && verdict !== 'cancelled') {
+          if (!yesFrom(m.name)) { try { roomNote('Only ' + inviter + ', who let me in, can say yes to that.'); } catch (_) {} return; }
+          verdict = 'approved'; if (!yesAt) yesAt = Date.now();   // ...a yes waits out the grace
+        }
       };
-      // what the room already said since the question was first asked (the chat log has it)
-      if (since0 < t0) for (const m of readInbox()) { if ((Number(m.ts) || 0) >= since0 && verdict !== 'cancelled') hear(m); }
+      // what the room already said since the question was first asked (the chat log has it) -- by when it ARRIVED here
+      if (since0 < t0) for (const m of readInbox()) { if ((Number(m.at || m.ts) || 0) >= since0 && verdict !== 'cancelled') hear(m); }
       while (verdict !== 'cancelled' && !stopped && !pressed) {
         const end = verdict === 'approved' && grace !== Infinity ? Math.min(deadline, (yesAt || Date.now()) + grace) : deadline;
         if (Date.now() >= end) break;
-        const m = await raceStop(ws.waitFor((x) => x.type === 'chat' && !x.system && String(x.name || '') !== selfName && (Number(x.ts) || 0) >= t0, Math.max(1, end - Date.now())));
-        if (!m) break;
+        const m = await raceStop(ws.waitFor((x) => x.type === 'chat' && !x.system && String(x.name || '') !== selfName && (Number(x.at) || Date.now()) >= t0, Math.max(1, end - Date.now())));
+        if (!m) { if (ws.dead) dropped = true; break; }
         hear(m);
       }
+      if (ws.dead) dropped = true;
       // Standing yes: ONLY a window that NO ONE answered (and no revoke) means go ahead. A reply it could not read
       // as a yes is a person who said something -- never filled in as approval (it used to be).
       let auto = false;
-      if (standing && verdict === 'unclear' && !replies.length && !stopped) { verdict = 'approved'; auto = true; }
+      if (standing && verdict === 'unclear' && !replies.length && !stopped && !dropped) { verdict = 'approved'; auto = true; }
       // The replies ride back in the answer, so the driver has read them -- as `chat-wait` does, the interrupt they
       // raised is spent. Left set, the very "yes" that approved a restart cut the plan doing it at its first step.
       // A message from before the question still stands.
       if (replies.length && interrupt && (Number(interrupt.ts) || 0) >= since0) interrupt = null;
       // answered (or given up on): off the panel -- one left unanswered stays up for the next asking of it
       if (verdict !== 'unclear' || stopped) closeAsk(q.id); else q.waited = false;
-      return { verdict, replies, auto };
+      return { verdict, replies, auto, dropped: dropped || undefined };
     }
     // the plan's milestones for the panel's preview checklist: each with what will be on the screen when it is done
     const planOf = () => { try { const J = MS.toJSON(); return J && Array.isArray(J.ms) ? J.ms.slice(0, 12).map((m) => ({ t: clipS(m.t, 80), w: clipS(m.done, 100) })) : undefined; } catch (_) { return undefined; } };
@@ -2708,19 +2886,36 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           try { fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, img: !!out.img, mine: true, sent: true, done: true }) + '\n'); } catch (_) {}
           reply(out);
         } else if (cmd.do === 'chat-wait') {           // block for the next human reply (ask, then wait)
-          // The next message from SOMEONE ELSE after `since` (default: now), or a timeout. The agent's
-          // own echo and the relay's `system` notices are skipped, so this returns a person's answer.
-          const since = Number(cmd.since) || Date.now();
+          // WHAT THE ROOM SAID, NOT ONLY WHAT IT SAYS NEXT. A reply written while the driver was still deciding -- after its
+          // last answer, before this wait began -- was skipped (the wait started at "now") and surfaced only when the wait
+          // timed out, minutes later. So the wait starts where the driver last heard the room: every line written since its
+          // last answer comes back at once (all of them, in `lines`); with none, the next one does. A board button is not a
+          // reply: the serve handles it, and the driver hears it as `room`. `since` (ms, this machine's clock) overrides it.
+          // The agent's own echo and the relay's `system` notices are skipped, so this returns a person's words.
+          const since = Number(cmd.since) || lastAnswerAt || serveStart;
           const ms = Math.max(1000, Math.min(600000, Number(cmd.timeout) || 120000));
-          // ON THE BOARD (core/board.js): when the agent's last words to the room were a question, the panel says it is
-          // waiting for their reply -- and "it needs you" reaches someone who is looking elsewhere
-          const qa = (!ask && !paused && !lastDrive.fin && /\?\s*$/.test(lastSaid.text) && Date.now() - lastSaid.ts < 180000) ? openAsk('reply', lastSaid.text) : null;
-          if (qa) qa.waited = true;
-          const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && (Number(m.ts) || 0) >= since, ms));
-          if (qa) closeAsk(qa.id);
-          if (got) interrupt = null;   // the driver is attending to chat; let a paused plan resume
-          if (!got) reply({ ok: false, why: stopped || 'nobody answered in time', timedOut: !stopped });
-          else reply({ ok: true, from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to });
+          const said = () => readInbox().filter((m) => (Number(m.at || m.ts) || 0) >= since && !board.parseMark(m.text));
+          let lines = said();
+          if (!lines.length) {
+            // ON THE BOARD (core/board.js): when the agent's last words to the room were a question, the panel says it is
+            // waiting for their reply -- and "it needs you" reaches someone who is looking elsewhere
+            const qa = (!ask && !paused && !lastDrive.fin && /\?\s*$/.test(lastSaid.text) && Date.now() - lastSaid.ts < 180000) ? openAsk('reply', lastSaid.text) : null;
+            if (qa) qa.waited = true;
+            const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && !board.parseMark(String(m.text || '')) &&
+                                                         (Number(m.at) || Date.now()) >= since, ms));
+            if (qa) closeAsk(qa.id);
+            if (got) {
+              lines = said();
+              if (!lines.length) lines = [{ from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to }];
+            }
+          }
+          if (!lines.length) reply({ ok: false, why: stopped || (ws.dead ? 'the connection dropped while waiting' : 'nobody answered in time'), timedOut: !stopped && !ws.dead, dropped: ws.dead ? true : undefined });
+          else {
+            interrupt = null;   // the driver is attending to chat; let a paused plan resume
+            const last = lines[lines.length - 1];
+            reply({ ok: true, from: String(last.from || ''), name: String(last.name || ''), text: String(last.text || ''), ts: Number(last.ts) || 0, dm: !!last.dm,
+                    lines: lines.length > 1 ? lines.slice(-10).map((m) => ({ name: m.name, text: m.text, dm: m.dm || undefined })) : undefined });
+          }
         } else if (cmd.do === 'captcha') {             // a CAPTCHA is for a PERSON: say so in chat, and wait for them
           // The agent never solves, bypasses or clicks through a CAPTCHA ("I'm not a robot", a picture puzzle): it is a
           // check that a person is there, and an agent passing it would be passing for one. 10002's plan had a step
@@ -2736,18 +2931,38 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // request meanwhile (a pause, an undo) is that request, handled as such -- not an answer about the CAPTCHA.
           const cq = openAsk('captcha', 'A CAPTCHA needs a person: please solve it on the screen, then say so');
           cq.waited = true; TS.waitNow();
-          const answers = (m) => { const mk = board.parseMark(String(m.text || '')); return !mk || ((mk.kind === 'yes' || mk.kind === 'no' || mk.kind === 'solved') && mk.q === cq.id); };
-          const got = await raceStop(ws.waitFor((m) => m.type === 'chat' && !m.system && String(m.name || '') !== selfName && (Number(m.ts) || 0) >= since0 && answers(m), ms));
+          const answers = (m) => { const mk = board.parseMark(String(m.text || '')); return !mk || ((mk.kind === 'yes' || mk.kind === 'no' || mk.kind === 'solved') && board.sameQ(mk.q, cq.id)); };
+          // WHAT A REPLY ABOUT A CAPTCHA MEANS -- its own reading, not confirm's (where any hesitation is a no): "one sec",
+          // "hold on", "working on it" is a person ON IT, so the wait goes on; "can't", "skip it" is a no; "done", "solved",
+          // "ok" is solved; anything else is neither (it used to read every non-no as solved)
+          const captchaWord = (t) => {
+            const s = String(t || '').toLowerCase();
+            if (/\b(not|n't)\s+(yet|done|solved|finished)\b|\b(one|a|just a)\s+(sec|second|moment|minute|min)\b|\b(hold on|hang on|wait|working on it|on it|trying|give me)\b/.test(s)) return 'later';
+            if (/\b(can'?t|cannot|won'?t|unable|impossible|skip( it)?|give up|leave it|no|nope|not now)\b/.test(s)) return 'no';
+            if (/\b(done|solved|finished|fixed|all set|did it|passed|cleared|gone|go ahead|carry on|continue|ok(ay)?|yes|yep|yeah)\b/.test(s)) return 'yes';
+            return 'unclear';
+          };
+          const end = Date.now() + ms;
+          let got = null, word = '';
+          for (;;) {
+            const m = await raceStop(ws.waitFor((x) => x.type === 'chat' && !x.system && String(x.name || '') !== selfName && (Number(x.at) || Date.now()) >= since0 && answers(x), Math.max(1, end - Date.now())));
+            if (!m) break;
+            const gm = board.parseMark(String(m.text || ''));
+            got = m; word = gm ? (gm.kind === 'no' ? 'no' : 'yes') : captchaWord(m.text);
+            if (word !== 'later') break;   // they are on it: keep waiting for their word
+          }
           closeAsk(cq.id);
-          if (got && interrupt && (Number(interrupt.ts) || 0) >= since0) interrupt = null;   // answered HERE: not an interrupt
+          if (got && interrupt && (Number(interrupt.at || interrupt.ts) || 0) >= since0) interrupt = null;   // answered HERE: not an interrupt
           driveStatus(null, { warn: '' });
-          if (!got) reply({ ok: false, why: stopped || 'nobody answered about the CAPTCHA in ' + Math.round(ms / 60000) + ' min', timedOut: !stopped });
-          else {
-            const gm = board.parseMark(String(got.text || ''));
-            const no = gm ? gm.kind === 'no' : consent.confirmReply(String(got.text || '')) === 'no';
-            reply({ ok: true, solved: !no, name: String(got.name || ''), text: String(got.text || ''),
+          if (!got || word === 'later') {
+            reply({ ok: false, why: stopped || (got ? 'they said they were on it ("' + clipS(got.text, 60) + '") but did not say it is done in ' + Math.round(ms / 60000) + ' min'
+                                                   : 'nobody answered about the CAPTCHA in ' + Math.round(ms / 60000) + ' min'), timedOut: !stopped });
+          } else {
+            const no = word === 'no', yes = word === 'yes';
+            reply({ ok: true, solved: no ? false : yes ? true : null, name: String(got.name || ''), text: String(got.text || ''),
                     next: no ? 'the operator did not solve it -- read their reply, and do NOT try the CAPTCHA yourself'
-                             : 'look again: the CAPTCHA should be gone; if it is still there, ask again' });
+                         : yes ? 'look again: the CAPTCHA should be gone; if it is still there, ask again'
+                         : 'they wrote something else -- read it and answer in chat; do not take the CAPTCHA as solved (look first, and ask again if it is still there)' });
           }
         } else if (cmd.do === 'ping') {                // quick liveness: is the session still alive?
           // A short-deadline held frame, so a stale session (e.g. after a relay move) is found in
@@ -2763,7 +2978,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // it here to synthesize the close -> ws.dead -> the serve loop redials and surfaces a fresh Allow.
           // (If a FRESH session still can't `shot`, that's a HOST freeze, not a relay move -- tell the operator.)
           reply({ ok: true, reconnecting: true });
-          try { ws.close(); } catch (_) {}
+          try { if (ws.kill) ws.kill(); else ws.close(); } catch (_) {}   // at once: a graceful close waits on a FIN a dead relay never sends
         } else if (cmd.do === 'status') {              // set the panel's line / plan / thought / metrics, no action
           // `text`: the live line (omit to keep it). `steps`: the whole plan (array of short labels). `at`:
           // the current step, 0-based -- declare the plan once (steps + at:0) then advance `at`. Optional:
@@ -2827,7 +3042,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           else if (depth === 0 && ((treeMoved && declares) || planMoved || atMoved)) {
             const nx = typeof cmd.step === 'string' ? cmd.step : typeof cmd.substep === 'string' ? cmd.substep : typeof cmd.task === 'string' ? cmd.task
                      : (Array.isArray(lastDrive.steps) && cmd.at != null) ? lastDrive.steps[Math.max(0, Number(cmd.at) || 0)] : '';
-            stepEnded(String(nx || ''), false);
+            stepEnded(String(nx || ''), false, typeof cmd.substep === 'string' && typeof cmd.step !== 'string' ? 'sub' : 'step');
           }
           // ...and a `why` on the status is its thought, as on any other command
           if (cmd.thought === undefined && typeof cmd.why === 'string' && cmd.why.trim()) cmd = Object.assign({}, cmd, { thought: cmd.why.trim() });
@@ -3215,7 +3430,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           }
         } else if (cmd.do === 'inbox') {               // the operator's recent messages; clears the interrupt + unread
           const messages = readInbox();
-          interrupt = null; unreadIds = [];
+          interrupt = null;
+          if (unreadIds.length) { try { ws.send({ type: 'chat-read', ids: unreadIds.slice(0, 200) }); } catch (_) {} }
+          unreadIds = []; unreadRecs = [];
           reply({ ok: true, n: messages.length, messages });
         } else if (cmd.do === 'typing') {              // "Claude typing..." while you compose a reply
           // A transient ping the viewer expires on its own, so it repeats on a short beat until you send
@@ -3467,7 +3684,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             n++;
             frame = null;                              // EVERY look is a new picture, the first one
             v = await evaluate(until);                 // included -- see `expect` above
-            if (v.ok || Date.now() >= deadline || stopped) break;
+            if (v.ok || v.error || Date.now() >= deadline || stopped) break;   // an error is no reason to keep polling it
             await sleep(poll);
           }
           reply(Object.assign({ ok: v.ok, held: v.ok, polls: n, ms: Date.now() - t0 }, v));
@@ -3504,6 +3721,15 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           await missionOp(cmd);
         } else reply({ ok: false, why: 'unknown command "' + cmd.do + '"' });
       } catch (e) { reply({ ok: false, why: (e && e.message) || String(e) }); }
+      // AN ACTION ON A DEAD LINE DID NOT ARRIVE (or not all of it): the relay dropped while it was sent -- a send cannot tell,
+      // so the answer said ok. Say so; the loop redials, and the driver looks before it goes on.
+      if (out && out.ok && verbs.isActing(cmd) && ws.dead) {
+        out = Object.assign({}, out, { ok: false, dropped: true, why: 'the connection to the machine dropped during this command -- it may not have arrived, or only part of it. Look before going on (the visit is being reconnected).' });
+      }
+      // ...and the picture held is from before it: the next read (find, clickText, ocr, probe) takes a new one -- a word
+      // found after a click used to be looked for on the screen as it was before the click
+      if (verbs.isActing(cmd)) frame = null;
+      const acted = out;   // the act's own answer: what it changed is recorded from this, whatever rides on it below
 
       // "SENT" IS NOT "LANDED", and until now this file only ever reported the first. Any verb may
       // carry an expectation; it is checked against a picture taken AFTER the action, so a click that
@@ -3513,7 +3739,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         frame = null;                                  // what we hold is from before the action
         const v = await evaluate(cmd.expect);
         out = Object.assign({}, out, { held: v.ok, expect: v });
-        if (!v.ok) { out.ok = false; out.why = 'it was sent, but the screen did not agree: ' + (v.saw || v.pred); }
+        if (!v.ok) { out.ok = false; out.why = (v.error ? 'it was sent, but the screen could not be checked: ' : 'it was sent, but the screen did not agree: ') + (v.saw || v.pred); }
       }
       // ...AND A PICTURE OF WHAT IT DID, as the same command (look:{out,rect,max,settle}): act-then-look is the
       // commonest pair a driver sends, and as two commands it is two round trips through its thinking. Taken
@@ -3524,7 +3750,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       }
       // ...AND WHAT IT CHANGED goes in the visit's record, with how to put it back (core/undo.js) -- every step,
       // a plan's included: a move inside a plan is a move
-      await noteChange(cmd, out);
+      await noteChange(cmd, out, acted);
       return out;
     }
 
@@ -3593,6 +3819,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           try { fs.unlinkSync(statusFile); } catch (_) {}
           try { fs.writeFileSync(path.join(dir, 'ready.json'), JSON.stringify({ w: SW, h: SH, host: HOST, at: Date.now(), reconnected: reconnects, relay: lastGoodRelay })); } catch (_) {}
           frame = null; img = null; before = null;      // the held picture belonged to the dead socket
+          lockOn = false; term.open = false;             // ...and so did the exclusive hold and the terminal: the new grant has neither
           say('[+] reconnected -- machine ' + HOST + ' is open again' + (attempt > 1 ? ' (after ' + attempt + ' tries)' : ''));
           // the old grant's release cleared the watchers' panel ("ended"): put the picture back at once,
           // not only when the next command or heartbeat happens to send it
@@ -3627,7 +3854,14 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     for (;;) {
       // A drop (not a revoke) is recoverable: redial, get a fresh Allow, and resume. A revoke sets
       // `stopped` instead, and that still ends the run through the branch below.
-      if (ws.dead && !stopped) { if (!(await reconnect())) break; }
+      if (ws.dead && !stopped && !(await reconnect())) {
+        // ...AND ONE THAT COULD NOT BE GOT BACK LEAVES THE WAITING DRIVER AN ANSWER, as a revoke does below (it exited in silence,
+        // and a driver waited out its whole budget -- twenty minutes for a file)
+        const note = { ok: false, why: 'the connection to the machine dropped and could not be got back', stopped: true, dropped: true, bye: true, at: new Date().toISOString() };
+        try { fs.writeFileSync(path.join(dir, 'stopped.json'), JSON.stringify(note)); } catch (_) {}
+        try { if (!fs.existsSync(outFile)) writeOut(note); } catch (_) {}
+        break;
+      }
       // WHAT THE ROOM ASKED THE SERVE ITSELF TO DO (core/board.js) -- an undo, saving the job, a schedule -- runs HERE,
       // between the driver's commands: within a quarter of a second while the driver is thinking
       if (roomJobs.length && !stopped && !ws.dead) await runRoomJobs();
@@ -3710,7 +3944,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           if (ask && ask.k === 'step') closeAsk(ask.id);
           const q = openAsk('step', 'Next: ' + actionWords(cmd) + '. Go ahead?');
           approval = { id: q.id, cmd };
-          r0 = { waiting: true, approval: { id: q.id, q: q.q }, why: 'the room approves ' + (mode === 'each' ? 'each action' : 'risky actions') + ' (the board’s autonomy dial) -- nothing was done. They were asked: “' + q.q + '” Wait for the answer in chat (chat-wait); on their yes, send this exact command again.' };
+          r0 = { waiting: true, approval: { id: String(q.id).split('@')[0], q: q.q }, why: 'the room approves ' + (mode === 'each' ? 'each action' : 'risky actions') + ' (the board’s autonomy dial) -- nothing was done. They were asked: “' + q.q + '” Wait for the answer in chat (chat-wait); on their yes, send this exact command again.' };
         }
         if (r0) {
           Object.assign(r0, { ok: false, refused: true, ms: 0, bytes: 0, trips: 0 });
@@ -3792,13 +4026,14 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const t0 = Date.now(), w0 = wire, p0 = trips;
       const mAt = MS.active() && MS.current() ? MS.current().id : '';   // the milestone this command works on (replay.js)
       // the board's clock (core/board.js): this command is acting -- or waiting on people, as a chat-wait is -- from now
-      inFlight = true; lastCmdAt = t0; TS.begin(cmd, t0);
+      inFlight = true; curVerb = String(cmd.do || ''); lastCmdAt = t0; TS.begin(cmd, t0);
       const nChanges = changes.length;
       const r = (await step(cmd)) || { ok: false, why: 'that command answered nothing' };
       inFlight = false; lastCmdEnd = Date.now(); TS.end(lastCmdEnd);
       r.ms = Date.now() - t0; r.bytes = wire - w0; r.trips = trips - p0;
       // a failed action counts on the board ("2 failed"); a refusal or a stop is not a failure of the action
-      if (r.ok === false && !r.refused && !r.stopped && verbs.isActing(cmd)) failsThisTask++;
+      // ...and nor is one the room cut short (a pause, a stop, their words): it did what it was let do
+      if (r.ok === false && !r.refused && !r.stopped && !r.dropped && !(r.stoppedAt && r.stoppedAt.interrupted) && verbs.isActing(cmd)) failsThisTask++;
       // The answer goes into the tree too (a look shows what it saw, an input whether it failed), and
       // every command re-arms the pause detector that ends a burst.
       // (the line is the action tree's only while it still owns the panel: a batch may have handed it to a plan)
@@ -3816,7 +4051,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (r && r.ok) recordStep(cmd, r, mAt);
       // THE INBOX RIDES EVERY ANSWER. The driver reads done.json after each command; attaching pending
       // operator mail here means it cannot run the next step without seeing it (FIX 3). n=0 when empty.
-      if (r && typeof r === 'object') r.inbox = { n: unreadIds.length, latest: lastOp };
+      // Every line not yet handed over rides as `new` (it was only the newest, `latest`, which never cleared -- a model
+      // answered it twice); n=0 when there is nothing new.
+      lastAnswerAt = Date.now();
+      if (r && typeof r === 'object') {
+        r.inbox = unreadRecs.length ? { n: unreadRecs.length, latest: lastOp, new: unreadRecs.slice(-5).map((m) => ({ name: m.name, text: m.text, dm: m.dm || undefined })) } : { n: 0 };
+      }
       // ...and so does every name the verb table corrected, once, so the next command is written right
       if (fixedNotes.length && r && typeof r === 'object') { r.fixed = fixedNotes.slice(); fixedNotes = []; }
       // ...AND SO DOES THE PLAN (core/mission.js): which milestone is current, what will prove it, the step --
@@ -3856,6 +4096,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         const ids = unreadIds.slice(0, 200);
         try { ws.send({ type: 'chat-read', ids }); } catch (_) {}
         unreadIds = unreadIds.filter((x) => !ids.includes(x));
+        unreadRecs = [];
         if (!typingTimer) {
           const ping = () => { try { ws.send({ type: 'chat-typing' }); } catch (_) {} };
           ping(); typingTimer = setInterval(ping, 1500); if (typingTimer.unref) typingTimer.unref();
@@ -3871,7 +4112,10 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       }
       // the command's own id comes back on its answer, so a program driving this can tie the two together
       if (cmd && cmd.cid != null && r && typeof r === 'object') r.cid = cmd.cid;
+      unreadRecs = [];   // handed over (a line with no id has no receipt, but it was shown all the same)
       writeOut(r);
+      // AN INTERRUPTION IS SPENT ONCE THE DRIVER HAS BEEN HANDED IT: left set, it cut the NEXT plan after its first step too
+      if (interrupt && (Number(interrupt.at || interrupt.ts) || 0) <= lastAnswerAt) interrupt = null;
       if (cmd.do === 'quit' || cmd.do === 'done') break;
     }
     // THE KEPT COPIES GO WITH THE VISIT (core/undo.js cleanup): what capture-before-change put in the host's temp folder

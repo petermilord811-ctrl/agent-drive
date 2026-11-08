@@ -20,6 +20,9 @@
 //   ⏭ skip / 🔁 redo “step”  for the driver: carried to it as a hint
 //   🎚 autonomy               ask before each action / risky actions only / at checkpoints / not at all
 //   💾 save as a skill  🔂 run again  🗓 schedule  👋 are you still there?
+//   ❓ why “step”?           the reason the agent gave for that step: answered at once from what it said (its `why`),
+//                            or carried to the driver to answer -- never an interruption
+//   [@tag]                   any line may name one visit (two agents on one machine): the other ignores it
 //
 // Pure: no I/O, no clock of its own (callers pass `now`), so tests/board.js runs it in CI.
 
@@ -42,6 +45,7 @@ const MARKS = [
   ['\u{1F502}', 'run-again'],  // 🔂
   ['\u{1F5D3}', 'schedule'],   // 🗓
   ['\u{1F44B}', 'nudge'],      // 👋
+  ['\u2753', 'why'],         // ❓
 ];
 const KIND_OF = new Map(MARKS);
 const MARK_OF = new Map(MARKS.map(([m, k]) => [k, m]));
@@ -71,8 +75,13 @@ function parseMark(text) {
   let rest = s.slice(first.length);
   if (rest.startsWith(VS)) rest = rest.slice(1);
   rest = rest.trim();
-  const qm = /\[(q\d{1,6})\]/.exec(rest);
-  const out = { kind, q: qm ? qm[1] : '', step: quoted(rest), arg: '' };
+  // A QUESTION'S ID NAMES ITS VISIT TOO -- [q3@7f2a] -- so with two agents on one machine, a press on one's q3 is not
+  // an answer to the other's (each counts q1, q2, ... on its own). [@7f2a] alone scopes any other mark (a pause, a stop)
+  // to that visit; a line with no tag is for every agent on the machine, as before.
+  const qm = /\[(q\d{1,6})(?:@([a-z0-9]{2,8}))?\]/i.exec(rest);
+  const vm = /\[@([a-z0-9]{2,8})\]/i.exec(rest);
+  const vt = qm && qm[2] ? qm[2].toLowerCase() : vm ? vm[1].toLowerCase() : '';
+  const out = { kind, q: qm ? qm[1] + (qm[2] ? '@' + qm[2].toLowerCase() : '') : '', vt, step: quoted(rest), arg: '' };
   if (kind === 'undo') {
     const m = /\b(c\d{1,5})\b/i.exec(rest);
     out.arg = m ? m[1].toLowerCase() : /\ball\b/i.test(rest) ? 'all' : '';
@@ -92,27 +101,36 @@ function markText(kind, o) {
   o = o || {};
   const m = MARK_OF.get(kind);
   if (!m) return '';
-  const tag = o.q ? ' [' + o.q + ']' : '';
+  const tag = o.q ? ' [' + o.q + ']' : o.vt ? ' [@' + o.vt + ']' : '';
   const st = o.step ? '“' + clip(o.step, 90) + '”' : '';
+  const vtag = !o.q && o.vt ? ' [@' + o.vt + ']' : '';
   switch (kind) {
-    case 'pause': return m + ' Pause — hold on until I say go on.';
-    case 'resume': return m + ' Go on.';
-    case 'stop-task': return m + ' Stop this task — say what is done, and wait.';
-    case 'stop-after': return m + ' Stop after ' + (st || 'this step') + '.';
-    case 'end': return m + ' Stop — please end the current task now.';
+    case 'pause': return m + ' Pause — hold on until I say go on.' + vtag;
+    case 'resume': return m + ' Go on.' + vtag;
+    case 'stop-task': return m + ' Stop this task — say what is done, and wait.' + vtag;
+    case 'stop-after': return m + ' Stop after ' + (st || 'this step') + '.' + vtag;
+    case 'end': return m + ' Stop — please end the current task now.' + vtag;
     case 'yes': return m + ' Yes — go ahead.' + tag;
     case 'no': return m + ' No.' + tag;
     case 'solved': return m + ' Solved — the CAPTCHA is done.' + tag;
-    case 'undo': return m + ' Undo ' + (o.id === 'all' ? 'all' : (o.id || '')) + '.';
-    case 'skip': return m + ' Skip ' + (st || 'this step') + '.';
-    case 'redo': return m + ' Redo ' + (st || 'this step') + '.';
-    case 'autonomy': return m + ' ' + (MODE_WORDS[o.mode] || MODE_WORDS.auto) + '.';
-    case 'save-skill': return m + ' Save this job as a skill.';
-    case 'run-again': return m + ' Run this job again.';
-    case 'schedule': return m + ' Schedule this job: ' + clip(o.when || 'every day at 09:00', 60) + '.';
-    case 'nudge': return m + ' Are you still there?';
+    case 'undo': return m + ' Undo ' + (o.id === 'all' ? 'all' : (o.id || '')) + '.' + vtag;
+    case 'skip': return m + ' Skip ' + (st || 'this step') + '.' + vtag;
+    case 'redo': return m + ' Redo ' + (st || 'this step') + '.' + vtag;
+    case 'autonomy': return m + ' ' + (MODE_WORDS[o.mode] || MODE_WORDS.auto) + '.' + vtag;
+    case 'save-skill': return m + ' Save this job as a skill.' + vtag;
+    case 'run-again': return m + ' Run this job again.' + vtag;
+    case 'schedule': return m + ' Schedule this job: ' + clip(o.when || 'every day at 09:00', 60) + '.' + vtag;
+    case 'nudge': return m + ' Are you still there?' + vtag;
+    case 'why': return m + ' Why ' + (st || 'this step') + '?' + vtag;
   }
   return '';
+}
+// Is this press an answer to that question? The same id -- or, for a line with no visit tag (an older panel), the same
+// number: a press on another visit's q3 is never this visit's q3.
+function sameQ(pressed, asked) {
+  const p = String(pressed || ''), a = String(asked || '');
+  if (!p || !a) return false;
+  return p === a || (p.indexOf('@') < 0 && p === a.split('@')[0]);
 }
 
 // ---- risk: the actions the 'risky' autonomy mode asks about, and the panel marks ------------------------------------
@@ -177,4 +195,4 @@ function timeSplit(now0) {
   };
 }
 
-module.exports = { MARKS, MODES, MODE_WORDS, parseMark, markText, riskOf, sigOf, approvals, timeSplit, WAITING };
+module.exports = { MARKS, MODES, MODE_WORDS, parseMark, markText, sameQ, riskOf, sigOf, approvals, timeSplit, WAITING };
