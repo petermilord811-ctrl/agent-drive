@@ -409,7 +409,12 @@ function profile(list) {
   for (const p of prof) for (const t of p.w.keys()) df.set(t, (df.get(t) || 0) + 1);
   const n = prof.length;
   const idf = (t) => n ? Math.log(1 + n / (df.get(t) || n)) / Math.log(1 + n) : 0;
-  return { prof, idf };
+  // how many skills have a word in their NAME (whole, not a hyphened word's part): a word only one skill's name
+  // holds names that skill's thing, however many others carry it as a tag -- "form" stays the web-form skill's
+  // word when other skills tag themselves "forms" (rarity alone made it general, and the form skill unreachable)
+  const named = new Map();
+  for (const p of prof) for (const x of new Map(terms(p.s.name || p.s.slug).filter((y) => !y.part).map((y) => [y.t, y])).keys()) named.set(x, (named.get(x) || 0) + 1);
+  return { prof, idf, named };
 }
 const r2 = (x) => Math.round(x * 100) / 100;
 const short = (s) => ({ slug: s.s.slug, name: String(s.s.name || s.s.slug), score: r2(s.score) });
@@ -417,7 +422,7 @@ const short = (s) => ({ slug: s.s.slug, name: String(s.s.name || s.s.slug), scor
 // -> { skill: {slug, name, run, score}|null, others: [...], entry: the skill's own record, clause }
 function matchSkill(text, list) {
   if (!Array.isArray(list) || !list.length) return { skill: null, others: [], entry: null, clause: 'no skill: no skills to match against (pass intake.skills())' };
-  const { prof, idf } = profile(list);
+  const { prof, idf, named } = profile(list);
   const q = new Map();                              // term -> the word to show for it
   for (const x of terms(text)) if (!q.has(x.t)) q.set(x.t, x.w);
   const l = lower(text);
@@ -432,7 +437,7 @@ function matchSkill(text, list) {
       const d = idf(t), c = v * d;
       score += c;
       hit.push([shown, c]);
-      if (d >= 0.75 && !GENERIC.has(t)) specific = true;
+      if (!GENERIC.has(t) && (d >= 0.75 || (v === 3 && named.get(t) === 1))) specific = true;
     }
     if (score > 0) ranked.push({ s: p.s, score, specific, words: uniq(hit.sort((a, b) => b[1] - a[1]).map((h) => h[0])).slice(0, 3) });
   }

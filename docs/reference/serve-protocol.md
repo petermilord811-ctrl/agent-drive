@@ -33,7 +33,8 @@
   sslip.io name carries its own) — the certificate is still checked against the name.
 
 Every command is `{ "do": "<verb>", ... }`. Coordinates are **screen pixels** at the served size — or,
-as `lx`/`ly`, pixels of the **last `look`** (below), which the serve maps to the screen for you.
+as `lx`/`ly`, pixels of a **`look`** (the last, or the one `of` names; below), which the serve maps to the screen
+for you — or a **`mark`**: a number `look {marks:true}` drew on a button, a field or a box to tick.
 
 **Every command is checked before it runs** ([core/verbs.js](../../core/verbs.js); `node kit.js verbs` prints
 the table). A field the verb does not read used to be silently ignored — live on 10002,
@@ -57,10 +58,10 @@ it explain each verb.
 
 | verb | its fields (any other is refused) | what it does | renamed for you, and said so in `fixed` |
 |------|------|------|------|
-| `click` | `x` `y` `lx` `ly` `at` `dx` `dy` `fast` `look` | left click at a point |  |
+| `click` | `x` `y` `lx` `ly` `mark` `of` `at` `dx` `dy` `snap` `aim` `fast` `look` | left click at a point |  |
 | `clicks` | `at` `fast` `look` | many left clicks, one round trip |  |
-| `dbl` | `x` `y` `lx` `ly` `at` `dx` `dy` `look` | double click | `doubleclick`, `double-click`, `dblclick` |
-| `right` | `x` `y` `lx` `ly` `at` `dx` `dy` `look` | right click | `rightclick`, `right-click` |
+| `dbl` | `x` `y` `lx` `ly` `mark` `of` `at` `dx` `dy` `snap` `aim` `look` | double click | `doubleclick`, `double-click`, `dblclick` |
+| `right` | `x` `y` `lx` `ly` `mark` `of` `at` `dx` `dy` `snap` `aim` `look` | right click | `rightclick`, `right-click` |
 | `clickText` | `text` `rect` `nth` `as` `lang` `dx` `dy` `fast` `look` | read the screen, find a word and click it |  |
 | `keys` | `text` `human` `speed` `look` | type text into the focused window -- like a person by default (human:0 = instant) | `type`, `write`, `keys`→`text`, `value`→`text`, `string`→`text`, `chars`→`text`, `input`→`text`, `person`→`human`, `natural`→`human`, `pace`→`speed` |
 | `press` | `code` `n` `look` | press one key (n times) | `key`, `key`→`code`, `keys`→`code`, `name`→`code`, `times`→`n`, `count`→`n`, `repeat`→`n` |
@@ -71,7 +72,7 @@ it explain each verb.
 | `strokes` | `list` `ms` `look` | many held drags |  |
 | `pause` | `ms` `look` | wait a fixed time (a wait on a pixel is better) | `sleep`, `delay`, `wait`→`ms`, `time`→`ms`, `duration`→`ms`, `delay`→`ms` |
 | `quit` | — | hand the grant back, no sign-off |  |
-| `look` | `out` `rect` `max` `settle` `keep` | a fresh picture sized for reading (long edge <= max, 1280 by default), with the scale back to screen pixels | `view`, `file`→`out`, `path`→`out`, `to`→`out`, `size`→`max` |
+| `look` | `out` `rect` `max` `settle` `keep` `marks` | a fresh picture sized for reading (long edge <= max, 1280 by default), with the scale back to screen pixels; marks:true numbers what can be clicked on it | `view`, `file`→`out`, `path`→`out`, `to`→`out`, `size`→`max` |
 | `shot` | `out` `keep` | the whole screen, full size, as a PNG | `screenshot`, `capture`, `file`→`out`, `path`→`out`, `to`→`out` |
 | `hold` | — | a new picture -- its identity only (~5 KB) |  |
 | `see` | `rect` | decode the held picture down to a rectangle |  |
@@ -130,9 +131,9 @@ Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `
 
 | verb | what it does |
 |------|--------------|
-| `click {x,y}` / `clicks {at:[[x,y],...]}` | left click one / many |
+| `click {mark \| lx,ly \| x,y \| at}` / `clicks {at:[[x,y],...]}` | left click one / many — a click aimed from a look is checked against the screen first and says what it hit ([below](#clicking-the-right-thing-marks-the-check-the-hit)) |
 | `clickText {text,rect?,nth?}` | OCR the screen, find that word and CLICK it — no hand-measured x/y (it's `find` + `click` in one; `rect` limits where to look, `nth` picks among matches, `as` also remembers it) |
-| `right` / `dbl` {x,y} | right-click / double-click |
+| `right` / `dbl` {mark \| lx,ly \| x,y \| at} | right-click / double-click, aimed like `click` |
 | `keys {text, show?, secret?, human?, speed?}` | type text (window must have focus). The progress panel shows only its SHAPE ("typed 11 characters") unless `show:1` (a URL, a search term); `secret:1` hides it whatever else is set. **It types LIKE A PERSON by default** — the viewer's own Type-window planner ([core/autotype.js](../../core/autotype.js), copied character for character): a typist's rhythm, pauses at clause ends, the odd slip onto a neighbouring key fixed with Backspace; `speed` `slow` / `normal` / `fast` (≈40 / 70 / 105 words a minute). It takes as long as a person would, and stops when the operator writes (`stoppedAt`). **Everyone watching sees ScreenMirror's own "is auto-typing" card** under the agent's name while it types (`spot {k:"at"}`, as a colleague's Type window raises it), and **a person who presses a key stops the run** (`stoppedAt.tookKeyboard`) — they took the keyboard. **`human:0`** is the machine's instant typing (with a `speed`, the even robot pace); `--type-instant` / `SM_TYPE_HUMAN=0` makes instant the default for a whole visit. On a host that drops characters, `drive/type-text.js` (one key per command; `--show` / `--secret` / `--intent`) |
 | `press {code}` | one key, e.g. `Enter`, `Backspace`, `F5` |
 | `chord {mod,code}` | modifier + key, e.g. `ControlLeft` + `KeyT` |
@@ -143,16 +144,54 @@ Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `
 | `quit` | hand the grant back with no sign-off (prefer `done`) |
 
 Any acting verb may carry **`expect: <predicate>`** — it's only `ok` when the screen agrees afterwards.
-A pointer verb may use `at:"<name>"` to aim where `find` last saw a word, or **`lx`/`ly`** to aim in the
-last `look`'s pixels. Any acting verb may also carry **`look:{out,rect?,max?,settle?}`**: after the act (and its
+A pointer verb may use `at:"<name>"` to aim where `find` last saw a word, or **`lx`/`ly`** to aim in a
+`look`'s pixels. Any acting verb may also carry **`look:{out,rect?,max?,settle?}`**: after the act (and its
 `expect`), a picture of the result rides on the answer as `look` — act and see in ONE round trip (`settle`
 defaults to 300 ms here). A failed look does not undo the act; check `look.ok`.
+
+### Clicking the right thing: marks, the check, the hit
+
+A model that reads a picture and answers "the box is at 412,96" is estimating, and on a 16 px box to tick an
+estimate is a miss. A page that moved after the look takes the click on whatever moved in. So `click`, `dbl` and
+`right` aimed **from a look** go through three steps ([vision/targets.js](../../vision/targets.js)):
+
+1. **Aim at a mark, not a coordinate.** `look {marks:true}` numbers what can be clicked on the picture it returns:
+   - **boxes** shaped like a control (a button's fill, a field's inside, a box to tick, a radio button, a switch);
+   - **short phrases** of words (a link, a tab, a menu item).
+
+   Each is named by its words: a button by its own, a box to tick by the words to its right, a field by its label
+   (left or above), with what is in it as its `value`. The answer lists them as `marks: ['7 field "Email" =
+   "you@example.com"', …]`. Then `click {mark:7}` goes to its centre. The words are read by the host from the very
+   picture it sent.
+2. **The screen is checked first.** The spot round the target is cut from the screen now (a small picture, about
+   one round trip) and compared with the look by the shape of its light and dark, so a hover tint is still the
+   same button.
+   - **Same:** the click goes.
+   - **Moved** (a scroll, a banner that pushed the page down): it is searched for nearby and the click follows it.
+     The answer says `moved:[dx,dy]`, in screen pixels.
+   - **Gone, or found in more than one place:** **nothing is clicked.** The answer is `ok:false` with `stale`, and a
+     fresh look (with marks, when the old one had them) comes back with it as `look`, ready to aim again.
+3. **The answer says what it hit.** `hit:{kind, label, value?}`, or `hit:null` with `near` (the nearest target and
+   how far, in screen pixels). A click from `lx`/`ly` that just missed a small target is moved onto it when it is
+   the only one that near; the answer says `snapped:{onto, by}`. `from` names the look (and mark) it was aimed
+   from.
+
+Each look has an **`id`** (the eight most recent are kept). `lx`/`ly` or `mark` with **`of:<id>`** are read from
+that look, not the last one: a zoomed look, or the picture an act brought back, no longer moves the frame of the
+next click.
+
+To skip a step:
+- **`aim:false`** skips the check.
+- **`snap:false`** keeps the exact point.
+- **`fast:1`** skips the check and the snap (a run of clicks into known targets).
+
+`x`/`y` and `at` are not from a picture, and are sent as before.
 
 ## Looking
 
 | verb | what it does |
 |------|--------------|
-| `look {out, rect?, max?, settle?, keep?}` | **the picture to read with vision.** A fresh capture, cut to `rect` (screen pixels), shrunk so its long edge is ≤ `max` (1280 by default; never enlarged), written to `out`. Answers `{w,h,scale,at,region,screen}`: `scale` is screen pixels per look pixel. Then **click what you saw in the picture's own pixels** — `click {lx,ly}` (also `dbl`, `right`, `probe`, `scroll`) — and the serve maps them back: a model reading a shrunk screenshot otherwise answers in the shrunk pixels and the click lands short. `settle` waits ms first (≤5 s). A point outside the look is refused. With a `rect`, a host that can cut the picture sends only that region (the answer says `cut:"host"` — a fraction of the bytes); an older host sends the whole screen and the serve cuts it. Deleted when the visit ends unless `keep:1`. |
+| `look {out, rect?, max?, settle?, keep?, marks?}` | **the picture to read with vision.** A fresh capture, cut to `rect` (screen pixels), shrunk so its long edge is ≤ `max` (1280 by default; never enlarged), written to `out`. Answers `{id,w,h,scale,at,region,screen}`: `id` names this look (for `of`), `scale` is screen pixels per look pixel. **`marks:true`** numbers what can be clicked on the picture and lists them in `marks` — then `click {mark:N}` ([above](#clicking-the-right-thing-marks-the-check-the-hit)). Otherwise **click what you saw in the picture's own pixels** — `click {lx,ly}` (also `dbl`, `right`, `probe`, `scroll`) — and the serve maps them back: a model reading a shrunk screenshot otherwise answers in the shrunk pixels and the click lands short. `settle` waits ms first (≤5 s). A point outside the look is refused. With a `rect`, a host that can cut the picture sends only that region (the answer says `cut:"host"` — a fraction of the bytes); an older host sends the whole screen and the serve cuts it. Deleted when the visit ends unless `keep:1`. |
 | `shot {out, keep?}` | save a full-screen PNG to `out`, full size (prefer `look` for reading). Deleted when the visit ends unless `keep:1` (or `--keep-captures`). |
 | `hold` | take a new picture, keep its identity only (~5.5 KB), decode nothing |
 | `see {rect}` | decode the held picture only down to `rect` |
