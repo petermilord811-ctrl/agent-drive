@@ -66,6 +66,8 @@ what makes the MCP row use the same mark; see the install script's comments and 
 | `SM_MCP_LOOK_MAX` | the long edge of a `look` that names no `max` (default: the serve's 1280; see below) |
 | `SM_MCP_MAX_VISITS` | how many machines the server holds at once, every chat's together (default 8, at most 32) |
 | `SM_MCP_CLIENT` | the client a visit runs (default `core/agent-join.js`); tests point it at a stand-in |
+| `SM_MCP_CALL_MS` | how long one call may block before it answers `pending` / `waiting` (default 50000: under the 60 s an editor allows) |
+| `SM_MCP_TOOLS` | `all`: a tool per verb (68 tools), for a client with no limit on tools; by default the verbs a job is made of, and `more` for the rest |
 
 ## A person still presses Allow, for every visit
 
@@ -84,30 +86,42 @@ unless someone presses Allow on it. The code goes out as an MCP progress notific
 
 | tool | what it does |
 |---|---|
-| `connect {host, task, relay?, control?, shell?, camera?, audio?, files?, monitor?}` | Starts `core/agent-join.js --serve <visit folder>` and waits for Allow. Answers `{w, h, host, dir, code, at, pid}`; every x/y is a screen pixel at `w`×`h`. If the visit cannot start, the answer gives the client's reason, its exit code and the end of its stderr. |
-| one tool per verb in `core/verbs.js` | Generated at startup, with `-` turned into `_` (`chat_wait`, `note_add`, `spotlight_off`). A call becomes `{do: <verb>, ...arguments}`, and the result is done.json's JSON as text. `ok:false` comes back as `isError`. The schema is the verb's own fields plus the common ones, with `additionalProperties:false`. The serve's verb table still has the last word: an unknown field is `refused` (and nothing is sent), and a common slip is renamed and reported in `fixed`. |
+| `connect {host, task, relay?, control?, shell?, camera?, audio?, files?, monitor?}` | Starts `core/agent-join.js --serve <visit folder>` and waits for Allow. Answers `{w, h, host, dir, code, at, pid}`; every x/y is a screen pixel at `w`×`h`. Not pressed within one call (see *One call, about 50 seconds*): `{ok:false, waiting:true, code}` — call `connect` again with the same host and it takes the wait up again (`resumed:true` once open). If the visit cannot start, the answer gives the client's reason, its exit code and the end of its stderr. |
+| the verbs a job is made of, one tool each | `look`, `click`, `keys`, `press`, `chord`, `open`, `scroll`, `clickText`, `dbl`, `right`, `find`, `ocr`, `wait`, `plan`, `chat`, `chat_wait`, `inbox`, `status`, `think`, `confirm`, `captcha`, `mission`, `done`, `access`, `undo`, `exec`, `terminal`, `ping` — the ones the rules require among the first. Generated at startup from `core/verbs.js`, with `-` turned into `_`. A call becomes `{do: <verb>, ...arguments}`, and the result is done.json's JSON as text; `ok:false` comes back as `isError`. The schema is the verb's own fields plus the common ones and **`host` (required)**, with `additionalProperties:false`. The serve's verb table still has the last word: an unknown field is `refused` (and nothing is sent), and a common slip is renamed and reported in `fixed`. |
+| `more {do, host, ...}` | Every other verb (`pause`, `note_add`, `spotlight`, `fetch`, `camera`, …): the same verb, through the same checks. Its description lists them. `SM_MCP_TOOLS=all` brings back a tool per verb for a client with no limit on tools. |
 | `look {rect?, max?, settle?, out?, marks?}` | Returns `[text: the answer, image: the PNG]`. `out` is optional. The answer's `id` names the look. With `marks:true` the picture carries a number on each thing to click and the answer lists them (`marks`): click one with `click {mark}`. Otherwise click what you see in **its** pixels with `click {lx, ly}`. |
 | `click {mark}` / `click {lx, ly, of?}` | A click aimed from a look is checked against the screen first. It follows a target that moved, and refuses one that is gone, handing back a fresh look as the image. It says what it hit: `hit`, `near`, `snapped`, `moved` ([serve-protocol.md](serve-protocol.md#clicking-the-right-thing-marks-the-check-the-hit)). |
 | any acting verb with `look:{}` | Acts, then returns the picture of the result in the same answer. |
-| `disconnect {text?, host?}` | With `text`, signs off in the room (`done`); without it, leaves quietly (`quit`). Waits for the client process to exit. With several visits open it ends only the one `host` names. |
+| `disconnect {host, text?}` | With `text`, signs off in the room (`done`); without it, leaves quietly (`quit`). Waits for the client process to exit. Ends only the visit `host` names; one still waiting for Allow is withdrawn. |
 | `intake {text}` | A job asked for in plain words ("connect 10004 and do my sticky notes") read by `core/intake.js`: `{host, skill, others, task, needs, why}` and, when it found a machine and a task, `connect` — the fields to call `connect` with (the least access the words justify). Connects to nothing; answered at once, outside the visit's queue. |
 
 - **Several machines at once.** The server holds a visit per machine (8 by default, `SM_MCP_MAX_VISITS`), each with its
   own client and serve. An editor shares one server between all its chats, so this is also how two agents work on two
   machines side by side.
-  - Every tool takes `host`, the machine it is for. With one visit open, a call without `host` goes to it, as before.
-  - Once several have been open, a call without `host` is refused, never guessed. That holds even when only one is
-    left: the call may come from the agent whose own visit just ended, and it must not reach the one that stayed.
-    Every answer says which `host` it came from.
+  - **Every call but `connect` and `intake` names its machine with `host`** — required, and never guessed. A call that
+    names none is refused even with one visit open: it may come from a chat that never connected, and "the only one
+    open" is how such a chat once acted on another's machine. Every answer says which `host` it came from.
   - `connect` to another machine opens alongside the visits already here. A `connect` to a machine already open here is
     refused, with a reminder that it may be another agent's visit: a refusal never tells one agent to end another's.
   - The relay lets three asks for Allow wait at once from one address. A fourth, while three are still waiting,
     replaces the oldest code.
+- **One call, about 50 seconds.** An MCP client gives up on a call it has waited on too long — Cursor at 60 s (error
+  -32001, not configurable, and progress does not extend it), Claude's desktop app too — and a call it gave up on was
+  cancelled: a `connect` threw away the card a person was about to press. So no call blocks longer than
+  `SM_MCP_CALL_MS` (50 000 by default):
+  - a command still running then answers **`pending`** (not an error): it goes on on the machine, and its answer rides on
+    the next call to that machine as `{previous, answeredLate}` — `ping {host}` collects it, waiting as long as a call may;
+  - a `connect` still waiting for Allow answers **`waiting`** with the code; the next `connect` to that machine takes the
+    wait up again. A visit nobody takes up — not let in, or let in while no call was waiting — ends 90 s after the last
+    `connect` for it, so no grant is left with nobody driving;
+  - `chat_wait` listens for at most one call's time and says to call it again;
+  - a client that resets its own clock on progress hears a word every 15 s.
 - **Timing.** A visit's serve takes one command at a time, so ITS calls queue. Another visit's calls run alongside
   them. Verbs that wait for a person or for the screen (`chat_wait`, `captcha`, `confirm`, `access`, `wait`, `plan`)
-  are given their own timeout plus a margin.
+  are given their own timeout plus a margin — within one call's time; past it, `pending`.
 - **Relative paths.** Relative paths (`out`, `file`) resolve inside the visit folder, which is the client's working
-  folder. Pictures are deleted when the visit ends unless `keep:1`.
+  folder. Pictures are deleted when the visit ends unless `keep:1` — by the client as it exits, and by this server
+  when the client was stopped instead (and, at startup, those left by visits a day old).
 - **Cancelling.** A cancelled call gets no answer. If the serve has not read the command yet, it is taken back and
   never runs. Otherwise it finishes, and its answer is added to the next result as `{previous, answeredLate}`.
 - **When things go wrong:**
