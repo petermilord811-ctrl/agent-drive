@@ -18,7 +18,7 @@
 //
 // See reference/serve-protocol.md for the verbs and gotchas. No dependencies.
 const fs = require('fs'), path = require('path');
-const { putCmd, budgetOf } = require('../core/cmd-file.js');
+const { exchangeAsync } = require('../core/cmd-file.js');
 const dir = process.argv[2];
 const cmd = process.argv[3];
 if (!dir || !cmd) { console.error('usage: node drive.js <work-dir> <cmdJson | [cmd, ...]>'); process.exit(2); }
@@ -29,18 +29,10 @@ const list = Array.isArray(parsed) ? parsed : [parsed];
 if (!list.length) { console.error('bad cmd json: empty batch'); process.exit(2); }
 for (const c of list) if (!c || typeof c.do !== 'string') { console.error('bad cmd json: a command has no .do'); process.exit(2); }
 
-// How long to wait for each answer: budgetOf in cmd-file.js, shared with the scripts that hand over in-process.
-const runOne = (c) => new Promise((resolve, reject) => {
-  try { fs.unlinkSync(outFile); } catch (_) {}
-  // ATOMIC write: temp file + rename, so the client can never read cmd.json mid-write (a batch writes fast).
-  putCmd(cmdFile, c);
-  const t0 = Date.now(), budget = budgetOf(c);
-  (function wait() {
-    if (fs.existsSync(outFile)) { let txt = ''; try { txt = fs.readFileSync(outFile, 'utf8'); } catch (_) {} resolve(txt); return; }
-    if (Date.now() - t0 > budget) { reject(new Error('TIMEOUT after ' + Math.round(budget / 1000) + 's waiting for done.json')); return; }
-    setTimeout(wait, 80);
-  })();
-});
+// How long to wait for each answer: budgetOf in cmd-file.js, shared with the scripts that hand over in-process. Each
+// command goes with its own id, and only the answer that carries it back is its answer (cmd-file.js exchangeAsync): a
+// late answer to a command given up on is never read as this one's. Handed over atomically (temp file + rename).
+const runOne = (c) => exchangeAsync(path.dirname(cmdFile), c).then((a) => a.txt);
 (async () => {
   const many = list.length > 1;
   for (let i = 0; i < list.length; i++) {
