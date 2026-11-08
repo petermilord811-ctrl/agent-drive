@@ -36,14 +36,17 @@ const nonEmpty = (v) => (typeof v === 'string' && v.length > 0) || (typeof v ===
 // own keys only: "toString", "constructor" and "__proto__" are not verbs, aliases or fields
 const own = (o, k) => o != null && Object.prototype.hasOwnProperty.call(o, k);
 // a point: x/y in screen pixels, lx/ly in the last look's pixels, or `at` -- a name `find` remembered
-const point = (c) => (typeof c.at === 'string' && !!c.at) || (num(c.x) && num(c.y)) || (num(c.lx) && num(c.ly));
-const PT = ['x', 'y', 'lx', 'ly', 'at', 'dx', 'dy'];
+const point = (c) => (typeof c.at === 'string' && !!c.at) || (num(c.x) && num(c.y)) || (num(c.lx) && num(c.ly)) || num(c.mark);
+// a point: screen pixels (x/y), a look's pixels (lx/ly, from look `of` -- the last by default), a number look {marks}
+// drew (mark), or a word `find` remembered (at); dx/dy shift it. aim:false skips the check against the screen, and
+// snap:false the move onto a target a click nearly hit (core/agent-join.js: aimed, hitOf).
+const PT = ['x', 'y', 'lx', 'ly', 'mark', 'of', 'at', 'dx', 'dy', 'snap', 'aim'];
 const V = {
   // ---- acting (needs --control) ----
-  click:     { f: PT.concat(['fast'], ACT), need: (c) => point(c) ? '' : 'a click needs x and y (screen pixels), lx and ly (the last look\'s pixels), or at:"<name>" from find', what: 'left click at a point' },
+  click:     { f: PT.concat(['fast'], ACT), need: (c) => point(c) ? '' : 'a click needs a mark (a number look {marks:true} drew), lx and ly (a look\'s pixels), x and y (screen pixels), or at:"<name>" from find', what: 'left click at a point' },
   clicks:    { f: ['at', 'fast'].concat(ACT), need: (c) => Array.isArray(c.at) && c.at.length ? '' : 'clicks needs at:[[x,y],...]', what: 'many left clicks, one round trip' },
-  dbl:       { f: PT.concat(ACT), need: (c) => point(c) ? '' : 'a double-click needs x and y, lx and ly, or at:"<name>"', what: 'double click' },
-  right:     { f: PT.concat(ACT), need: (c) => point(c) ? '' : 'a right-click needs x and y, lx and ly, or at:"<name>"', what: 'right click' },
+  dbl:       { f: PT.concat(ACT), need: (c) => point(c) ? '' : 'a double-click needs a mark, lx and ly, x and y, or at:"<name>"', what: 'double click' },
+  right:     { f: PT.concat(ACT), need: (c) => point(c) ? '' : 'a right-click needs a mark, lx and ly, x and y, or at:"<name>"', what: 'right click' },
   clickText: { f: ['text', 'rect', 'nth', 'as', 'lang', 'dx', 'dy', 'fast'].concat(ACT), need: (c) => nonEmpty(c.text) ? '' : 'clickText needs the text to look for', what: 'read the screen, find a word and click it' },
   keys:      { f: ['text', 'human', 'speed'].concat(ACT), need: (c) => nonEmpty(c.text) ? '' : 'keys needs text: the characters to type (keys {text:"…"}) -- nothing was typed', what: 'type text into the focused window -- like a person by default (human:0 = instant)' },
   press:     { f: ['code', 'n'].concat(ACT), need: (c) => nonEmpty(c.code) ? '' : 'press needs code: a key like "Enter", "Escape", "F5", "ArrowDown", "a"', what: 'press one key (n times)' },
@@ -55,7 +58,7 @@ const V = {
   pause:     { f: ['ms'].concat(ACT), need: (c) => num(c.ms) && Number(c.ms) > 0 ? '' : 'pause needs ms (how long to wait, up to 30000)', what: 'wait a fixed time (a wait on a pixel is better)' },
   quit:      { f: [], what: 'hand the grant back, no sign-off' },
   // ---- looking ----
-  look:      { f: ['out', 'rect', 'max', 'settle', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'look needs out: the .png file to write the picture to', what: 'a fresh picture sized for reading (long edge <= max, 1280 by default), with the scale back to screen pixels' },
+  look:      { f: ['out', 'rect', 'max', 'settle', 'keep', 'marks'], need: (c) => nonEmpty(c.out) ? '' : 'look needs out: the .png file to write the picture to', what: 'a fresh picture sized for reading (long edge <= max, 1280 by default), with the scale back to screen pixels; marks:true numbers what can be clicked on it' },
   shot:      { f: ['out', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'shot needs out: the file to write the picture to', what: 'the whole screen, full size, as a PNG' },
   hold:      { f: [], what: 'a new picture -- its identity only (~5 KB)' },
   see:       { f: ['rect'], what: 'decode the held picture down to a rectangle' },

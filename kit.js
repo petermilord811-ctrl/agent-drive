@@ -48,6 +48,9 @@ const AREAS = [
   ['tests/', "the kit's own tests: npm test (CI runs them on every pull request)"],
   ['.github/', 'CI on every pull request, CODEOWNERS (who reviews what), the pull-request and issue templates'],
   ['.cursor/', "Cursor's project rules (rules/*.mdc): what an agent working on this kit in Cursor must do"],
+  ['.cursor-plugin/', 'the kit as a Cursor plugin: plugin.json names its MCP server and its logo (node scripts/install-cursor-plugin.js)'],
+  ['assets/', "the plugin's pictures: ScreenMirror's mark, the logo Cursor shows"],
+  ['scripts/', 'setting the kit up on a machine: install-cursor-plugin.js (--check says whether it is in place)'],
   ['work/', "a run's scratch: cmd.json, done.json, ledger.json, screenshots (never committed)"],
 ];
 

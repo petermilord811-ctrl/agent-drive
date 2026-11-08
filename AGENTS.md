@@ -54,6 +54,10 @@ file explains them.
 - **Plan before you act.** A job of more than a step or two is a mission: milestones that each say what will be
   on the screen when they are done. Read the plan back (`mission.js show`) whenever you lose the thread.
 - **Look before you act; check after.** A click that was sent is not a click that landed.
+- **Click by mark, not by guess.** For a button, a field, a box to tick or a link, `look {marks:true}` and then
+  `click {mark:N}`. Otherwise give `lx`/`ly` read from the look, with `of:<its id>` when it is not the last one. Read
+  `hit` in every answer. When it is not what you meant (or `near` says you missed), look again; never nudge a few
+  pixels and try again. A click refused as `stale` sent nothing: aim again on the fresh look it brought back.
 - **Achieve with proof** — a check that holds on a fresh picture, or a picture of it.
 - **Replan out loud** — when the screen or the operator says the plan no longer fits: add, change, split, skip
   or fail, each with its why. The room sees the plan move, and the reason.

@@ -105,7 +105,12 @@ const POINTS = { type: 'array', items: { type: 'array', items: { type: 'number' 
 const LOOK_AFTER = { type: 'object', description: 'after the act, a picture of the screen -- it comes back in this answer: {rect?, max?, settle?}; out is optional' };
 const FIELDS = {
   x: N('screen pixel x'), y: N('screen pixel y'),
-  lx: N('x in the last look\'s pixels: the serve maps it to the screen'), ly: N('y in the last look\'s pixels'),
+  lx: N('x in a look\'s pixels (the last look, or the one `of` names): the serve maps it to the screen'), ly: N('y in a look\'s pixels'),
+  mark: N('a number look {marks:true} drew on a target: the click goes to its centre'),
+  of: N('the id of the look lx/ly or mark were read from (default: the last look)'),
+  marks: B('number what can be clicked on the picture -- buttons, fields, boxes to tick, links -- then click {mark:N}'),
+  snap: B('false: leave a click that just missed a small target where it was asked for'),
+  aim: B('false: skip checking that the screen still shows what the look showed there'),
   dx: N('added to x, screen pixels'), dy: N('added to y, screen pixels'),
   at: S('aim where `find` remembered this name'),
   fast: B('tighter pacing, for a run of known targets'),
@@ -188,7 +193,8 @@ const COMMON = verbs.COMMON.filter((k) => k !== 'do' && k !== '__vetted');
 const HOST_FIELD = { type: 'string', pattern: '^[0-9]{5}$', description: 'the machine this is for: the number you connected to (needed once this server has had more than one visit open)' };
 // More than the table's one line, where the MCP side changes what a call does or how long it may take.
 const EXTRA = {
-  look: 'The picture comes back in this answer with its scale: click what you see in ITS pixels with lx/ly. out is optional.',
+  look: 'The picture comes back in this answer with its id and scale. marks:true numbers what can be clicked on it: then click {mark:N}, with nothing to estimate. Or click what you see in ITS pixels with lx/ly. out is optional.',
+  click: 'Aim with a mark (look {marks:true} first) or with lx/ly read from a look (of: its id, when not the last). A click aimed from a look is checked against the screen first and follows a target that moved; the answer says what it hit (hit, near, snapped, moved). look:{} returns a picture of the result in the same answer.',
   shot: 'Writes the file only (out is optional) -- to see the screen, use look.',
   wait: 'Blocks until it holds, or timeout ms (default 15000).',
   plan: 'One call, many steps on the machine.',
@@ -277,7 +283,7 @@ for (const verb of verbs.VERBS) {
 const INSTRUCTIONS = [
   'agent-drive drives a machine through ScreenMirror for the person who invited you. Each visit needs a person at the machine to press Allow.',
   '1. connect {host, task}: the card shows your task and a code. The answer is the screen size; every x/y is a screen pixel at that size. A request in plain words ("connect 10004 and do my sticky notes")? intake {text} reads it into connect\'s fields and finds the skill that does it.',
-  '2. Every serve verb is a tool (a "-" in a verb is "_" here: chat_wait, note_add). look returns the picture inline with its scale: click what you see in ITS pixels with click {lx,ly}. Any acting verb takes look:{} to act and see in one call.',
+  '2. Every serve verb is a tool (a "-" in a verb is "_" here: chat_wait, note_add). look returns the picture inline. To click a button, a field, a box to tick or a link: look {marks:true} -- each gets a number on the picture -- and click {mark:N}, with nothing to estimate. Otherwise click what you see in the look\'s own pixels with click {lx,ly}. A click from a look is checked against the screen first and says what it hit (hit, near, snapped, moved): when hit is not what you meant, look again instead of clicking near it again. Any acting verb takes look:{} to act and see in one call.',
   '3. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (the operator wrote: answer in chat); room (what the people watching did on the board: a pause, a stop, an answer, an undo -- act on it first); paused / hold / approval (wait in chat_wait, then send again); remind and hint (do those first).',
   '4. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '5. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply.',
