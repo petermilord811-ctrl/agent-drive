@@ -1,6 +1,6 @@
 'use strict';
 // @tool a picture sized for reading: crop + area-average shrink to a long edge, and the way back to screen pixels
-// @run  const look = require('./look.js'); look.fit(w, h, rect, max); look.render(img, region); look.toScreen(region, lx, ly)
+// @run  const look = require('./look.js'); look.fit(w, h, rect, max); look.render(img, region); look.renderRaw(img, region); look.toScreen(region, lx, ly)
 // look -- WHAT A MODEL IS SHOWN, AND HOW ITS ANSWER GETS BACK TO THE SCREEN.
 //
 // A full-size screenshot (2560x1440 and up) is shrunk by whatever reads it, and the reader then answers in
@@ -28,8 +28,9 @@ function fit(sw, sh, rect, max) {
   return { x, y, w, h, k: +k.toFixed(6), ow: Math.max(1, Math.round(w / k)), oh: Math.max(1, Math.round(h / k)) };
 }
 
-// Area-average the region of a decoded picture (agent-eyes decode: px/stride/bpp/rows) to ow x oh, as a PNG.
-function render(img, r) {
+// Area-average the region of a decoded picture (agent-eyes decode: px/stride/bpp/rows) to ow x oh: the pixels,
+// as a decoded picture of its own (what the model is shown, kept so a click can be checked against it).
+function renderRaw(img, r) {
   const { ow, oh } = r, rgb = Buffer.alloc(ow * oh * 3);
   const sx = r.w / ow, sy = r.h / oh, rows = Math.min(img.rows, img.h);
   for (let oy = 0; oy < oh; oy++) {
@@ -51,8 +52,10 @@ function render(img, r) {
       if (a > 0) { rgb[o] = Math.round(R / a); rgb[o + 1] = Math.round(G / a); rgb[o + 2] = Math.round(B / a); }
     }
   }
-  return encodePng(ow, oh, rgb);
+  return { w: ow, h: oh, px: rgb, stride: ow * 3, bpp: 3, rows: oh, ready: true };
 }
+// ...and as a PNG.
+function render(img, r) { const p = renderRaw(img, r); return encodePng(p.w, p.h, p.px); }
 
 // A point in the look's pixels -> the screen's (the centre of the screen area that look pixel covers).
 // Outside the look is refused rather than clamped: a point off the picture was not seen, so it is not aimed at.
@@ -64,4 +67,4 @@ function toScreen(r, lx, ly) {
   return { ok: true, x: Math.min(r.x + r.w - 1, Math.round(r.x + X * r.k)), y: Math.min(r.y + r.h - 1, Math.round(r.y + Y * r.k)) };
 }
 
-module.exports = { fit, render, toScreen };
+module.exports = { fit, render, renderRaw, toScreen };

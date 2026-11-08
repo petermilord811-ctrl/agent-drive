@@ -76,6 +76,16 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   - A second `connect` opens alongside the first. It used to be refused with "disconnect it first", and an agent
     obeyed: it ended another chat's visit.
   - `SM_MCP_MAX_VISITS` sets the limit (8 by default).
+- **Clicks that hit what they aim at** (`vision/targets.js`, [serve-protocol.md](docs/reference/serve-protocol.md#clicking-the-right-thing-marks-the-check-the-hit)):
+  - `look {marks:true}` numbers what can be clicked on the picture and names each target by its words: buttons,
+    fields, boxes to tick, radio buttons, switches, links. Then `click {mark:N}` goes to that target's centre, with
+    no coordinate for the model to estimate.
+  - A click aimed from a look (a mark, or `lx`/`ly`) is checked against the screen first. A target that moved is
+    followed (`moved`). One that is gone is not clicked, and a fresh look comes back with the refusal.
+  - The answer says what the click hit (`hit`, `near`). A click that just missed a small target is moved onto it
+    (`snapped`).
+  - Every look has an `id`, and `of:<id>` aims in that look rather than the last one.
+  - `aim:false`, `snap:false` and `fast:1` turn these off.
 
 ## 1.0.0 — 2026-11-06
 

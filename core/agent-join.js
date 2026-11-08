@@ -144,6 +144,8 @@ const intake = require('./intake.js');     // a job asked for in plain words -> 
 const undo = require('./undo.js');         // what a command changed on the host, and how it is put back; pure, tested
 const board = require('./board.js');       // the watchers' board: its buttons' requests, autonomy, risk, time; pure, tested
 const lookv = require('../vision/look.js');   // a picture sized for reading, and the way back to screen pixels; pure, tested
+const targets = require('../vision/targets.js');   // what can be clicked on a picture, as numbered marks; is a spot still there; pure, tested
+const { encodePng } = require('../vision/glyph-reader.js');
 
 // ---- the command line ---------------------------------------------------------------------------
 const argv = process.argv.slice(2);
@@ -1732,14 +1734,26 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (!v) return { ok: false, why: 'nothing is remembered as "' + cmd.at + '" -- `find` it first' };
         return { ok: true, x: v.cx + (Number(cmd.dx) || 0), y: v.cy + (Number(cmd.dy) || 0) };
       }
-      // lx/ly: a point in the LAST LOOK's pixels -- what a model reading that picture answers in. Mapped here,
-      // the same way every time, instead of by whoever read it (vision/look.js).
+      // A MARK: a number look {marks:true} drew on a target (vision/targets.js). Its centre, with nothing to estimate.
+      if (cmd.mark != null && cmd.x == null && cmd.lx == null) {
+        const L = lookOf(cmd.of);
+        if (!L) return { ok: false, why: cmd.of != null ? 'there is no look ' + cmd.of + ' any more (the last ' + LOOKS_KEPT + ' are kept) -- look again' : 'a mark is a number on a look -- look {marks:true} first' };
+        if (!L.marks) return { ok: false, why: 'look ' + L.id + ' has no marks -- look {marks:true} draws them' };
+        const m = L.marks.find((t) => t.n === Number(cmd.mark));
+        if (!m) return { ok: false, why: 'look ' + L.id + ' has no mark ' + cmd.mark + (L.marks.length ? ' (its marks are 1-' + L.marks.length + ')' : ' (it found nothing to mark)') };
+        const p = lookv.toScreen(L.r, m.cx, m.cy);
+        return p.ok ? { ok: true, x: p.x + (Number(cmd.dx) || 0), y: p.y + (Number(cmd.dy) || 0), from: 'mark', look: L, mark: m, lx: m.cx, ly: m.cy } : p;
+      }
+      // lx/ly: a point in a LOOK's pixels -- what a model reading that picture answers in -- the last look's, or the
+      // one `of` names. Mapped here, the same way every time, instead of by whoever read it (vision/look.js).
       if (cmd.x == null && cmd.y == null && (cmd.lx != null || cmd.ly != null)) {
-        const p = lookv.toScreen(lastLook, cmd.lx, cmd.ly);
-        return p.ok ? { ok: true, x: p.x + (Number(cmd.dx) || 0), y: p.y + (Number(cmd.dy) || 0), from: 'look' } : p;
+        const L = cmd.of != null ? lookOf(cmd.of) : null;
+        if (cmd.of != null && !L) return { ok: false, why: 'there is no look ' + cmd.of + ' any more (the last ' + LOOKS_KEPT + ' are kept) -- look again' };
+        const p = lookv.toScreen(L ? L.r : lastLook, cmd.lx, cmd.ly);
+        return p.ok ? { ok: true, x: p.x + (Number(cmd.dx) || 0), y: p.y + (Number(cmd.dy) || 0), from: 'look', look: L || lookOf(null), lx: Number(cmd.lx), ly: Number(cmd.ly) } : p;
       }
       const x = Number(cmd.x), y = Number(cmd.y);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) return { ok: false, why: 'no point to aim at: give x and y, lx and ly, or at' };
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return { ok: false, why: 'no point to aim at: give x and y, lx and ly, a mark, or at' };
       return { ok: true, x, y };
     };
 
@@ -1957,6 +1971,27 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // LOOK: a fresh picture of (a region of) the screen, shrunk so its long edge is <= max, written to `out`,
     // with the scale back. It is remembered, so the next click can be given in its pixels (lx/ly).
     let lastLook = null, eyeAt = 0;
+    // THE LOOKS, NOT ONLY THE LAST. Each has an id, and lx/ly or a mark may say which picture they were read from
+    // (`of`): a look at a small region, or the picture an act brought back with look:{}, used to change the frame of
+    // every click after it, whatever picture the model was still reading. Kept with their pixels -- what the model
+    // was shown -- so a click aimed from one can be checked against the screen before it goes, and with their marks.
+    const looks = [];
+    const LOOKS_KEPT = 8;
+    let lookSeq = 0, acts = 0;
+    const lookOf = (id) => (id == null || id === '' ? looks[looks.length - 1] : looks.find((l) => l.id === Number(id))) || null;
+    // THE WORDS ON A LOOK, read from the very picture it shows: the host holds what it sent and reads it there (on its
+    // own lossless pixels), or it is read here from the bytes in hand. In the look's pixels, as the reader's lines.
+    async function lookWords(s, r) {
+      const f = { id: s.id, w: s.w, h: s.h, buf: s.png, total: s.png.length, wire: 0, trips: 0 };
+      const t = await readText(ws, f, s.crop ? null : { x: r.x, y: r.y, w: r.w, h: r.h }, LANG);
+      trips++;
+      if (!t.ok) return { ok: false, why: t.why };
+      const ox = (s.crop ? s.crop[0] : 0) + (Number(t.at && t.at.x) || 0), oy = (s.crop ? s.crop[1] : 0) + (Number(t.at && t.at.y) || 0);
+      const lines = (t.lines || []).map((l) => (l.w || []).map((w) => [String(w[0]), (ox + Number(w[1]) - r.x) / r.k, (oy + Number(w[2]) - r.y) / r.k, Number(w[3]) / r.k, Number(w[4]) / r.k]));
+      return { ok: true, lines };
+    }
+    // a mark as the answer says it: 7 field "Email" = "you@example.com"
+    const markLine = (m) => m.n + ' ' + m.kind + ' "' + m.label + '"' + (m.value ? ' = "' + m.value + '"' : '');
     // THE BOARD'S PICTURES (core/board.js): a milestone's proof and the task's result, each its own frame (the relay keeps
     // the last few for whoever opens the machine later) instead of riding every panel frame
     const sendProof = (m, ev, img) => {
@@ -1987,10 +2022,24 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (im.w !== SW || im.h !== SH) return { ok: false, why: 'the screen changed size -- was ' + SW + 'x' + SH + ', now ' + im.w + 'x' + im.h };
         r = src = lookv.fit(im.w, im.h, o.rect, o.max);
       }
-      const png = lookv.render(im, src);
+      const raw = lookv.renderRaw(im, src);
+      // MARKS: what can be clicked, numbered on the picture -- so a click is {mark:7}, with nothing to estimate
+      let marks = null, shown = raw, marksWhy;
+      if (o.marks) {
+        const t = await lookWords(s, r);
+        // no words (a reader that failed) still leaves the boxes: buttons, fields and boxes to tick, unnamed
+        marks = targets.find(raw, t.ok ? t.lines : [], { k: r.k });
+        if (!t.ok) marksWhy = 'the words could not be read (' + t.why + ') -- the marks are the boxes alone, unnamed';
+        const avoid = t.ok ? [].concat(...t.lines.map((l) => l.map((w) => ({ x: w[1], y: w[2], w: w[3], h: w[4] })))) : [];
+        shown = targets.draw(raw, marks, { avoid });
+      }
+      const png = encodePng(shown.w, shown.h, shown.px);
       fs.writeFileSync(o.out, png);
       capture(o.out, o.keep);
       lastLook = r;
+      const id = ++lookSeq;
+      looks.push({ id, r, pic: raw, at: Date.now(), acts, marks, max: o.max, rect: o.rect || null, out: o.out });
+      while (looks.length > LOOKS_KEPT) looks.shift();
       // WHAT THE AGENT SAW, on the board (core/board.js): the same region, small (a PNG of ~10 KB; smaller when the screen
       // is busy), at most every 2.5 s -- so the people watching see what its next move is based on
       if (!relayDegraded && !left && Date.now() - eyeAt > 2500) {
@@ -2003,9 +2052,124 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           }
         } catch (_) {}
       }
-      return { ok: true, out: o.out, w: r.ow, h: r.oh, scale: r.k, at: [r.x, r.y], region: [r.w, r.h], screen: [SW, SH], bytes: png.length, cut: s.crop ? 'host' : undefined,
-               hint: r.k > 1 || r.x || r.y ? 'click in this picture\'s pixels with lx/ly; the serve maps them to the screen' : undefined };
+      return { ok: true, id, out: o.out, w: r.ow, h: r.oh, scale: r.k, at: [r.x, r.y], region: [r.w, r.h], screen: [SW, SH], bytes: png.length, cut: s.crop ? 'host' : undefined,
+               marks: marks ? marks.map(markLine) : undefined, marksWhy,
+               hint: marks ? (marks.length ? 'click a target by its number: click {mark:N} (of:' + id + ' if you look again before clicking)' : 'nothing on it looks clickable -- click in this picture\'s pixels with lx/ly')
+                 : r.k > 1 || r.x || r.y ? 'click in this picture\'s pixels with lx/ly; the serve maps them to the screen' : undefined };
     }
+
+    // ---- BEFORE A CLICK AIMED FROM A PICTURE ---------------------------------------------------------------------
+    // A click given in a look's pixels (lx/ly, or a mark) is aimed at what that picture showed -- and the screen may
+    // have moved on since: the page scrolled, a banner pushed it down, a list loaded above it, the last click opened
+    // something. The click then lands on whatever is there now. So the spot is cut from the screen NOW, at the look's
+    // scale, and compared with the look (vision/targets.js `same`: by the shape of its light and dark, so a hover tint
+    // is still the same button). Still there: it goes. Moved: it is searched for round about (`track`) and the click
+    // follows it (`moved` in the answer). Gone, or found in more than one place: nothing is clicked, and a fresh look
+    // comes back with the refusal -- one call to aim again, not two. A small cut, so it costs about one round trip.
+    // `fast` or aim:false skips it (a run of clicks into known targets); x/y and `at` are not from a picture at all.
+    const SEARCH_X = 160, SEARCH_Y = 320;   // how far a target is followed, in screen pixels
+    // a screen rectangle as a picture at scale k, and where it sits in look L's pixels
+    async function cutAt(rect, k) {
+      const x = Math.max(0, Math.round(rect.x)), y = Math.max(0, Math.round(rect.y));
+      const want = { x, y, w: Math.max(1, Math.min(SW - x, Math.round(rect.w))), h: Math.max(1, Math.min(SH - y, Math.round(rect.h))) };
+      const s = await picture(() => shot(ws, [MON], want));
+      if (!s.ok) return s;
+      wire += s.png.length; trips += s.trips || 1;
+      const im = eyes.decode(s.png);
+      if (!im.ready || im.rows < im.h) return { ok: false, why: 'the picture could not be decoded' };
+      // a host that cannot cut sends the whole screen: the region is then cut here
+      const src = s.crop ? { x: 0, y: 0, w: im.w, h: im.h } : { x: want.x, y: want.y, w: want.w, h: want.h };
+      const at = s.crop ? { x: s.crop[0], y: s.crop[1] } : { x: want.x, y: want.y };
+      const ow = Math.max(1, Math.round(src.w / k)), oh = Math.max(1, Math.round(src.h / k));
+      return { ok: true, pic: lookv.renderRaw(im, Object.assign({}, src, { ow, oh, k })), sx: at.x, sy: at.y };
+    }
+    async function aimed(a, cmd) {
+      const L = a.look;
+      if (!L || !L.pic || cmd.fast || cmd.aim === false || cmd.aim === 0 || cmd.aim === '0') return a;
+      const k = L.r.k;
+      // the spot round the point, in the look's pixels: the mark's own box and a little more, or a window round lx/ly
+      let sp = a.mark ? { x: a.mark.x - 4, y: a.mark.y - 4, w: a.mark.w + 8, h: a.mark.h + 8 }
+                      : { x: Math.round(a.lx) - 24, y: Math.round(a.ly) - 14, w: 48, h: 28 };
+      if (sp.w > 240) { sp.x += Math.round((sp.w - 240) / 2); sp.w = 240; }
+      if (sp.h > 100) { sp.y += Math.round((sp.h - 100) / 2); sp.h = 100; }
+      sp = targets.clip(L.pic, sp);
+      if (sp.w < 8 || sp.h < 8) return a;                                  // too little of it on the picture to compare
+      const toScr = (lx, ly) => ({ x: L.r.x + lx * k, y: L.r.y + ly * k });
+      const near = await cutAt(Object.assign(toScr(sp.x - 3, sp.y - 3), { w: (sp.w + 6) * k, h: (sp.h + 6) * k }), k);
+      if (!near.ok) return a;                                                // no picture now: aim as asked (the click is what was asked for)
+      const inCut = (c) => ({ x: Math.round(sp.x - (c.sx - L.r.x) / k), y: Math.round(sp.y - (c.sy - L.r.y) / k), w: sp.w, h: sp.h });
+      const v = targets.same(L.pic, sp, near.pic, inCut(near));
+      const since = acts - L.acts - 1;   // this click is counted already
+      if (v.same) return Object.assign({}, a, { checked: { look: L.id, same: v.score } });
+      // not what the look showed there: follow it, round about
+      const area = Object.assign(toScr(sp.x, sp.y), { w: 0, h: 0 });
+      area.x -= SEARCH_X; area.y -= SEARCH_Y; area.w = sp.w * k + 2 * SEARCH_X; area.h = sp.h * k + 2 * SEARCH_Y;
+      const wide = await cutAt(area, k);
+      if (wide.ok) {
+        const t = targets.track(L.pic, sp, wide.pic, { x: 0, y: 0, w: wide.pic.w, h: wide.pic.h });
+        if (t.found) {
+          // where the spot is now, in screen pixels, against where it was
+          const now = { x: wide.sx + t.at[0] * k, y: wide.sy + t.at[1] * k }, was = toScr(sp.x, sp.y);
+          const mx = Math.round(now.x - was.x), my = Math.round(now.y - was.y);
+          return Object.assign({}, a, { x: Math.min(SW - 1, Math.max(0, a.x + mx)), y: Math.min(SH - 1, Math.max(0, a.y + my)),
+                                        moved: [mx, my], checked: { look: L.id, same: v.score, followed: t.score } });
+        }
+      }
+      // gone: refuse, and hand back a fresh look so the next call can aim again
+      const why = 'nothing was clicked: the screen has changed where look ' + L.id + ' showed ' + (a.mark ? 'mark ' + a.mark.n + ' (' + a.mark.kind + ' "' + a.mark.label + '")' : 'that point') +
+        (since > 0 ? ' (' + since + ' action' + (since > 1 ? 's' : '') + ' since that look)' : '') + ' -- aim again on the new look';
+      let fresh;
+      try { fresh = await doLook({ out: path.join(dir, 'look-' + (lookSeq + 1) + '.png'), max: Math.max(L.r.ow, L.r.oh), rect: L.rect || undefined, marks: !!L.marks }); } catch (_) { fresh = null; }
+      return { ok: false, why, stale: { look: L.id, same: v.score }, look: fresh && fresh.ok ? fresh : undefined };
+    }
+    // WHAT A CLICK FROM A PICTURE HITS, said in its answer -- and a near miss put right. The targets are the look's marks,
+    // or (without marks) the boxes round the point, found on the look's own pixels: no words, no round trip. A click
+    // just off a small target -- a box to tick, a radio button, a little close button -- is moved onto it (`snapped`)
+    // when it is the only target that near; snap:false leaves every click where it was asked for. A click given with
+    // dx/dy meant to be off the centre, and is left alone.
+    function hitOf(a, cmd) {
+      const L = a.look;
+      if (!L || !L.pic) return a;
+      if (a.mark) return Object.assign({}, a, { hit: { kind: a.mark.kind, label: a.mark.label || undefined, value: a.mark.value } });
+      const k = L.r.k, lx = a.lx, ly = a.ly;
+      // the whole look, once (a box cut by a window round the point would not count, and a wide field clicked in
+      // its middle would read as a miss): about 50 ms the first time a click is aimed from it, kept for the next
+      if (!L.marks && !L.auto) L.auto = targets.find(L.pic, [], { k });
+      const list = L.marks || L.auto;
+      const h = targets.at(list, lx, ly);
+      const say = (m) => ({ kind: m.kind, label: m.label || undefined, value: m.value });
+      if (h.hit) return Object.assign({}, a, { hit: say(h.hit) });
+      const out = Object.assign({}, a, { hit: null });
+      if (h.nearest) out.near = Object.assign(say(h.nearest), { by: Math.round(h.dist * k) });
+      const reach = (m) => Math.max(3, Math.min(12, Math.min(m.w, m.h) * 0.6));
+      const close = list.filter((m) => targets.dist(m, lx, ly) <= reach(m));
+      if (cmd.snap !== false && cmd.snap !== 0 && cmd.dx == null && cmd.dy == null && close.length === 1) {
+        const m = close[0], p = lookv.toScreen(L.r, m.cx, m.cy);
+        if (p.ok) {
+          const mx = a.moved ? a.moved[0] : 0, my = a.moved ? a.moved[1] : 0;
+          out.x = Math.min(SW - 1, Math.max(0, p.x + mx)); out.y = Math.min(SH - 1, Math.max(0, p.y + my));
+          out.snapped = { onto: say(m), by: [out.x - a.x, out.y - a.y] };
+          out.hit = say(m); delete out.near;
+        }
+      }
+      return out;
+    }
+    // the parts of a click's answer that say where it went and what it hit
+    const aimNote = (a) => {
+      const o = {};
+      if (a.look) o.from = (a.mark ? 'mark ' + a.mark.n + ' of ' : '') + 'look ' + a.look.id;
+      for (const key of ['hit', 'near', 'snapped', 'moved']) if (a[key] !== undefined) o[key] = a[key];
+      return o;
+    };
+    // aim a click: where (aimAt), still there (aimed), and what it hits (hitOf)
+    async function aimFor(cmd) {
+      const a = aimAt(cmd);
+      if (!a.ok || !a.look || cmd.fast) return a;   // fast: a run into known targets -- no check, no snap
+      const b = await aimed(a, cmd);
+      return b.ok ? hitOf(b, cmd) : b;
+    }
+    // a click that was not sent: why, and -- when the screen had moved on -- the fresh look to aim again on
+    const failAim = (a) => { const o = { ok: false, why: a.why }; if (a.stale) o.stale = a.stale; if (a.look && a.look.ok) o.look = a.look; return o; };
     // Locate a word on the screen -- the body `find` and `clickText` share. Reads a region, OCRs it on the
     // host, matches the word (substring, case-insensitive), returns the nth hit (0-based) with its centre.
     const findWord = async (rect, text, nth, lang) => {
@@ -2383,6 +2547,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (!v.ok) { out = { ok: false, why: v.why, refused: true }; return out; }
         if (v.fixed.length) { cmd = v.cmd; noteFixed(v.fixed); }
       }
+      if (verbs.isActing(cmd)) acts++;   // how many actions since a look (aimed: "2 actions since that look")
       if (!grantControl && NEEDS_CONTROL.has(cmd.do)) {
         out = { ok: false, why: 'this visit is watch-only -- ask for the keyboard and mouse: {"do":"access","control":1,"why":"..."}', needs: 'control' };
         return out;
@@ -2404,9 +2569,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           // counted like every other read: the ledger showed every shot as 0 bytes, the costliest command as free
           else { wire += s.png.length; trips += s.trips || 1; fs.writeFileSync(cmd.out, s.png); capture(cmd.out, cmd.keep); reply({ ok: true, w: s.w, h: s.h, bytes: s.png.length }); }
         } else if (cmd.do === 'click') {
-          const a = aimAt(cmd);
-          if (!a.ok) reply({ ok: false, why: a.why });
-          else { await clickAt(a.x, a.y, SW, SH, cmd.fast); reply({ ok: true, at: [a.x, a.y] }); }
+          const a = await aimFor(cmd);
+          if (!a.ok) reply(failAim(a));
+          else { await clickAt(a.x, a.y, SW, SH, cmd.fast); reply(Object.assign({ ok: true, at: [a.x, a.y] }, aimNote(a))); }
         } else if (cmd.do === 'clicks') {              // many, in one round trip
           for (const [x, y] of (cmd.at || [])) { await clickAt(Number(x), Number(y), SW, SH, cmd.fast); await sleep(cmd.fast ? 20 : 40); }
           reply({ ok: true, n: (cmd.at || []).length });
@@ -2456,8 +2621,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           await chord(String(cmd.mod || 'ControlLeft'), String(cmd.code || 'KeyA'));
           reply({ ok: true });
         } else if (cmd.do === 'dbl') {                 // a double click: the way into a colour picker
-          const a = aimAt(cmd);
-          if (!a.ok) { reply({ ok: false, why: a.why }); return out; }
+          const a = await aimFor(cmd);
+          if (!a.ok) { reply(failAim(a)); return out; }
           const x = Math.min(a.x / SW, 0.99999), y = Math.min(a.y / SH, 0.99999);
           clickPing(x, y, false);
           ws.send({ type: 'mouse', action: 'move', x, y }); await sleep(60);
@@ -2465,16 +2630,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             ws.send({ type: 'mouse', action: 'down', button: 0, x, y }); await sleep(30);
             ws.send({ type: 'mouse', action: 'up', button: 0, x, y }); await sleep(40);
           }
-          oweSettle(300); reply({ ok: true, at: [a.x, a.y] });
+          oweSettle(300); reply(Object.assign({ ok: true, at: [a.x, a.y] }, aimNote(a)));
         } else if (cmd.do === 'right') {               // a flag, in minesweeper terms
-          const a = aimAt(cmd);
-          if (!a.ok) { reply({ ok: false, why: a.why }); return out; }
+          const a = await aimFor(cmd);
+          if (!a.ok) { reply(failAim(a)); return out; }
           const x = Math.min(a.x / SW, 0.99999), y = Math.min(a.y / SH, 0.99999);
           clickPing(x, y, false);
           ws.send({ type: 'mouse', action: 'move', x, y }); await sleep(50);
           ws.send({ type: 'mouse', action: 'down', button: 2, x, y }); await sleep(50);
           ws.send({ type: 'mouse', action: 'up', button: 2, x, y }); oweSettle(100);
-          reply({ ok: true, at: [a.x, a.y] });
+          reply(Object.assign({ ok: true, at: [a.x, a.y] }, aimNote(a)));
         } else if (cmd.do === 'keys') {
           // LIKE A PERSON, BY DEFAULT (the owner's call, 2026-11-06): the viewer's own "Like a person" planner
           // (core/autotype.js -- the Type window's, copied character for character): a typist's rhythm, pauses at
