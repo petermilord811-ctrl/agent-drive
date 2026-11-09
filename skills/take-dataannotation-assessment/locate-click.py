@@ -13,18 +13,31 @@ CONTRACT:
   Content modes NEVER return a point with lx <= sidebar_edge.
   Re-measure after every click; never reuse coords from a prior look.
 
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png zones
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png continue
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png next
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png back
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png radios
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png radio 0
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png sidebar 3
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png role "Data Scientist"
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png start
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png scroll-complete
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea 1
+@tool OCR/geometry click targets on a DA assessment look.png
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea --near "first rubric"
 """
 from __future__ import annotations

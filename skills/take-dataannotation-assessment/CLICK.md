@@ -139,7 +139,7 @@ OCR of long URLs (Google Docs `/pub`) is **wrong often**. Do not bank OCR’d UR
 
 If the URL is plain text (not an `<a>`), bank the on-screen string — do not invent a click→tab flow.
 
-Figures (letter-F example): crop PNG and `![…](assets/…)` — never paraphrase.
+Figures (letter-F example): crop PNG and embed under `problems/assets/{slug}/` — never paraphrase.
 
 If `next` succeeds geometrically but UI does not advance twice: use `sidebar N` to jump — do not hammer Next.
 

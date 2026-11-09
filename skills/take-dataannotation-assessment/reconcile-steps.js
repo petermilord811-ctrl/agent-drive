@@ -2,7 +2,9 @@
 /**
  * HARD gate: sidebar leaf count ("Step K of N") must match bank **Step:** entries.
  *
+// @tool Reconcile sidebar steps against problems-{slug}.md
  * @run  node skills/take-dataannotation-assessment/reconcile-steps.js --slug software-engineer
+// @tool Reconcile sidebar steps against problems-{slug}.md
  * @run  node skills/take-dataannotation-assessment/reconcile-steps.js --slug software-engineer --sidebar-json path.json
  *
  * Sidebar JSON shape (from OCR / manual inventory at fetch start):

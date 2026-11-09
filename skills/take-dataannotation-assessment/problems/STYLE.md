@@ -136,7 +136,7 @@ Pseudocode fences: ` ```text `. Real code: ` ```python ` etc.
 - Notes = capture metadata only (gaps belong here or in Bank header — not as edited Prompt text).
 - No HTML, no colored layout tables.
 - Omitted No-LLM: `<!-- Omitted: … -->`.
-- Figures: `![alt](assets/…)`.
+- Figures: embed under `problems/assets/{slug}/file.png` (markdown image pointing at that path).
   - Crop only when **title + both axes + all tick labels** are in-frame (DS 2026-11-08: half-hidden chart rejected).
   - Keep a full-viewport `*-live.png` next to the tight figure crop.
   - Never paraphrase a chart (“bars rise to ~95%”) in place of the PNG.

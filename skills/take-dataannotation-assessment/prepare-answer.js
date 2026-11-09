@@ -2,8 +2,11 @@
 /**
  * Part B orchestrator — pick slug, gate bank, emit session + playbook paths.
  *
+// @tool Part B orchestrator: session + playbook; refuse autofill without gates
  * @run node skills/take-dataannotation-assessment/prepare-answer.js --profile "d:/…/10-Daniel Herman"
+// @tool Part B orchestrator: session + playbook; refuse autofill without gates
  * @run node skills/take-dataannotation-assessment/prepare-answer.js --profile "…" --slug software-engineer --strict-full
+// @tool Part B orchestrator: session + playbook; refuse autofill without gates
  * @run node skills/take-dataannotation-assessment/prepare-answer.js --profile "…" --fetch-min 10 --gen-min 10
  *
  * Writes:

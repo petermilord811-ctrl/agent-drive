@@ -2,7 +2,9 @@
 /**
  * Validate profile answer.md against problems bank + fillability.
  *
+// @tool Validate answer.md Fields/Values against bank
  * @run node skills/take-dataannotation-assessment/validate-answers.js --slug chemist --answer path/answer.md
+// @tool Validate answer.md Fields/Values against bank
  * @run node skills/take-dataannotation-assessment/validate-answers.js --slug software-engineer --answer path/answer.md --mode filled-check
  */
 const fs = require('fs');

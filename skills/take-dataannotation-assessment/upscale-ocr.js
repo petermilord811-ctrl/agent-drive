@@ -3,6 +3,7 @@
  * Upscale a look crop then OCR with vision/local-ocr.js — dump reading-order lines.
  * Use for Part A source capture when host OCR is chrome-blind.
  *
+// @tool Upscale+OCR a crop from a look.png
  * @run node skills/take-dataannotation-assessment/upscale-ocr.js look.png --crop 40,155,1240,690 --scale 3
  */
 'use strict';

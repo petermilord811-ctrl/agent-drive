@@ -1,3 +1,4 @@
+// @tool Slugify a Browse-roles title into problems-{slug}
 // Shared role → filename slug helpers for the problems bank
 function slugifyRole(role) {
   return String(role || '')

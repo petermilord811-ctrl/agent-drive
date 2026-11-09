@@ -138,7 +138,7 @@ For **every** assessment step:
 
 **Embedded diagrams / example images (not prose):**
 - Never replace a figure with a prose paraphrase (e.g. “black box with letter F”, “bars ~95%”).
-- Crop the on-screen figure → `problems/assets/{slug}/….png` and **embed** it in the MD with `![…](assets/…)`, **or** redraw it character-for-character (same grid). Prefer the PNG embed.
+- Crop the on-screen figure → `problems/assets/{slug}/….png` and **embed** it in the MD with a relative image under that folder, **or** redraw it character-for-character (same grid). Prefer the PNG embed.
 - **Figure completeness (HARD — DS 2026-11-08):** title + **both axes** + all tick labels must be in-frame before crop. Half-hidden charts fail `validate-figures.js`. Keep a full-viewport `*-live.png` alongside the crop.
 
 **URLs / hyperlinks (OCR is untrusted):**

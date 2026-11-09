@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Extract plain text from resume PDF/DOCX/TXT for pick-assessment scoring."""
+# @tool Extract plain text from a resume PDF/DOCX/TXT for role pick scoring
+# @run  python skills/dataannotation-assessment-workflow/extract-resume-text.py path/Resume.pdf
 from __future__ import annotations
 
 import sys

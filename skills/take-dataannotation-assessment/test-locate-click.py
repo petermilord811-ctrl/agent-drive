@@ -1,3 +1,4 @@
+@tool Unit checks for locate-click.py geometry helpers
 #!/usr/bin/env python3
 """Regression checks for locate-click.py against saved assessment assets."""
 from __future__ import annotations

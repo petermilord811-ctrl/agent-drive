@@ -22,8 +22,11 @@ Exit codes
   4  needs agent fit-fix + humanize (see report.regen[])
   5  reserved / verify after paired humanize
 
+@tool DetectPass for Part B textareas (cls.ai<=20) after Meaning/Quality
 @run python skills/take-dataannotation-assessment/aicheck-answer.py --profile "…"
+@tool DetectPass for Part B textareas (cls.ai<=20) after Meaning/Quality
 @run … --dry-run
+@tool DetectPass for Part B textareas (cls.ai<=20) after Meaning/Quality
 @run … --ids q3_rubric1,s3_education
 """
 from __future__ import annotations

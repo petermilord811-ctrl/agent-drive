@@ -1,3 +1,4 @@
+// @tool Validate embedded figure crops are complete before captureStatus full
 #!/usr/bin/env node
 /**
  * Fail banks whose embedded figures are missing, tiny, or obviously truncated.

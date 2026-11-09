@@ -11,7 +11,7 @@ run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "pat
 Runs only when Part A bank is ready. **Do not Submit** until the operator reviews.
 
 Parent: [`README.md`](./README.md) · Template: [`answers.template.md`](./answers.template.md) ·
-Rules: [`rules/generating_rule.md`](../../../rules/generating_rule.md) · Clicks: [`CLICK.md`](./CLICK.md) ·
+Gates: [`ANSWER-GATES.md`](./ANSWER-GATES.md) · Clicks: [`CLICK.md`](./CLICK.md) ·
 Fill: [`PART-B-FILL.md`](./PART-B-FILL.md) · Claude: [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md)
 
 ## One command to start

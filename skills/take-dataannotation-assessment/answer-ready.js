@@ -2,7 +2,9 @@
 /**
  * Part B gate: refuse answer/autofill until bank + profile inputs are ready.
  *
+// @tool Gate problems bank readiness for a role slug / profile
  * @run node skills/take-dataannotation-assessment/answer-ready.js --slug data-scientist --profile "d:/…/10-Daniel Herman"
+// @tool Gate problems bank readiness for a role slug / profile
  * @run node skills/take-dataannotation-assessment/answer-ready.js --slug software-engineer --profile "d:/…/10-Daniel Herman" --strict-full
  */
 const fs = require('fs');

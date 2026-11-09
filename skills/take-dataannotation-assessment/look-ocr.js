@@ -2,7 +2,9 @@
 /**
  * Local OCR on a look PNG (Windows.Media.Ocr / Tesseract) — use when host OCR is chrome-blind.
  *
+// @tool OCR a look.png and optionally find text
  * @run node skills/take-dataannotation-assessment/look-ocr.js work/…/look-8.png
+// @tool OCR a look.png and optionally find text
  * @run node skills/take-dataannotation-assessment/look-ocr.js look.png --find "Data Scientist"
  */
 const path = require('path');

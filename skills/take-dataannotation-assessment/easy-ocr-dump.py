@@ -1,3 +1,4 @@
+@tool Dump EasyOCR lines from an image for debugging
 #!/usr/bin/env python
 """Dump EasyOCR text from a look PNG (paragraph mode). Source capture helper — do not invent."""
 from __future__ import annotations

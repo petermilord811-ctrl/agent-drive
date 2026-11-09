@@ -8,6 +8,7 @@
  *
  * Legacy still works: value column inside the Fields table.
  *
+// @tool Parse answer.md Values fences into answer.fill.json
  * @run node skills/take-dataannotation-assessment/parse-answer-fill.js --answer path/answer.md --out path/answer.fill.json
  */
 const fs = require('fs');

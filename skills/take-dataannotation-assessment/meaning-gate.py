@@ -11,9 +11,11 @@ Exit 0 = all checked fields MeaningPass
 Exit 1 = one or more MeaningPass failures
 Exit 2 = usage / missing meaning file
 
+@tool MeaningPass: must_keep / must_not / strength on answer Values
 @run python skills/take-dataannotation-assessment/meaning-gate.py \\
         --meaning "{profile}/drafts/meaning.json" \\
         --texts "{profile}/drafts-humanized.json"
+@tool MeaningPass: must_keep / must_not / strength on answer Values
 @run … --ids s3_project,q3_rubric2
 """
 from __future__ import annotations

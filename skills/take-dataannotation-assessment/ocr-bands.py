@@ -1,3 +1,4 @@
+@tool Band/layout OCR helpers for DA screenshots
 #!/usr/bin/env python
 """Crop a look into horizontal bands and OCR each with vision/local-ocr via upscale-ocr.js."""
 from __future__ import annotations

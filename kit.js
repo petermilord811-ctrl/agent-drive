@@ -51,6 +51,7 @@ const AREAS = [
   ['.cursor-plugin/', 'the kit as a Cursor plugin: plugin.json names its MCP server and its logo (node scripts/install-cursor-plugin.js)'],
   ['assets/', "the plugin's pictures: ScreenMirror's mark, the logo Cursor shows"],
   ['scripts/', 'setting the kit up on a machine: install-cursor-plugin.js (--check says whether it is in place)'],
+  ['work-helpers/', 'small host-side helpers used while driving a visit (e.g. run.js)'],
   ['work/', "a run's scratch: cmd.json, done.json, ledger.json, screenshots (never committed)"],
 ];
 

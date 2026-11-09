@@ -9,8 +9,11 @@ Also available live as agent-drive verbs:
   {"do":"aicheck","text":"…"}
   {"do":"aiusage"}
 
+@tool Humanize answer prose via relay /api/humanize (join key)
 @run python skills/take-dataannotation-assessment/humanize-text.py --text "raw answer"
+@tool Humanize answer prose via relay /api/humanize (join key)
 @run python skills/take-dataannotation-assessment/humanize-text.py --json-in raw.json --json-out humanized.json
+@tool Humanize answer prose via relay /api/humanize (join key)
 @run python skills/take-dataannotation-assessment/humanize-text.py --ready
 """
 from __future__ import annotations

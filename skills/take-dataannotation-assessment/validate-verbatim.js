@@ -1,3 +1,4 @@
+// @tool Validate problems bank verbatim completeness before captureStatus full
 #!/usr/bin/env node
 /**
  * Fail a problem bank that contains summarized / edited / OCR-repaired problem text.

@@ -15,6 +15,7 @@ Exit 0 = all QualityPass
 Exit 1 = failures
 Exit 2 = usage / missing files
 
+@tool QualityPass: reviewer-ready prose + On form criterion coverage
 @run python skills/take-dataannotation-assessment/quality-gate.py \\
         --meaning "{profile}/drafts/meaning.json" \\
         --texts "{profile}/drafts-humanized.json"

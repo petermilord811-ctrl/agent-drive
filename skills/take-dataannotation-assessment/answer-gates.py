@@ -16,8 +16,11 @@ Exit:
   3  DetectPass failed / aicheck not ok
   4  aicheck needs agent regen (report only; same as not done)
 
+@tool Fail-closed MeaningPass + QualityPass + DetectPass before autofill
 @run python skills/take-dataannotation-assessment/answer-gates.py --profile "…"
+@tool Fail-closed MeaningPass + QualityPass + DetectPass before autofill
 @run … --run-aicheck
+@tool Fail-closed MeaningPass + QualityPass + DetectPass before autofill
 @run … --skip-detect   # meaning+quality only (offline draft)
 """
 from __future__ import annotations

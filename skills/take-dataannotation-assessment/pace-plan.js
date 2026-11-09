@@ -2,7 +2,9 @@
 /**
  * Build think/type pacing so autofill lands inside the bio time window.
  *
+// @tool Build answer.pace.json timing for Part B autofill
  * @run node skills/take-dataannotation-assessment/pace-plan.js --bio-min 30 --bio-max 60 --fetch-min 10 --gen-min 10 --fields 24
+// @tool Build answer.pace.json timing for Part B autofill
  * @run node skills/take-dataannotation-assessment/pace-plan.js --bio-min 30 --bio-max 60 --fetch-min 10 --gen-min 10 --fill path/answer.fill.json --out path/answer.pace.json
  *
  * Chemistry example: bio 30–60, fetch 10, gen 10 → remaining 10–40 for fill.
