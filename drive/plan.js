@@ -18,7 +18,7 @@
 // `done`/`warn` for explicit, non-linear marks. All of it is display-only -- it drives the panel, never
 // the machine. No dependencies; same cmd/done channel as drive.js.
 const fs = require('fs'), path = require('path');
-const { putCmd } = require('../core/cmd-file.js');
+const { exchangeAsync } = require('../core/cmd-file.js');
 const [dir, verb, arg, note] = process.argv.slice(2);
 if (!dir || !verb) { console.error('usage: node plan.js <work-dir> set|at|done|warn [path] [note] | finish [picture] [note]'); process.exit(2); }
 const planFile = path.join(dir, 'plan.json'), cmdFile = path.join(dir, 'cmd.json'), outFile = path.join(dir, 'done.json');
@@ -69,11 +69,5 @@ fs.writeFileSync(planFile, JSON.stringify(tree));
 // goes absolute -- the serve's working folder need not be this one.
 const cmd = { do: 'status', tree }; if (note) cmd.text = String(note);
 if (verb === 'finish') { cmd.fin = 1; if (arg) cmd.file = path.resolve(String(arg)); }
-try { fs.unlinkSync(outFile); } catch (_) {}
-putCmd(cmdFile, cmd);   // atomic: no mid-write read
-const t0 = Date.now();
-(function wait() {
-  if (fs.existsSync(outFile)) { try { process.stdout.write(fs.readFileSync(outFile, 'utf8') + '\n'); } catch (_) {} return; }
-  if (Date.now() - t0 > 35000) { console.error('TIMEOUT after 35s waiting for done.json'); process.exit(3); }
-  setTimeout(wait, 80);
-})();
+// its own id, and the answer that carries it back (core/cmd-file.js): a late answer to something else is not this one's
+exchangeAsync(dir, cmd).then((a) => process.stdout.write(a.txt + '\n'), (e) => { console.error(e.message); process.exit(3); });

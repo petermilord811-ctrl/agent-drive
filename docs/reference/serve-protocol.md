@@ -31,6 +31,16 @@
   picture. `--no-idle` (or `SM_AGENT_IDLE=0`) keeps the stream on.
 - **a relay whose name stops resolving** is dialled at the address it last had (`work/relay-ips.json`; an
   sslip.io name carries its own) — the certificate is still checked against the name.
+- **a line that drops is never reported as done**: an action sent as the relay went down answers `ok:false, dropped:true`
+  (it may not have arrived — look before going on); a plan stops at its next step; a question asked of the room is never
+  approved by the silence of a dead line, even with the standing yes; a redial that fails leaves a waiting driver its answer.
+- **a condition that cannot be checked is not "false"**: a plan's `if` / `until`, an `expect` or a `wait` whose picture or
+  text could not be read stops and says why, instead of taking the else branch or looping blind.
+- **each command carries its own id (`cid`)**, echoed on its answer: the drivers here (drive.js, run.js, plan.js, the MCP
+  server) read only the answer that carries theirs, and take a command back when they give up on it before the serve read
+  it. `keys` and `open` are given the time typing like a person takes (about 0.17 s a character).
+- **after any action, the next read takes a fresh picture**: `find`, `clickText`, `ocr`, `probe` never read the screen as it
+  was before a click.
 
 Every command is `{ "do": "<verb>", ... }`. Coordinates are **screen pixels** at the served size — or,
 as `lx`/`ly`, pixels of a **`look`** (the last, or the one `of` names; below), which the serve maps to the screen
@@ -224,15 +234,15 @@ reaching for the text verbs on that host.
 |------|--------------|
 | `chat {text, to?}` | say it in this host's session chat — the room (all viewers), or `to:"<tag>"` for a DM |
 | `chat-img {file, text?, to?}` | post an **image** (a cropped screenshot) to the room. The driver prepares a small PNG/JPEG **file** (`vision/crop.py`); this inlines it as a `data:` URL, capped at ~45 KB — name the crop `.jpg` and crop.py shrinks it to fit, or it's rejected with the size. Posting one pays a result picture a finish still owes (see `status` `file`). |
-| `chat-wait {timeout?, since?}` | block for the next human reply (not the agent's own echo, not system notices). Use it right after `chat` to ask a question and wait for the answer. Prefer `timeout:45000` and **re-call in the same turn** on `timedOut` / `busy` (Cursor MCP often aborts longer tools). On timeout the answer carries `listening:true` + `remind` — never end the Cursor turn (the editor does not auto-wake on session inbox). |
+| `chat-wait {timeout?, since?}` | what the room said: every line a person wrote since your last answer comes back at once (`text` the newest, `lines` all of them) — a reply written while you were still deciding is not missed; with none, it waits for the next one. Not the agent's own echo, not system notices, and not a board button (that reaches you as `room`). Use it right after `chat` to ask a question and wait for the answer. `since` (ms) starts it elsewhere. On timeout the answer carries `listening:true` + `remind` — **re-call in the same turn** (Cursor MCP often aborts longer tools and does not auto-wake on session inbox). |
 | `seen {ids?}` | mark the operator's message(s) **read** — posts a receipt so their chat shows "seen". No `ids` = all unread. The incoming ids are logged in `chat.json`. |
 | `typing {on}` | show / hide **"Claude typing…"** while you compose a reply. It repeats on a beat until you send a message (`chat`/`chat-img`/`done` clear it) or `typing {on:false}`. |
-| `inbox` | the operator's recent messages (every answer also carries `inbox:{n,latest}`) |
+| `inbox` | the operator's recent messages. Every answer also carries `inbox`: `{n:0}`, or `{n, latest, new:[{name, text}]}` — the lines written since your last answer, every one, each handed over once |
 | `think {thought, conf?, next?}` / `warn {text}` | the panel's **thought**, pinned above the plan: your reasoning, with `conf:"low"` marking it unsure and `next` what you will do after it. A new thought replaces the last one whole (`think {next}` alone updates only that). **`why:"…"` on any command** (or batch step) sets the same thought in the same call — no extra turn; a `quiet` command's is ignored. A thought lasts until the next one, or until a task, step or sub-step is declared, a flat plan moves, a mission moves on, or the task finishes. / an amber caution line (`warn {text:""}` clears it) |
 | `ping {timeout?}` | is the session still alive? Returns in seconds (`{alive:true}`), so a stale session (e.g. after a relay move) is found fast instead of a 30s stall per command. |
 | `status {text?, steps?, at?, tree?, fin?, task?, step?, substep?}` | drive the **progress panel** every watcher sees — no action, and replayed to anyone who opens the machine mid-task. `text` = the live line. **`task` / `step` / `substep`** name the levels of the **action tree** the serve builds itself when no `tree` or `steps` is sent (see below; `step:null` / `substep:""` end one). **`tree`** = a NESTED plan the panel renders indented, with a **live elapsed time per step**: an array of `{t: label, s: "done"\|"doing"\|"todo"\|"warn", k: [children]}` — a big step, its small steps, a sub-step, the command underneath (depth ≤4, ≤60 nodes). Send the whole tree again on every change (flip finished→`done`, next→`doing`); times accumulate by label. `steps`+`at` is the flat quick version: `steps` = a list of short labels, `at` = the current step (0-based); the panel shows done ✓ / current (+ `text`) / **next** / upcoming + "step N/M". **`fin:1`** settles the panel **green** (task complete) **without ending the session** — unlike `done`, which hangs up the grant. The next live frame lifts the green. **`file`** (with `fin:1`): the **picture of the result** (a `.jpg` crop under ~45 KB) rides IN the finish report — one chat message: the report, the picture, "Anything else, or shall I sign off?"; the answer says `img:true`, or `img:false` + `imgWhy`. **A task that finishes with no picture in chat owes one:** every answer then carries **`remind`** until a `chat-img` pays it or new work starts. |
 | `confirm {text, timeout?}` | gate a dangerous action: announce it to everyone and wait. Returns `{verdict, replies}` — `cancelled` on any negation, deferral or hesitation anywhere in a reply ("no", "not sure", "later", "go back first", "let me think", the Stop button, a Steer) — **even after a yes**; `approved` only on a SHORT reply made of nothing but yes-words ("yes", "ok do it", "go ahead", 👍); anything else `unclear` ([core/consent.js](../../core/consent.js)). Treat `unclear` as **no** for a real restart/shutdown. With **`--auto-confirm`** (or **`SM_AUTO_CONFIRM`** truthy) the operator has pre-approved: it still announces and still waits, a stop still wins, and only a window **nobody answered at all** comes back `approved` with **`auto:true`** — a reply it could not read stays `unclear`. |
-| `captcha {text?, timeout?}` | **a CAPTCHA is for a person.** Says in the session chat that one is on the screen and needs solving (your `text`, or a standard ask: "Please solve it — I won't touch it — then reply **done**"), puts it on the panel, and waits for the operator's reply (`timeout` ms, default 10 min, at most 30). Answers `{solved, text, next}` — `solved:false` when their reply is a no ("can't", "skip it"); then read it, and still never try the CAPTCHA yourself. A timeout is `ok:false, timedOut:true`. Never solve, bypass or click through one: a `mission` plan that mentions a CAPTCHA is answered with this rule as `human`. |
+| `captcha {text?, timeout?}` | **a CAPTCHA is for a person.** Says in the session chat that one is on the screen and needs solving (your `text`, or a standard ask: "Please solve it — I won't touch it — then reply **done**"), puts it on the panel, and waits for the operator's reply (`timeout` ms, default 10 min, at most 30). Answers `{solved, text, next}` — `solved:true` only when they say so ("done", "solved", the button); `solved:false` when their reply is a no ("can't", "skip it"); `solved:null` when they wrote something else ("one sec") — read it, and look before taking the CAPTCHA as gone. Never try it yourself. A timeout is `ok:false, timedOut:true`. Never solve, bypass or click through one: a `mission` plan that mentions a CAPTCHA is answered with this rule as `human`. |
 | `done {text?, file?}` | post a sign-off to the room (`file` attaches a final cropped screenshot, like `chat-img`), then **hand the grant back and end the run** — the clean way to finish. |
 
 **Arriving and leaving.** Serving begins with an automatic hello to the room drawn from `--task`
@@ -370,11 +380,25 @@ serve honours each **itself**, so a button works while you are busy or thinking.
   `approval {id, q}` (the autonomy dial asks before this command: wait for the answer, then send the SAME command again —
   the yes runs it once), `checkpoint` (a step ended in 'checkpoints' mode: wait for the go-ahead). Looking, talking, the
   panel and finishing are never held.
-- **Questions carry ids.** `confirm`, `captcha`, a mission's preview or checkpoint and `undo`'s question are
-  on the panel with buttons; a button answers only the question it was shown for. A yes counts only from the person who
-  let you in (the relay tells the serve); anyone's no still wins.
+- **Questions carry ids** (`q3@7f2a`: the number and this visit's tag). `confirm`, `captcha`, a mission's preview or
+  checkpoint and `undo`'s question are on the panel with buttons; a button answers only the question it was shown for —
+  and with two agents on one machine, only its own visit's. A yes, pressed or typed, counts only from the person who let
+  you in (the relay tells the serve); anyone's no still wins. A typed yes / no settles an approval or a checkpoint too. A
+  press on a question whose wait was over reaches you in `room`: ask again to act on it.
+- **Every board line may name its visit** (`[@7f2a]`): with two agents on one machine, a pause, a stop or an answer on
+  one's panel is that one's. A line with no tag is for every agent there, as before.
+- **“❓ Why “step”?”** is answered by the serve at once, from the reason you gave when you took that step (`why` on a
+  command, `think`, a status's thought) — you hear it in `room`; a step you gave no reason for is yours to answer in chat.
+  It never interrupts you. Give a `why` wherever a watcher could not guess it, and the board answers for you.
+- **What interrupts you**: a person's own words (a steer), ⏹ stop, ⏭ skip and 🔁 redo — a plan stops after its step, a
+  run of typing at its next key. A board button that only asks (why, 👋, the dial, an answer) does not, and an
+  interruption is spent once you have been handed it.
+- **Who is listening**: the panel shows `lis` — working (a command running), listening (waiting on the room), thinking
+  (between commands, under a minute), away (no command for a minute: your turn may be over). 👋 is answered with the same.
 - **The serve does some things itself, between your commands**: an Undo the room asked for (`↩ Undo c3`), saving the job
-  as a draft skill, scheduling it, answering "are you still there?". You hear each in `room`.
+  as a draft skill, scheduling it, answering "are you still there?" and "why this step?". You hear each in `room`.
+- **"Stop after “step”" means that step**: it takes hold when the step it names ends (a sub-step moving on inside a
+  milestone is not the milestone ending).
 - **A person taking the mouse, or someone at the machine, pauses you** (unless you were waiting for them). Wait for “▶ Go on”.
 - What the panel shows comes from you: `why` on commands, `status {task|step}`, proofs (`mission achieve` with a check or a
   picture, `status {fin:1, file}`), and the `look` you take (a small copy goes to the panel as "what it saw").

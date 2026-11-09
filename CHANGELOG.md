@@ -71,8 +71,8 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
   URIs) to a client that speaks that revision, for one that draws a server's icon beside its tools.
 - **Several machines at once** through one MCP server, which is how an editor runs it for all its chats. Each
   machine is a visit with its own client, serve and queue, so agents on different machines work side by side.
-  - Every tool takes `host`. Once several visits have been open, a call must name its machine; it is refused, never
-    guessed. Answers say which `host` they came from.
+  - Every call but `connect` and `intake` names its machine with `host` (required); a call that names none is refused,
+    never guessed — even with one visit open. Answers say which `host` they came from.
   - A second `connect` opens alongside the first. It used to be refused with "disconnect it first", and an agent
     obeyed: it ended another chat's visit.
   - `SM_MCP_MAX_VISITS` sets the limit (8 by default).
@@ -86,6 +86,41 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
     (`snapped`).
   - Every look has an `id`, and `of:<id>` aims in that look rather than the last one.
   - `aim:false`, `snap:false` and `fast:1` turn these off.
+- **The MCP server fits an editor's limits**: no call blocks past `SM_MCP_CALL_MS` (50 s, under the 60 s Cursor allows):
+  - a command still running answers `pending`, and the next call to that machine collects it (`ping`);
+  - a `connect` not let in yet answers `waiting` with the code, and the next `connect` takes the wait up again;
+  - `chat_wait` listens one call's time and says to call again.
+
+  It shows 33 tools, not 68: the verbs a job is made of, and `more {do:"<verb>"}` for the rest (`SM_MCP_TOOLS=all`
+  for one per verb). Cursor sends its agent 40, so `status`, `confirm` and `captcha` used to be cut.
+- **The operator is heard, and answered**:
+  - `chat-wait` returns every line written since the agent's last answer, at once: a reply typed while it was deciding
+    is no longer missed until a timeout. A board button is not taken for a reply.
+  - `inbox.new` carries every unread line, each once.
+  - Only a person's words, ⏹ stop, ⏭ skip and 🔁 redo interrupt the agent (a "why?", a 👋 or the dial cut a field
+    mid-typing). An interruption is spent once handed over, and is not counted as a failure.
+  - "❓ Why “step”?" is a board request of its own, answered at once from the reason the agent gave.
+  - The board's `lis` says whether the agent is working, listening, thinking or away, and 👋 answers the same.
+  - "Stop after “step”" stops after that step, not at any sub-step.
+  - A typed yes counts only from the person who let the agent in, as the button's does. A typed yes or no settles an
+    approval or a checkpoint.
+  - With two agents on one machine, answers, pauses and stops carry the visit's tag (`[q3@7f2a]`, `[@7f2a]`) and reach
+    that agent only.
+  - A CAPTCHA reply that is neither a yes nor a no answers `solved:null`, not solved.
+- **A dropped line is never reported as done**:
+  - an action sent as the relay went down answers `dropped`, and a plan stops;
+  - a question asked over a dead line is never approved by its silence, even with the standing yes;
+  - a failed redial leaves the waiting driver an answer.
+
+  Other fixes:
+  - a condition that could not be checked is no longer "false";
+  - the next read after an action takes a fresh picture (`clickText` after a click read the old screen);
+  - the "risky actions" dial also asks about a risky step inside a `plan`;
+  - commands carry their own id, so a late answer is never read as the next command's;
+  - `keys` gets the time human-speed typing takes;
+  - a SIGTERM hands the grant back and deletes the pictures;
+  - a card whose driver has gone stops waiting for Allow;
+  - a truncated file read fails.
 
 ## 1.0.0 — 2026-11-06
 

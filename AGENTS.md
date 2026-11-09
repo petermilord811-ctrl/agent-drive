@@ -482,8 +482,11 @@ kind of task (the growth area) · `config/` behaviour · `docs/` reference + pla
 - **Answer the room while you work.** Read `<serve-dir>/chat.json` between steps. When the operator
   writes, don't leave them hanging to the end: `seen` it (their message shows read), `typing {on}` while
   you compose, then `chat` back. A question mid-task is a reason to pause and reply, not to push through.
-  The progress panel's **Steer / New task / Stop** buttons arrive here as ordinary chat ("Please change: …",
-  "New task: …", "⛔ Stop …"). Steer and New task are yours to weigh and run. **Stop is different: the serve
+  The progress panel's **Steer / New task / Stop** buttons arrive here as ordinary chat ("About “step”: …" or
+  "Please change: …", "New task: …", "⛔ Stop …"). Every line written since your last answer rides on your next one
+  as `inbox.new` (all of them, each once), and `chat-wait` returns them all at once. A **"❓ Why “step”?"** from the
+  board is answered by the serve from the `why` you gave for that step (you hear it in `room`); one you gave none for
+  is yours to answer in a sentence or two. Steer and New task are yours to weigh and run. **Stop is different: the serve
   client honours it ITSELF** — a message that starts with the no-entry mark (⛔, which only the Stop button
   sends) ends the run and hands control back the moment it arrives, so a Stop works even when you are busy
   and not reading chat. (Plain "stop" TEXT stays a judgement call for you.) Confirm before a big change.
