@@ -2,10 +2,11 @@
 
 ### Bank
 
-- **captureStatus:** stub → bio+track only
-- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
-- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
-- **Track:** **Life Sciences Projects assessment** — **shared** with Experimental Biologist + Drug Discovery Scientist (same subtitle + 1h30 cue). Distinct from Biology Projects (Biologist).
+- **captureStatus:** nearly-full · **shared stamp**
+- **Captured:** 2026-11-09 · host 34123
+- **Shared form:** Live-fetched via **Experimental Biologist** entry (`problems-experimental-biologist.md`)
+- **Live IDs:** task `f80ef42a-58bb-4a5d-98ab-04b23744ed0d` · `project_id=91c51160-2ef8-4a1d-9711-814a82bfad5c` · `task_response_id=01a1c00d-d6e2-72d7-999e-4589306f843f`
+- **Track:** **Life Sciences Projects assessment** — same assessment as Experimental Biologist + Drug Discovery Scientist
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -18,7 +19,7 @@
 ### Contents
 
 1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
-2. _(Steps pending — Start not clicked)_
+2. **Assessment steps:** see [`problems-experimental-biologist.md`](problems-experimental-biologist.md) (shared Life Sciences Domain form)
 
 ---
 
@@ -45,10 +46,6 @@ We're looking for experienced computational biologists and bioinformaticians to 
   - Population and statistical genetics.
   - Machine learning applied to biology.
 
-### What we look for
-
-_Below fold on first capture — incomplete._
-
 ### Sidebar
 
 - **Rate:** Up to $125+/hour
@@ -66,10 +63,12 @@ _Below fold on first capture — incomplete._
 - **Pay line:** Up to $125+ per hour · Your hours: remote, no minimum
 - **What it takes — for this assessment:** People who pass usually spend **1 hour 30 minutes or more**; We read your reasoning, not just your answers; Save and come back (several days); Do your own work (No LLMs unless a task says otherwise); This is your one attempt
 - **What happens next:** Email if accepted; Most projects need some additional qualifications after acceptance
-- **CTA:** Start assessment — **not clicked** (expire risk)
+- **CTA:** Start assessment — shared form started via Experimental Biologist 2026-11-09
 
 **Assets:** `assets/computational-biologist/track-intro.png`
 
-## Experience / questions
+## Assessment body
 
-_Not captured — Start blocked pending expire clearance._
+### Shared: experimental-biologist · 2026-11-09
+
+Full Instructions → Section 1 (Expert Domain Parallel Q1–Q7) → Section 2 Conversation (**Life Sciences Domain** · Haiku 5.5) → Background Life Sciences field checkboxes → Coding → meaningful Life Sciences write-in → fluency → Degree → Optional: see `problems-experimental-biologist.md`.

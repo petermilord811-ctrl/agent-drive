@@ -2,14 +2,15 @@
 
 ### Bank
 
-- **captureStatus:** nearly-full
+- **captureStatus:** verified
 - **Captured:** 2026-11-08 · host **34123**
-- **Leaves:** **16** (re-counted 2026-11-08; prior bank said 15) · `assets/finance-expert/sidebar-inventory.json`
+- **Verified:** 2026-11-09 · host **34123** · operator confirmed
+- **Leaves:** **16** base · expands with Part 2 MCQ year leaves (full expand → **28**) · `assets/finance-expert/sidebar-inventory.json`
 - **IDs:** `task_response_id=01a1bae0-a32d-7940-9ea9-a52c7d91d75b` · `project_id=82dc8649-89f4-41ff-bb4e-9247da232829`
 - **Assessment:** Finance Starter Assessment V4.1 / Finance Projects assessment
 - **Gaps:** Experience Part 1 Other-branch write-in optional. Claude setup URL Ctrl+L optional.
 - **Re-fetch 2026-11-08:** Leaves **16**; Experience Part 1 + Part 2 (**12** roles) ✅; Q1–Q7 titles/prompts spot-confirmed (`fe_q01`–`fe_q07.png`).
-- **Re-check 2026-11-09 host 34123:** Live `task_response_id=01a1bae0…` / `project_id=82dc8649…` · expires ~5d. Q3–Q5 filled (Generalist/Economist parallel); Q5 **gold models** live-confirmed; Section 2 full prose + **Haiku 5.5** (corrects prior 3.5). Part 2 MCQ expand: **Position Tenure** + **all 10** Investment/Corporate year leaves + Other write-in ✅ (full expand → **28** steps). Never Submit.
+- **Re-check 2026-11-09 host 34123:** Live `task_response_id=01a1bae0…` / `project_id=82dc8649…` · expires ~5d. Q3–Q5 filled (Generalist/Economist parallel); Q5 **gold models** live-confirmed; Section 2 full prose + **Haiku 5.5** (corrects prior 3.5). Part 2 MCQ expand: **Position Tenure** + **all 10** Investment/Corporate year leaves + Other write-in ✅ (full expand → **28** steps). Never Submit. Operator: mark **verified**.
 - **Rule:** never Submit while fetching
 
 ### Role

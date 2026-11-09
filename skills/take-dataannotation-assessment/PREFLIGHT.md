@@ -6,39 +6,55 @@ run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "pat
 ---
 # Preflight — before resume on a real machine
 
+## MUST — Never Submit until operator yes
+
+**Always.** No fetch, fill, recheck, or sign-off may click Submit unless the operator explicitly says **yes** / **Submit**. Not optional.
+
+## MUST — Full name + email first
+
+Before connect / prepare / fetch / fill, the operator must give:
+
+1. **Full name** (First + Last) — DA / Claude identity  
+2. **Email** — same as DataAnnotation account for this worker  
+
+If either is missing → `chat` ask once → `chat_wait` → do not continue. Never invent. Password: ask only when a login page needs it (operator types or sends secret).
+
 Do this **offline** (or with look-only) before acting on a live one-attempt assessment.
 
 ## A. Profile → role → bank
 
-```bash
-node skills/dataannotation-assessment-workflow/pick-assessment.js --resume "{profile}/Resume.pdf"
-# → pick.slug, pick.role, pick.bank
+**HARD — always auto-pick role from resume** until the operator says they will pick manually (e.g. “I will pick assessment manually” / “I’ll pick” + a role). Do **not** ask which assessment. `prepare-answer.js --profile` (no `--slug`) runs `pick-assessment.js` and sets `session.slug` / `session.role`.
 
+```bash
 node skills/take-dataannotation-assessment/prepare-answer.js \
   --profile "{profile}" \
   --strict-full
-# → {profile}/session.json  (phase + nextSteps)
+# → pick from Resume → {profile}/session.json (slug, role, phase, nextSteps)
+# Manual override only after operator says they will pick: --slug {slug}
 ```
 
 | Check | Pass when |
 |-------|-----------|
-| Pick uses PDF extract | `extracted: true`, not Designer-from-binary |
-| Slug matches opened card | session.slug === on-screen role |
+| Pick uses PDF extract | `session.pick.extracted: true` (or pick stdout), not Designer-from-binary |
+| Opened card matches pick | on-screen role === `session.role` / `session.slug` |
 | Bank ready | `answer-ready` ok under `--strict-full` (`captureStatus: full`) **and** `validate-verbatim.js` + `validate-figures.js` exit 0 |
 | Verbatim clean | No summaries / `[bracket]` repairs / `Source OCR` dumps / “pending re-catch” in Prompt bodies (2026-11-08 DS miss) |
 | Figures complete | Charts show title + both axes; no half-hidden crops (`validate-figures.js`) |
 | Fetch gotchas read | [`FETCH-GOTCHAS.md`](./FETCH-GOTCHAS.md) before Part A on a live host |
-| Wrong bank | **stop** — Part A fetch that slug first |
+| Wrong / missing bank | **complete Part A fetch for session.slug first** (automatic — do not skip) |
 
 ## B. Part A vs Part B decision
 
+**HARD — complete the bank first.** If `problems-{slug}.md` is missing or `captureStatus` is not `full`/`verified`, fetch/complete that bank **before** writing `answer.md` or live fill. Do not ask the operator; this is the default path.
+
 | Screen / bank | Do |
 |---------------|----|
-| Browse roles, bank incomplete | **Part A fetch** only — never Start for “answers” |
+| Bank missing / incomplete | **Part A fetch** that auto-picked slug first (verbatim, never Submit) until `full`/`verified` |
+| Browse roles, bank incomplete | Part A fetch only — never Start for “answers” |
 | Bio-2 Start, bank incomplete | Fetch mode: Start → copy → **never Submit** → leave |
-| Assessment open, bank nearly-full/full, answer.md missing | Generate answers **offline** first |
+| Bank ready, answer.md missing | Generate answers **offline** first |
 | Assessment open + playbook ready | Part B autofill with pace |
-| Assessment open for **wrong role** vs pick | Chat operator — do not fill the wrong assessment |
+| Assessment open for **wrong role** vs `session.role` | Stop — open the auto-picked card; do not fill the wrong assessment |
 
 ## C. Answer artifacts (offline)
 
@@ -58,7 +74,7 @@ node skills/take-dataannotation-assessment/prepare-answer.js \
 5. Radios: `radios` (choice cluster) then `radio N` — not raw 13-hit columns.
 6. Browse cards: `role "Title"` → **`dbl`**. Filter/search if col-2 weak.
 7. One action → look prove → next. No blind batches.
-8. **Never Submit** until operator says `Submit` / yes after recheck.
+8. **MUST — Never Submit** until operator explicit `Submit` / `yes` after recheck (silence ≠ yes).
 9. If `busy: chat-wait` — wait for that flight or reconnect; do not hammer parallel tools.
 10. **Part A OCR:** never select/highlight for OCR; if host `ocr` repeats Instructions after scroll → look band-OCR. Never bank vision/`image_description` as problem text. Pass `host` on every serve call when ≥2 visits are open.
 11. **Part A figures:** crop only when the full figure (axes included) is in-frame; run `validate-figures.js` before `full`.

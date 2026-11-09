@@ -2,10 +2,11 @@
 
 ### Bank
 
-- **captureStatus:** stub → bio+track only
-- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
-- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
-- **Track:** **Civil Engineering Projects assessment** — **shared** with Civil Engineer (same subtitle + 1h cue). Bio template nearly identical; common backgrounds differ.
+- **captureStatus:** nearly-full · **shared stamp**
+- **Captured:** 2026-11-09 · host 34123
+- **Shared form:** Live-fetched via **Civil Engineer** entry (`problems-civil-engineer.md`)
+- **Live IDs:** task `d37ab06e-7ff7-4d78-9e8d-a6495a42a95d` · `project_id=5b27c22d-ba44-46b3-900c-725389299342` · `task_response_id=01a1c042-1ac7-7036-954b-1f337c9fa540`
+- **Track:** **Civil Engineering Projects assessment** — same assessment as Civil Engineer
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -18,7 +19,7 @@
 ### Contents
 
 1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
-2. _(Steps pending — Start not clicked)_
+2. **Assessment steps:** see [`problems-civil-engineer.md`](problems-civil-engineer.md) (shared Civil Engineering Domain form)
 
 ---
 

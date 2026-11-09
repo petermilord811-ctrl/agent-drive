@@ -3,6 +3,14 @@
 Evidence: host **99588** / Daniel Herman / Data Scientist — 2026-11-08 full night try
 (Claude identity → Round 1+2 → Share → DA fill → sign-off).
 
+## MUST — Never Submit until operator yes
+
+**Always.** Fetch, fill, recheck, sign-off, study mode — **never** click Submit / “Submit and Begin Next Task” unless the operator explicitly replies **yes** / **Submit** after review. Silence, “looks good”, or budget end ≠ yes. This overrides every other step.
+
+## MUST — Full name + email before anything else
+
+Operator must supply **Full name** (First + Last) and **Email** (DA account) at the start. Missing either → ask once and wait. Never invent. Used for Claude identity ([`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md)) and DA matching.
+
 **This file is the runbook.** Companions hold detail; if habit conflicts with this runbook, **this wins for sequencing**.
 
 | Phase detail | Doc |
@@ -19,16 +27,23 @@ Evidence: host **99588** / Daniel Herman / Data Scientist — 2026-11-08 full ni
 ## Pipeline (do in order — do not invent phases)
 
 ```
-0  Offline ready     prepare-answer --strict-full → autofill-ready
+0  Identity          require Full name + Email from operator (ask once if missing)
+0a Auto-pick role    ALWAYS from resume via prepare-answer (no --slug) unless operator says they will pick manually
+0b Complete bank     if problems-{slug}.md missing or not full|verified → Part A fetch that slug first (verbatim, never Submit) until bank ready; then continue
+0c Offline answers   answer.md + meaning cards + answer-gates green
+0d Offline ready     prepare-answer --strict-full → autofill-ready
 1  Connect           operator-named host only; host= on every call
-2  Start + TIMER     Start assessment → arm status/mission BEFORE first field
-3  Claude gate       CLAUDE-SETUP (DA email/name) → Haiku Effort Low
-4  Chat + Share      Round 1 (+ Round 2 if no fail) → Anyone with the link → copy URL
-5  Fill DA           answer.md Fields top→bottom; prove→keys; never Submit
-6  One recheck       Back to Top → walk required fields once
-7  Operator review   chat summary → chat_wait → Submit ONLY on explicit yes
-8  Sign-off          status fin + shot; disconnect when operator says so
+2  Open picked role  Browse → session.role only (do not invent another card)
+3  Start + TIMER     Start assessment → arm status/mission BEFORE first field
+4  Claude gate       CLAUDE-SETUP with that DA email/name → Haiku Effort Low
+5  Chat + Share      Round 1 (+ Round 2 if no fail) → Anyone with the link → copy URL
+6  Fill DA           answer.md Fields top→bottom; prove→keys; never Submit
+7  One recheck       Back to Top → walk required fields once
+8  Operator review   chat summary → chat_wait → Submit ONLY on explicit yes
+9  Sign-off          status fin + shot; disconnect when operator says so
 ```
+
+**0b is automatic.** Do not wait for the operator to say “fetch first.” Missing/incomplete bank → complete `problems-{slug}.md` before any `answer.md` or live fill.
 
 **Budget (answers already prepared):** Claude gate+share ≤ 20–30 min · DA fill ≤ 25–35 min · recheck ≤ 5 min.
 Exceeding fill budget = focus/nav regression, not “thinking harder.”
@@ -38,8 +53,13 @@ Exceeding fill budget = focus/nav regression, not “thinking harder.”
 ## 0. Offline ready (HARD)
 
 ```bash
+# ALWAYS auto-picks from resume; --slug only after operator says they will pick manually
 node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full
 ```
+
+Use `session.slug` / `session.role` everywhere after this. **Always auto-pick** — do not ask “which assessment?” Override only when the operator says they will pick manually (then use their role / `--slug`).
+
+If `session.phase === blocked` / bank missing / not `full|verified`: **complete Part A fetch for that slug first** (verbatim, never Submit), then re-run prepare-answer. Do not skip to answers or fill.
 
 Pass only when `session.phase === autofill-ready` and:
 

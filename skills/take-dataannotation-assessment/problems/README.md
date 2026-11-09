@@ -139,7 +139,7 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 | Hebrew Specialist | [`problems-hebrew-specialist.md`](./problems-hebrew-specialist.md) | stub | `languages` |
 | Designer | [`problems-designer.md`](./problems-designer.md) | stub | `design` |
 | Cybersecurity Projects | [`problems-cybersecurity-projects.md`](./problems-cybersecurity-projects.md) | stub | `project-based` |
-| Robotics Projects | [`problems-robotics-projects.md`](./problems-robotics-projects.md) | stub | `project-based` |
+| Robotics Projects | [`problems-robotics-projects.md`](./problems-robotics-projects.md) | nearly-full | `project-based` |
 | Nuclear Engineering Projects | [`problems-nuclear-engineering-projects.md`](./problems-nuclear-engineering-projects.md) | stub | `project-based` |
 | Chemical Engineering Projects | [`problems-chemical-engineering-projects.md`](./problems-chemical-engineering-projects.md) | stub | `project-based` |
 | Process Engineering Projects | [`problems-process-engineering-projects.md`](./problems-process-engineering-projects.md) | stub | `project-based` |

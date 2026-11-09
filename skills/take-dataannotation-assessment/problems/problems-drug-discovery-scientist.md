@@ -2,10 +2,11 @@
 
 ### Bank
 
-- **captureStatus:** stub → bio+track only
-- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
-- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
-- **Track:** **Life Sciences Projects assessment** — **shared** with Experimental Biologist (same subtitle + 1h30 time cue). Likely shared with Computational Biologist (verify).
+- **captureStatus:** nearly-full · **shared stamp**
+- **Captured:** 2026-11-09 · host 34123
+- **Shared form:** Live-fetched via **Experimental Biologist** entry (`problems-experimental-biologist.md`)
+- **Live IDs:** task `f80ef42a-58bb-4a5d-98ab-04b23744ed0d` · `project_id=91c51160-2ef8-4a1d-9711-814a82bfad5c` · `task_response_id=01a1c00d-d6e2-72d7-999e-4589306f843f`
+- **Track:** **Life Sciences Projects assessment** — same assessment as Experimental Biologist + Computational Biologist
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -18,7 +19,7 @@
 ### Contents
 
 1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
-2. _(Steps pending — Start not clicked)_
+2. **Assessment steps:** see [`problems-experimental-biologist.md`](problems-experimental-biologist.md) (shared Life Sciences Domain form)
 
 ---
 
@@ -38,16 +39,6 @@ We're looking for experienced drug discovery scientists to help train AI models.
 - Run tasks through frontier AI agents and grade deliverables (decision memos, screening workbooks, tox summaries).
 - Write clear grading rubrics specifying what a correct deliverable must contain.
 - Flag concrete failures with evidence — misread assay data, SAR conclusions unsupported by data, misinterpreted PK parameters, missed liabilities.
-- Problems draw on whatever you know best:
-  - Medicinal chemistry and SAR / lead optimization.
-  - Computational chemistry and CADD.
-  - Assay development and screening.
-  - DMPK, PK/PD, ADME, and preclinical safety.
-  - Translational and biomarker science, biologics and advanced modalities, and CMC / process development.
-
-### What we look for
-
-_Below fold on first capture — incomplete._
 
 ### Sidebar
 
@@ -62,14 +53,16 @@ _Below fold on first capture — incomplete._
 ## Bio (assessment intro)
 
 - **Title:** Drug Discovery Scientist
-- **Subtitle / track:** Life Sciences Projects assessment (**shared** with Experimental Biologist)
+- **Subtitle / track:** Life Sciences Projects assessment (**shared** with Experimental Biologist + Computational Biologist)
 - **Pay line:** Up to $125+ per hour · Your hours: remote, no minimum
 - **What it takes — for this assessment:** People who pass usually spend **1 hour 30 minutes or more**; We read your reasoning, not just your answers; Save and come back (several days); Do your own work (No LLMs unless a task says otherwise); This is your one attempt
 - **What happens next:** Email if accepted; Most projects need some additional qualifications after acceptance
-- **CTA:** Start assessment — **not clicked** (expire risk)
+- **CTA:** Start assessment — shared form started via Experimental Biologist 2026-11-09
 
 **Assets:** `assets/drug-discovery-scientist/track-intro.png`
 
-## Experience / questions
+## Assessment body
 
-_Not captured — Start blocked pending expire clearance._
+### Shared: experimental-biologist · 2026-11-09
+
+Full Instructions → Section 1 (Expert Domain Parallel Q1–Q7) → Section 2 Conversation (**Life Sciences Domain** · Haiku 5.5) → Background Life Sciences field checkboxes → Coding → meaningful Life Sciences write-in → fluency → Degree → Optional: see `problems-experimental-biologist.md`.

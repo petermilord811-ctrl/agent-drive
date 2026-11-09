@@ -41,7 +41,8 @@ Artifacts written: `answer.gates.json`, `answer.meaning.json`, `answer.quality.j
 5. **Voice:** prefer spoken variants of `best` that already MQ-pass; else **one** `humanize-text.py` (balanced) + scrub. Never `HUMANIZE_API_KEY`.
 6. **MeaningPass + QualityPass again** on the candidate. Fail ⇒ discard even if `cls.ai=0`. Surgical restore from `best` / card.
 7. **DetectPass** via `aicheck-answer.py` (`cls.ai≤20`) **only** on MQ-pass text. If ai>20: restore from card → humanize once → MQ → detect ≤3. Else ask operator.
-8. **`answer-gates.py` exit 0** → then `prepare-answer.js` (must emit `phase: autofill-ready`). Never Submit until operator yes.
+8. **`answer-gates.py` exit 0** → then `prepare-answer.js` (must emit `phase: autofill-ready`).
+9. **MUST — Never Submit** until operator explicit yes / Submit after review (always; silence ≠ yes).
 
 ```text
 best-correct → MeaningPass → QualityPass → voice → MQ again → DetectPass → answer-gates.py → prepare (gates ok) → fill
@@ -70,7 +71,7 @@ best-correct → MeaningPass → QualityPass → voice → MQ again → DetectPa
 - [ ] `answer-gates.py --profile … --run-aicheck` exit 0
 - [ ] Spot-skim: each Value answers **On form** (what the item grades)
 - [ ] `prepare-answer.js` → `autofill-ready`
-- [ ] Live fill only after gates green; Submit only on operator yes
+- [ ] Live fill only after gates green; **MUST — Never Submit** until operator explicit yes
 
 ---
 

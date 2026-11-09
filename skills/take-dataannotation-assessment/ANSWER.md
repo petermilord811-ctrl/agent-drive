@@ -8,7 +8,15 @@ run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "pat
 
 **Before any live click:** read [`PREFLIGHT.md`](./PREFLIGHT.md) then the live runbook [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md).
 
-Runs only when Part A bank is ready. **Do not Submit** until the operator reviews.
+Runs only when Part A bank is ready.
+
+## MUST — Never Submit until operator yes
+
+**Always.** Do not click Submit at any phase unless the operator explicitly says **yes** / **Submit** after review.
+
+## MUST — Full name + email first
+
+Operator supplies **Full name** + **Email** before prepare/connect/Claude. Missing → ask once and wait. Never invent.
 
 Parent: [`README.md`](./README.md) · Template: [`answers.template.md`](./answers.template.md) ·
 Gates: [`ANSWER-GATES.md`](./ANSWER-GATES.md) · Clicks: [`CLICK.md`](./CLICK.md) ·
@@ -17,16 +25,17 @@ Fill: [`PART-B-FILL.md`](./PART-B-FILL.md) · Claude: [`CLAUDE-SETUP.md`](./CLAU
 ## One command to start
 
 ```bash
+# ALWAYS auto-pick role from resume (omit --slug until operator says they will pick manually)
 node skills/take-dataannotation-assessment/prepare-answer.js \
   --profile "d:/5.AI/DA assessments/10-Daniel Herman" \
   --strict-full
 ```
 
-Writes `{profile}/session.json` with `phase` + `nextSteps`. When `answer.fill.json` exists, also writes `answer.pace.json` + `answer.playbook.json`.
+Writes `{profile}/session.json` with `slug` / `role` (from resume pick) + `phase` + `nextSteps`. When `answer.fill.json` exists, also writes `answer.pace.json` + `answer.playbook.json`.
 
 | `session.phase` | Meaning |
 |-----------------|---------|
-| `blocked` | Bank/resume gate failed — usually **Part A fetch** |
+| `blocked` | Bank missing/incomplete — **automatically** Part A fetch `session.slug` first (verbatim, never Submit), then re-run prepare |
 | `generate-answer-md` | Gate ok — write `answer.md` offline |
 | `parse-validate` | Have `answer.md` — parse + validate |
 | `gates` | `answer-gates.py` exit 0 (Meaning∧Quality∧Detect) — required before autofill |

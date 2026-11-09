@@ -1,0 +1,79 @@
+{
+  "total": 17,
+  "case": "Experience None of the above selected",
+  "leaves": [
+    {
+      "step": 1,
+      "label": "Instructions"
+    },
+    {
+      "step": 2,
+      "label": "Your Professional Experience"
+    },
+    {
+      "step": 3,
+      "label": "Section 1: Assessment Questions (incl Q1)"
+    },
+    {
+      "step": 4,
+      "label": "Question 2"
+    },
+    {
+      "step": 5,
+      "label": "Question 3"
+    },
+    {
+      "step": 6,
+      "label": "Question 4"
+    },
+    {
+      "step": 7,
+      "label": "Question 5"
+    },
+    {
+      "step": 8,
+      "label": "Question 6"
+    },
+    {
+      "step": 9,
+      "label": "Question 7"
+    },
+    {
+      "step": 10,
+      "label": "Section 2: Conversation"
+    },
+    {
+      "step": 11,
+      "label": "Attached Files"
+    },
+    {
+      "step": 12,
+      "label": "Did you get the model to produce..."
+    },
+    {
+      "step": 13,
+      "label": "Share Your Conversation"
+    },
+    {
+      "step": 14,
+      "label": "Section 3: Your Background"
+    },
+    {
+      "step": 15,
+      "label": "Coding and Computer Science..."
+    },
+    {
+      "step": 16,
+      "label": "Tell us about the most meaningful..."
+    },
+    {
+      "step": 17,
+      "label": "(Optional) Any other comments?"
+    }
+  ],
+  "ids": {
+    "task_response_id": "01a1bfe7-9302-7e49-9d3f-6d3c087d2227",
+    "project_id": "98115092-746b-4a56-a921-7fbde7b1cda4",
+    "task": "182c06fd-ff99-4b02-9192-c1300e2e7923"
+  }
+}

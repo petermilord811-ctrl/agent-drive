@@ -65,7 +65,7 @@ if (!resumeName) {
 }
 const resumePath = path.join(path.resolve(profileDir), resumeName);
 
-// 1) Pick role unless --slug given
+// 1) ALWAYS auto-pick from resume unless --slug (manual pick after operator says so)
 let pick = null;
 let slug = slugFlag;
 if (!slug) {
@@ -371,7 +371,10 @@ const session = {
   phase,
   nextSteps: nextSteps(phase, ready, slug),
   hardRules: [
-    'Never Submit until operator explicit yes',
+    'MUST — Never Submit until operator explicit yes / Submit after review (silence ≠ yes); always, every phase',
+    'MUST — Full name + Email from operator before connect/fetch/fill; ask once if missing; never invent',
+    'ALWAYS auto-pick role from resume (prepare-answer without --slug) until operator says they will pick assessment manually — never ask which role',
+    'If problems-{slug}.md missing or not full|verified — complete Part A bank fetch first (verbatim, never Submit) before answer.md or live fill; do not ask',
     'Never keys human:0 on DA fields',
     'Always look → locate-click.py on THAT png → act',
     'Never clickText for DA content on OCR-blind hosts',

@@ -11,12 +11,14 @@ Companion: [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) (when Claude sits in the liv
 
 ## Identity rule (HARD)
 
+**Before Claude or DA fill:** operator must already have given **Full name** + **Email** (workflow step 0). If missing, stop and ask — do not invent.
+
 Claude account **must** match the DataAnnotation worker identity for this profile:
 
 | Field | Source |
 |-------|--------|
-| **Email** | Same as DataAnnotation account email for this worker |
-| **Name** | Same legal / DA signup name (First + Last from profile) |
+| **Email** | Operator-given DA account email (required at start) |
+| **Name** | Operator-given Full name First + Last (required at start) |
 | **Password** | Same as DA password **or** ask operator to choose/set one |
 
 **Never:**

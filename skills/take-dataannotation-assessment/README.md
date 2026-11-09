@@ -1,6 +1,6 @@
 ---
 name: Take DataAnnotation assessment
-when: DataAnnotation real assessment after role pick — Part A verbatim capture into skills/.../problems/problems-{role-slug}.md (103 roles) + re-catch/diff; Part B prepare-answer → answer.md → playbook → paced autofill → operator review before Submit
+when: DataAnnotation real assessment after auto-pick (or manual) — if bank missing/not full fetch Part A first; then answer.md + gates; playbook autofill; MUST Never Submit until operator yes; Full name+Email required first
 tags: browser, dataannotation, assessment, problems, answers, autofill, pacing, humanize, markdown, firefox, mission, preflight
 run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "path/to/profile" --strict-full
 ---
@@ -12,8 +12,8 @@ run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "pat
 
 | Part | When | Doc |
 |------|------|-----|
-| **A. Fetch** | captureStatus not yet `full` | this README (HARD RULES + Capture sequence) |
-| **B. Answer** | bank `full` + re-catch clean → real take | [`ANSWER.md`](./ANSWER.md) + [`PREFLIGHT.md`](./PREFLIGHT.md) |
+| **A. Fetch** | bank missing or captureStatus not `full`/`verified` — **do this first automatically** | this README (HARD RULES + Capture sequence) |
+| **B. Answer** | bank ready → real take | [`ANSWER.md`](./ANSWER.md) + [`PREFLIGHT.md`](./PREFLIGHT.md) |
 | **B. Live runbook** | connect → Claude → fill → Submit gate | [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) (**read first** on live host) |
 | **B. Fill contract** | every DA `keys` | [`PART-B-FILL.md`](./PART-B-FILL.md) |
 | **B. Claude gate** | Section 1 share URL | [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md) |
@@ -44,7 +44,7 @@ skills/take-dataannotation-assessment/problems/problems-{role-slug}.md
 | Pace | `pace-plan.js` → `{profile}/answer.pace.json` |
 | Validate | `validate-answers.js --slug … --answer …` |
 | **Part B gate** | `answer-ready.js --slug … --profile … [--strict-full\|--auto-pick]` |
-| **Part B orchestrator** | `prepare-answer.js --profile … [--slug …] [--strict-full]` → `session.json` + playbook |
+| **Part B orchestrator** | `prepare-answer.js --profile … [--strict-full]` → **always** auto-pick role from resume → `session.json` + playbook (`--slug` only after operator says they will pick manually) |
 | **Part B timer (MUST)** | [`TIMER.md`](./TIMER.md) — arm `status`/`mission` after Start; log every leaf to `answer.timer.json` |
 | **Preflight** | [`PREFLIGHT.md`](./PREFLIGHT.md) |
 | **Local OCR (Browse)** | `look-ocr.js <look.png> --find "Data Scientist"` — when host OCR is chrome-blind |
@@ -149,9 +149,10 @@ For **every** assessment step:
 - **Never** `Ctrl+A` / select-all copy of the assessment page to capture problem text (look + scroll + PNGs / transcription instead).
 - Optional: keep a `*_link.png` of the address bar as evidence.
 
-### 6. Never Submit while fetching
+### 6. MUST — Never Submit until operator yes (always)
 
-- Fetch/capture runs stop before the final **Submit** (Generalist Step 14 footer). Leave answers unsubmitted or navigate away via URL after the last step is copied.
+- **Every phase** (fetch, fill, recheck, sign-off): never click Submit / “Submit and Begin Next Task” unless the operator explicitly says **yes** / **Submit** after review. Silence ≠ yes.
+- Fetch/capture runs stop before the final **Submit**. Leave answers unsubmitted or navigate away after the last step is copied.
 
 ## Capture sequence (full bank fill)
 

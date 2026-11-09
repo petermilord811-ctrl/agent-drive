@@ -197,7 +197,7 @@ def main() -> int:
             "Do not skip drafts/meaning.json",
             "Do not accept humanize output without re-running Meaning+Quality",
             "On form criterion coverage is part of QualityPass (q2b order+coeffs+SSE; q4 why B>A)",
-            "Never Submit until operator yes",
+            "MUST — Never Submit until operator explicit yes (always; silence ≠ yes)",
         ],
     }
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

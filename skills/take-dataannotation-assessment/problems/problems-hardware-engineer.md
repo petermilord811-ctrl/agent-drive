@@ -2,10 +2,11 @@
 
 ### Bank
 
-- **captureStatus:** stub → bio+track only
-- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
-- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
-- **Track:** **Electrical Engineering Projects assessment** — **shared** with Electrical Engineer (same subtitle + 1h30 cue). Bio template nearly identical. Likely also Embedded Systems Developer / Electronics Engineer.
+- **captureStatus:** nearly-full · **shared stamp**
+- **Captured:** 2026-11-09 · host 34123
+- **Shared form:** Live-fetched via **Electrical Engineer** entry (`problems-electrical-engineer.md`)
+- **Live IDs:** task `7078877b-da79-4715-9201-799a5fcaadeb` · `project_id=151b1505-822f-4491-a6fe-58619d73fc0f` · `task_response_id=01a1c02a-576d-7072-abe7-e4a1b4aa2b8a`
+- **Track:** **Electrical Engineering Projects assessment** — same assessment as Electrical Engineer + Electronics Engineer + Embedded Systems Developer
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -18,7 +19,7 @@
 ### Contents
 
 1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
-2. _(Steps pending — Start not clicked)_
+2. **Assessment steps:** see [`problems-electrical-engineer.md`](problems-electrical-engineer.md) (shared Electrical Engineering Domain form)
 
 ---
 

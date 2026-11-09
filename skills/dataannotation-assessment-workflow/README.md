@@ -1,6 +1,6 @@
 ---
 name: DataAnnotation assessment workflow
-when: full DataAnnotation.tech worker path — create account → setup profile → pick assessment role → take assessment (capture skills/.../problems/problems-{type}.md, re-catch/diff, answer); also when operator says DA workflow, full assessment, onboard, or browse roles after signup
+when: full DataAnnotation.tech worker path — Full name+Email first → create account → setup profile → ALWAYS auto-pick role from resume (unless operator picks manually) → take assessment (bank fetch if needed → answer.md → fill; Never Submit until yes); also when operator says DA workflow, full assessment, onboard, or browse roles after signup
 tags: browser, forms, dataannotation, assessment, onboarding, profile, resume, problems, firefox, mission
 run: node skills/dataannotation-assessment-workflow/pick-assessment.js --resume path/to/resume.txt
 ---
@@ -8,22 +8,28 @@ run: node skills/dataannotation-assessment-workflow/pick-assessment.js --resume 
 
 Orchestrates the **four big platform steps** on DataAnnotation.tech.
 
-| Big step | Screen cue | Skill / action |
-|----------|------------|----------------|
-| **1. Create account** | `worker_signup` | [`create-dataannotation-account`](../create-dataannotation-account/README.md) |
-| **2. Setup profile** | `workers/learn-about-you` — Welcome → Availability | [`setup-dataannotation-profile`](../setup-dataannotation-profile/README.md) |
-| **3. Choose assessment** | `workers/projects` — “Browse roles” / Assessment step 2 | [`pick-dataannotation-assessment`](../pick-dataannotation-assessment/README.md) |
-| **4. Real assessment** | role assessment / work mode | [`take-dataannotation-assessment`](../take-dataannotation-assessment/README.md) |
+## MUST (always — every big step)
+
+1. **Full name + Email first** — required before connect/signup/fill. Missing → ask once → wait. Never invent.
+2. **Always auto-pick role from resume** until the operator says they will pick manually (e.g. “I will pick assessment manually”). Never ask “which assessment?” by default.
+3. **Complete bank first** — if `problems-{slug}.md` missing or not `full`/`verified`, Part A fetch that slug before `answer.md` / live fill.
+4. **Never Submit until operator explicit yes / Submit** after review. Silence ≠ yes. Applies to fetch and fill.
+
+| Big step | Screen cue | Skill / action | Skip when |
+|----------|------------|----------------|-----------|
+| **1. Create account** | `worker_signup` | [`create-dataannotation-account`](../create-dataannotation-account/README.md) | Already signed in as this email |
+| **2. Setup profile** | `workers/learn-about-you` | [`setup-dataannotation-profile`](../setup-dataannotation-profile/README.md) | Profile/Availability already done → Browse roles |
+| **3. Auto-pick role** | `workers/projects` Browse roles | [`pick-dataannotation-assessment`](../pick-dataannotation-assessment/README.md) | Operator said they will pick manually → their role only |
+| **4. Real assessment** | role assessment / work mode | [`take-dataannotation-assessment`](../take-dataannotation-assessment/README.md) | — (bank → answer.md → fill; never Submit until yes) |
 
 ## Inputs the operator must give
 
 Before starting (session chat or flags):
 
-1. **Resume** file (PDF/DOCX/TXT) — or paste path in the Cursor chat.
-2. **Full name** (First + Last) and **email**.
-3. **Password policy** on the password page: agent **must ask** — operator types on the host
-   themselves, **or** sends the password in session chat for secret typing. Never invent a
-   password in the full workflow unless they explicitly say “random password”.
+1. **Host** (ScreenMirror) — operator-named only.
+2. **Profile dir** with **Resume** (PDF/DOCX/TXT), or resume path in chat.
+3. **Full name** (First + Last) and **email** — **required first** (same identity for DA + Claude).
+4. **Password** on the password page: agent **must ask** — operator types on the host, **or** sends in session chat for secret typing. Never invent unless they say “random password”.
 
 ## Mission shape (copy into `mission plan`)
 
@@ -31,10 +37,13 @@ Before starting (session chat or flags):
 {
   "goal": "DA full workflow for <Full Name>",
   "milestones": [
-    { "t": "1 Create account", "done": "confirm_email or signed-in onboarding" },
-    { "t": "2 Setup profile", "done": "Availability done; left learn-about-you / ready for projects" },
-    { "t": "3 Pick assessment", "done": "Chosen role card opened / assessment started for best match" },
-    { "t": "4 Real assessment", "done": "bank full + profile answer.md filled/rechecked; operator reviewed; Submit only on yes" }
+    { "t": "0 Identity", "done": "Full name + Email confirmed" },
+    { "t": "1 Create account", "done": "confirm_email or signed-in as that email (or skipped if already in)" },
+    { "t": "2 Setup profile", "done": "Availability done / Browse roles ready (or skipped if done)" },
+    { "t": "3 Auto-pick role", "done": "session.slug from resume (or manual override); correct role card opened" },
+    { "t": "4a Bank", "done": "problems-{slug}.md full|verified" },
+    { "t": "4b Answers", "done": "answer.md + answer-gates exit 0 + autofill-ready" },
+    { "t": "4c Live fill", "done": "filled+rechecked; Submit only on operator yes" }
   ]
 }
 ```
@@ -43,6 +52,7 @@ Run **one big-step skill at a time**. Achieve with a cropped look before moving 
 
 ## Step 1 — Create account (summary)
 
+0. Confirm Full name + Email present (MUST). If already signed in as that email → skip to step 2.
 1. Parse First / Last from full name; use given email.
 2. Fill name + email → Continue.
 3. On **password page**: `chat` ask + `chat_wait` —
@@ -58,6 +68,7 @@ Details: `skills/create-dataannotation-account/README.md`.
 
 URL: `https://app.dataannotation.tech/workers/learn-about-you`
 
+0. If already past Availability / on Browse roles → skip to step 3.
 1. **Welcome** → click **Let's go**.
 2. **Resume & LinkedIn** — copy operator resume into the host **Documents** folder; upload that
    file; wait for platform auto-fill; verify other fields.
@@ -75,21 +86,25 @@ URL: `https://app.dataannotation.tech/workers/learn-about-you`
 
 Details: `skills/setup-dataannotation-profile/README.md`.
 
-## Step 3 — Choose assessment (summary)
+## Step 3 — Auto-pick role (summary)
 
 URL: `https://app.dataannotation.tech/workers/projects` (Browse roles).
 
-1. Load catalog: `skills/dataannotation-assessment-workflow/assessments.json`.
-2. Score resume → top role + assessment family:
-   `node skills/dataannotation-assessment-workflow/pick-assessment.js --resume <file>`
-3. Search / filter on the page; open the chosen role card; start that assessment.
-4. Do **not** start unrelated roles.
+1. **ALWAYS** score resume (unless operator said they will pick manually):
+   `node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full`
+   or `pick-assessment.js --resume <file>` → use `session.slug` / `pick.role`.
+2. Do **not** ask which role. Chat the pick only as status (not a veto prompt).
+3. Search Browse roles for that **exact** title; open that card only.
+4. Manual override: operator says they will pick → open **their** role; use `--slug` if needed.
+5. Do **not** start unrelated roles. Opening the card ≠ Submit; hand off to step 4.
 
 Details: `skills/pick-dataannotation-assessment/README.md`.
 
 ## Step 4 — Real assessment (summary)
 
-**Part A — Fetch**
+Follow [`WORKFLOW-LIVE.md`](../take-dataannotation-assessment/WORKFLOW-LIVE.md).
+
+**Part A — Fetch (automatic if bank missing / not full|verified)**
 
 1. **Verbatim** capture into `skills/take-dataannotation-assessment/problems/problems-{role-slug}.md`
    (103 roles): Bio page 1 + Bio page 2 (skip only No-LLMs) + after Start assessment every step,
@@ -106,26 +121,27 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
 4. Re-catch → `.capture.md` → `compare-problems.js --slug …` → update if the **exact** text drifted.
    Mark `captureStatus: full` only when reconcile + bios are complete.
 
-**Part B — Answer** (last step)
+**Part B — Answer** (after bank ready)
 
 ```bash
+# auto-picks slug from resume; omit --slug unless manual pick
 node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full
 ```
 
-Follow `session.json` → [`PREFLIGHT.md`](../take-dataannotation-assessment/PREFLIGHT.md) → live runbook [`WORKFLOW-LIVE.md`](../take-dataannotation-assessment/WORKFLOW-LIVE.md) → [`ANSWER.md`](../take-dataannotation-assessment/ANSWER.md).
+Write `{profile}/answer.md` + gates ([`ANSWER-GATES.md`](../take-dataannotation-assessment/ANSWER-GATES.md)) → `autofill-ready`.
 
-Live order: TIMER → Claude identity ([`CLAUDE-SETUP.md`](../take-dataannotation-assessment/CLAUDE-SETUP.md)) → Round 1/2 + Share → DA Fields tape fill ([`PART-B-FILL.md`](../take-dataannotation-assessment/PART-B-FILL.md)) → **one** recheck → operator yes. Autofill from `answer.playbook.json` only. **Never Submit** until operator yes. **Never `xdotool type`** — SM `keys` only.
+Live order: TIMER → Claude identity with **operator name/email** ([`CLAUDE-SETUP.md`](../take-dataannotation-assessment/CLAUDE-SETUP.md)) → Round 1/2 + Share → DA Fields tape ([`PART-B-FILL.md`](../take-dataannotation-assessment/PART-B-FILL.md)) → **one** recheck → **MUST wait for explicit yes** before Submit. Autofill from `answer.playbook.json` only. **Never `xdotool type`** — SM `keys` only.
 
 Details: `skills/take-dataannotation-assessment/README.md` + `WORKFLOW-LIVE.md` + `ANSWER.md` + `PREFLIGHT.md`.
 
 ## Pitfalls
 
-- Full workflow ≠ random signup drill — use real resume + name + email.
+- Full workflow ≠ random signup drill — need host + profile/resume + **Full name + Email first**.
 - Never skip the password ask on step 1.
 - Resume must live on the **remote** host Documents before the upload picker can see it
   (`files` or `send` / shell copy — request access if needed).
-- Role pick must use `assessments.json` + resume scoring, not a gut click on the first card.
-- Never skip problem capture / re-catch on step 4; never paste No-LLMs boilerplate into the bank.
+- Role = resume auto-pick (or manual only when operator says so) — never gut-click the first Browse card.
+- Never skip problem capture when bank incomplete; never paste No-LLMs boilerplate into the bank.
 - Never skip **non-question UI cards** (Section 1 intro, review notices, recap blocks) — bank verbatim; one-line paraphrase is a fetch fail.
 - Before machine resume on step 4: run `prepare-answer.js --strict-full` and read `PREFLIGHT.md` + `WORKFLOW-LIVE.md`.
 - PDF resumes must be extracted (not binary-scored). OCR `clickText` is unreliable on some hosts.

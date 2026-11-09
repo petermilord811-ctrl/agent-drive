@@ -16,7 +16,7 @@ Companion docs: [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) · [`CLICK.md`](./CLICK
 | Pass `host` whenever ≥2 visits have ever been open this MCP session | Serve refuses guessed hosts |
 | End every work burst with `chat_wait {timeout:45000}`; re-call same turn on timeout/busy/-32001 | Cursor does not wake on SM inbox |
 | Inbox → `seen` + `typing` + `chat` **before** any screen act | Editor transcript is not a reply |
-| Never Submit until operator says `Submit` / yes after recheck | One-attempt assessment |
+| **MUST — Never Submit** until operator explicit `Submit` / `yes` after recheck (silence ≠ yes) | One-attempt assessment; always |
 | Arm TIMER immediately after **Start assessment** | Live miss: timer never armed |
 
 ---

@@ -11,7 +11,7 @@ Field contract: `PART-B-FILL.md` · Also: `CLICK.md` · `PREFLIGHT.md` · `TIMER
 
 ## Hard stops (before every `keys`)
 
-1. **Operator-named host only** — pass `host` on every serve call.
+1. **Operator-named host only** — pass `host` on every serve call. **MUST — Full name + Email first** (ask once if missing). **ALWAYS auto-pick role from resume** until operator says they will pick assessment manually.
 2. **Read WORKFLOW-LIVE.md + PART-B-FILL.md** in-session before first live Part B `keys`.
 3. **Prove focus** — one non-space letter/digit → look shows it in the target box — then type. Spaces on document = scroll bug.
 4. **Never** SM blank `field ""` (Expires) or content marks that click x≈80 — use `locate-click.py textarea` / OCR white-box / content lx / label→Tab.
@@ -20,7 +20,7 @@ Field contract: `PART-B-FILL.md` · Also: `CLICK.md` · `PREFLIGHT.md` · `TIMER
 7. **Small targets:** `snap:false` + `aim:false` (aim:false alone still snaps). Checkboxes: OCR label → lx ≈ bbox.x0−16.
 8. **Empty rubrics:** OCR placeholder → click white interior y≈ph+35; placeholder mark alone fails prove.
 9. **TIMER** immediately after Start (`da-partb-timer.mdc` / TIMER.md).
-10. **Fill = Fields tape** — answers offline; one recheck after last field; never Submit without operator yes.
+10. **MUST — Never Submit** until operator explicit yes / Submit after review (silence ≠ yes). Fill = Fields tape; one recheck after last field.
 11. Humanize = relay join-key / verb `humanize` only — never `HUMANIZE_API_KEY`.
 12. Failure **Yes** may add round / describe / screenshot — fill them; share URL needs real Claude then type with keys.
 13. Claude composer: Enter=Send; newline=`chord ShiftLeft+Enter`; Ctrl+V OK on Claude only — see `CLAUDE-SETUP.md`.

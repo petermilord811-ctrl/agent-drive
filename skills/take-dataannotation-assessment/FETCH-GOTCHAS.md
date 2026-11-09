@@ -14,6 +14,7 @@ Read this before writing a single line into `problems-{slug}.md`.
 | Treat Expert Domain Section 1 intro as **shared** — still paste full copy (or link `ASSESSMENT-TRACK-DIFF.md` Shared section) into **each** major’s md | Omit because “same as Finance/Generalist” |
 | **Parallel reuse (2026-11-09):** Autonomously stem-match → copy from **`verified` only**; stamp `### Parallel`. Always **live-fetch** “Tell us about the most meaningful…” + Section 2 domain/Goal/Haiku + Experience | Wait for operator to say parallel; parallel from nearly-full; skip meaningful-experience leaf; Gen Fog → Expert Q6 |
 | Include intro/header cards in leaf inventory / reconcile checklist | Count only radio/write-in steps toward “nearly-full” completeness |
+| **Sidebar order (ME 2026-11-09):** Walk **every** leaf in order — **Section 3: Your Background** (experience checkboxes / degrees) is its own leaf **before** Coding / meaningful. Jumping Coding→meaningful while Background unchecked = skip | Skip Background because “Coding/meaningful are the interesting leaves” |
 
 **Gate:** for any Expert Domain major, `problems-*.md` Section 1 must contain the **Why general questions** + **reviewed by a person** blocks verbatim (or an explicit `*(see ASSESSMENT-TRACK-DIFF Shared Section 1 intro)*` pointer with the full text living in one canonical file). Paraphrase-only = **not** nearly-full for that leaf.
 
