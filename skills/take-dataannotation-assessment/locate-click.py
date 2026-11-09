@@ -23,12 +23,18 @@ CONTRACT:
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png role "Data Scientist"
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png start
 @run  python -I skills/take-dataannotation-assessment/locate-click.py look.png scroll-complete
+@run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea
+@run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea 1
+@run  python -I skills/take-dataannotation-assessment/locate-click.py look.png textarea --near "first rubric"
 """
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
 from collections import deque
+from pathlib import Path
 
 from PIL import Image
 
@@ -822,15 +828,151 @@ def _is_input_fill(rgb):
     return 236 <= avg <= 252
 
 
+def _is_field_interior(rgb):
+    """#f8 fill or light placeholder ink — NOT pure page white (255).
+
+    Pass-3 bug (live look-1): treating 255 as interior grew the whole content card.
+    """
+    r, g, b = rgb[:3]
+    if max(r, g, b) - min(r, g, b) > 40:
+        return False
+    avg = (r + g + b) / 3
+    # Input fill ~248; placeholder glyphs ~160–200 sit on that fill.
+    # Allow slightly lighter padding but stop before page white.
+    return 210 <= avg <= 252
+
+
+def _is_soft_seed_row(px, y, x0, x1, step=6):
+    """A soft field must seed on real #f8 fill, not page white."""
+    samples = list(range(x0, max(x0 + 1, x1), step))
+    if not samples:
+        return False
+    seeds = sum(1 for x in samples if _is_input_fill(px[x, y]))
+    return seeds >= len(samples) * 0.45
+
+
+def _row_dark_frac(px, y, x0, x1, step=4):
+    samples = list(range(x0, max(x0 + 1, x1), step))
+    if not samples:
+        return 0.0
+    dark = 0
+    for x in samples:
+        r, g, b = px[x, y][:3]
+        if (r + g + b) / 3 <= 160:
+            dark += 1
+    return dark / len(samples)
+
+
+def _box_upper_ink_frac(px, box):
+    """Fraction of dark-ish pixels in the upper third (placeholder / prompt slab)."""
+    y0 = box["y0"]
+    y1 = box["y0"] + max(8, box["h"] // 3)
+    x0 = box["x0"] + 6
+    x1 = box["x1"] - 6
+    if x1 <= x0 or y1 <= y0:
+        return 0.0
+    total = 0
+    dark = 0
+    for y in range(y0, y1, 2):
+        for x in range(x0, x1, 5):
+            total += 1
+            r, g, b = px[x, y][:3]
+            if (r + g + b) / 3 <= 170:
+                dark += 1
+    return dark / total if total else 0.0
+
+
+def _box_fill_mean(px, box):
+    ys = range(box["y0"] + 4, max(box["y0"] + 5, box["y1"] - 4), 3)
+    xs = range(box["x0"] + 8, max(box["x0"] + 9, box["x1"] - 8), 6)
+    vals = []
+    for y in ys:
+        for x in xs:
+            r, g, b = px[x, y][:3]
+            vals.append((r + g + b) / 3)
+    return sum(vals) / len(vals) if vals else 0.0
+
+
+def _caret_ly(box):
+    """Click below placeholder ink into the caret zone (99588 rubric recipe)."""
+    h = max(1, int(box["h"]))
+    if h < 36:
+        # Single-line: click vertical mid (optional / share URL).
+        return int(box["y0"] + h // 2)
+    offset = max(28, min(48, int(h * 0.38)))
+    return int(min(box["y0"] + offset, box["y1"] - 6))
+
+
+def _score_textarea(box, w, h, edge, px, near_y=None):
+    """Higher = more likely a real DA editable field (not prompt slab / Expires)."""
+    score = 0.0
+    # Geometry: wide content fields win; chip-sized lose.
+    span = max(1, w - edge)
+    score += min(40.0, 40.0 * box["w"] / span)
+    if 48 <= box["h"] <= 160:
+        score += 28.0
+    elif 160 < box["h"] <= 280:
+        score += 22.0  # tall Goal / rationale
+    elif 36 <= box["h"] < 48:
+        score += 18.0  # short rubric
+    elif 20 <= box["h"] < 36:
+        score += 14.0  # single-line optional / share
+    else:
+        score -= 10.0
+    if box["y1"] >= int(h * 0.88):
+        score -= 50.0  # Expires / footer band
+    if box["cx"] <= edge + 20:
+        score -= 80.0
+
+    ink = _box_upper_ink_frac(px, box)
+    # Light placeholder text is OK; dense prompt prose is not.
+    # Fixture prompt slab ~0.07+; empty #f8 ~0; rubric placeholder ~0.006–0.04.
+    if ink <= 0.02:
+        score += 20.0  # empty #f8
+    elif ink <= 0.045:
+        score += 24.0  # light placeholder line (rubric)
+    elif ink <= 0.08:
+        score -= 15.0  # likely prompt / multi-line body text
+    else:
+        score -= 40.0  # prompt / instruction slab
+
+    mean = _box_fill_mean(px, box)
+    if 236 <= mean <= 252:
+        score += 12.0
+    elif 220 <= mean < 236:
+        score += 6.0
+    elif mean < 200:
+        score -= 20.0
+
+    if near_y is not None:
+        # Prefer boxes whose top sits just under the label.
+        dy = box["y0"] - near_y
+        if 0 <= dy <= 140:
+            score += 45.0 - dy * 0.15
+        elif -20 <= dy < 0:
+            score += 10.0  # label may sit inside the field (placeholder)
+        else:
+            score -= 25.0
+
+    # Prefer not-tiny strips above a real twin (handled later by ranking too).
+    if box["h"] < 40 and box.get("kind") == "fill248":
+        score -= 15.0
+    return score
+
+
 def find_textareas(path, sidebar_edge=None):
-    """Large empty white / #f8 boxes in the content pane (Explanation / Goal fields)."""
+    """Content-pane editable boxes: bordered white, #f8 fill, or placeholder fields.
+
+    Upgrade (99588 night): empty rubrics have gray placeholder text that breaks a
+    pure #f8 band. Pass 3 grows soft interior bands; scoring rejects prompt slabs.
+    """
     im, px, (w, h) = load_rgb(path)
     if sidebar_edge is None:
         sidebar_edge = detect_sidebar_edge(px, w, h)
     x0 = int(sidebar_edge) + 20
     # Sticky footer usually occupies bottom ~90px of look; ignore it for field search.
     y_hi = int(h * 0.90)
-    y_lo = int(h * 0.20)
+    y_lo = int(h * 0.12)
     candidates = []
     span_need = max(80, int((w - x0) * 0.35))
     y = y_lo
@@ -843,7 +985,8 @@ def find_textareas(path, sidebar_edge=None):
         if bx1 - bx0 < span_need:
             y += 2
             continue
-        # skip 1–2px of border, then require mostly white/near-white fill
+        # skip 1–2px of border, then require INPUT fill (#f8), not page white (255).
+        # Live miss: growing through 255 merged rubric1→gap→rubric2→footer.
         y1 = y + 2
         white_rows = 0
         gap = 0
@@ -851,12 +994,15 @@ def find_textareas(path, sidebar_edge=None):
             samples = list(range(bx0 + 8, bx1 - 8, 6))
             if not samples:
                 break
-            row_white = sum(
+            page_white = sum(
                 1
                 for x in samples
-                if px[x, y1][0] >= 238 and px[x, y1][1] >= 238 and px[x, y1][2] >= 238
+                if (px[x, y1][0] + px[x, y1][1] + px[x, y1][2]) / 3 >= 253
             )
-            if row_white < len(samples) * 0.50:
+            if page_white >= len(samples) * 0.55:
+                break
+            row_fill = sum(1 for x in samples if _is_field_interior(px[x, y1]))
+            if row_fill < len(samples) * 0.50:
                 gap += 1
                 # tolerate 3 speckled rows; stop on a clear bottom border or footer band
                 if gap <= 3 and white_rows >= 20:
@@ -879,6 +1025,7 @@ def find_textareas(path, sidebar_edge=None):
                     "h": box_h,
                     "cx": (bx0 + bx1) // 2,
                     "cy": (y + y1) // 2,
+                    "kind": "border",
                 }
             )
             y = y1 + 4
@@ -909,7 +1056,8 @@ def find_textareas(path, sidebar_edge=None):
             y1 += 1
         box_h = y1 - y0
         box_w = bx1 - bx0
-        if box_w >= span_need and 48 <= box_h <= 320:
+        # Single-line optional/share fields can be ~20–28px tall (99588 look-4).
+        if box_w >= span_need and 20 <= box_h <= 320:
             candidates.append(
                 {
                     "x0": bx0,
@@ -927,38 +1075,171 @@ def find_textareas(path, sidebar_edge=None):
             continue
         y += 2
 
+    # Pass 3 (99588 empty rubrics): seed on #f8, grow through placeholder ink.
+    # Placeholder text breaks pure fill248 bands; do not seed on page white.
+    y = y_lo
+    while y < y_hi - 36:
+        if not _is_soft_seed_row(px, y, x0 + 8, w - 16):
+            y += 2
+            continue
+        fill_xs = [x for x in range(x0 + 8, w - 16) if _is_input_fill(px[x, y]) or _is_field_interior(px[x, y])]
+        if len(fill_xs) < span_need:
+            y += 2
+            continue
+        bx0, bx1 = min(fill_xs), max(fill_xs)
+        if bx1 - bx0 < span_need:
+            y += 2
+            continue
+        if _row_dark_frac(px, y, bx0 + 8, bx1 - 8) > 0.35:
+            y += 2
+            continue
+        y0 = y
+        y1 = y
+        while y1 < y_hi:
+            samples = list(range(bx0 + 8, min(bx1 - 8, w - 8), 6))
+            if not samples:
+                break
+            # Stop on page-white rows (leave the input).
+            page_white = sum(
+                1
+                for x in samples
+                if (px[x, y1][0] + px[x, y1][1] + px[x, y1][2]) / 3 >= 253
+            )
+            if page_white >= len(samples) * 0.55:
+                break
+            ok = sum(1 for x in samples if _is_field_interior(px[x, y1])) >= len(samples) * 0.55
+            if not ok:
+                # tolerate a few placeholder-dense rows mid-field
+                if y1 - y0 >= 20 and _row_dark_frac(px, y1, bx0 + 8, bx1 - 8) <= 0.25:
+                    y1 += 1
+                    continue
+                break
+            y1 += 1
+        box_h = y1 - y0
+        box_w = bx1 - bx0
+        if box_w >= span_need and 20 <= box_h <= 320:
+            candidates.append(
+                {
+                    "x0": bx0,
+                    "y0": y0,
+                    "x1": bx1,
+                    "y1": y1,
+                    "w": box_w,
+                    "h": box_h,
+                    "cx": (bx0 + bx1) // 2,
+                    "cy": (y0 + y1) // 2,
+                    "kind": "soft",
+                }
+            )
+            y = y1 + 4
+            continue
+        y += 2
+
     kept = []
     for c in sorted(candidates, key=lambda t: -t["h"] * t["w"]):
         if any(
-            abs(c["cy"] - k["cy"]) < 30 and abs(c["cx"] - k["cx"]) < 40 for k in kept
+            abs(c["cy"] - k["cy"]) < 28 and abs(c["cx"] - k["cx"]) < 40 for k in kept
         ):
+            # Prefer the higher-scoring / better-kind duplicate later via rescoring.
             continue
         kept.append(c)
+    # Attach scores for callers (near_y optional later).
+    for c in kept:
+        c["score"] = round(_score_textarea(c, w, h, sidebar_edge, px), 2)
+        c["ink"] = round(_box_upper_ink_frac(px, c), 3)
+    kept.sort(key=lambda t: (-t["score"], t["y0"]))
     return kept, w, h, sidebar_edge
 
 
-def find_textarea_click(path, index=0):
-    """Empty content textareas (Conversation Goal, explanations).
+def _look_ocr_find(path, needle):
+    """Optional local OCR anchor (Windows). Returns {t,lx,ly,bbox} or None."""
+    if not needle:
+        return None
+    script = Path(__file__).resolve().parent / "look-ocr.js"
+    if not script.exists():
+        return None
+    try:
+        out = subprocess.check_output(
+            ["node", str(script), str(path), "--find", needle],
+            text=True,
+            stderr=subprocess.STDOUT,
+            timeout=45,
+        )
+        data = json.loads(out)
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        return None
+    pick = data.get("pick")
+    if not pick:
+        return None
+    return pick
 
-    HARD (99588 Daniel Herman 2026-11-08): ScreenMirror `marks` for an empty
-    Goal field mapped to the **Expires** chip (~1746,1017), not the box.
-    Never trust blank `field ""` marks for DA textareas — measure here, click
-    lx/ly from this look, then keys. After click: prove focus with one non-space
-    letter → look before full keys (spaces on document scroll the page). If click
-    focus fails, content-label → Tab (see PART-B-FILL.md).
+
+def find_textarea_click(path, index=0, near=None, prefer_best=False):
+    """Editable content fields (Goal, explanations, empty rubrics).
+
+    HARD (99588 Daniel Herman 2026-11-08/09):
+      - SM `field ""` marks → Expires chip — never trust them
+      - Placeholder-label mark click → prove letter fails
+      - Click caret zone (below placeholder), letter-prove, then keys
+      - Prefer `--near "first rubric"` label anchor when available
+
+    Indexing:
+      - `textarea` (no index, prefer_best) → highest score among usable
+      - `textarea N` → Nth box top-to-bottom
+      - `textarea --near needle` → boxes under label, then index in that set
     """
+    im, px, (w, h) = load_rgb(path)
     areas, w, h, edge = find_textareas(path)
-    # Prefer real fill boxes: wide + tall enough, above sticky footer/chip band
+    near_hit = _look_ocr_find(path, near) if near else None
+    near_y = None
+    if near_hit:
+        bbox = near_hit.get("bbox") or [0, near_hit.get("ly", 0), 0, near_hit.get("ly", 0)]
+        near_y = int(bbox[1] if len(bbox) > 1 else near_hit.get("ly", 0))
+
+    # Rescore with optional label anchor.
+    scored = []
+    for a in areas:
+        a = dict(a)
+        a["score"] = round(_score_textarea(a, w, h, edge, px, near_y=near_y), 2)
+        scored.append(a)
+
     usable = [
         a
-        for a in areas
-        if a["w"] >= int((w - edge) * 0.35)
-        and a["h"] >= 40
+        for a in scored
+        if a["w"] >= int((w - edge) * 0.30)
+        and a["h"] >= 20
         and a["cx"] > edge + 20
         and a["y1"] < int(h * 0.88)
+        and a["score"] >= 20.0
+        # Drop prompt/instruction slabs (99588 empty-rubrics fixture).
+        and float(a.get("ink") or 0) <= 0.05
     ]
-    # Prefer taller boxes first (99588: short #f8 strips above real Goal were index 0)
-    usable.sort(key=lambda a: (-a["h"], a["y0"]))
+    # Drop weak short strips that sit directly above a stronger taller twin.
+    filtered = []
+    for a in sorted(usable, key=lambda t: (-t["score"], t["y0"])):
+        dominated = False
+        for b in filtered:
+            if abs(a["cx"] - b["cx"]) < 50 and 0 < (b["y0"] - a["y1"]) < 36 and b["h"] >= a["h"] + 20:
+                dominated = True
+                break
+            if abs(a["cx"] - b["cx"]) < 50 and 0 < (a["y0"] - b["y1"]) < 36 and a["h"] + 20 <= b["h"]:
+                dominated = True
+                break
+        if not dominated:
+            filtered.append(a)
+    usable = filtered
+    if near_y is not None:
+        # Label may sit just above the box OR inside it as placeholder text.
+        under = [
+            a
+            for a in usable
+            if (a["y0"] - 15) <= near_y <= (a["y1"] + 8)
+            or 0 <= (a["y0"] - near_y) <= 150
+        ]
+        if under:
+            usable = under
+    usable.sort(key=lambda a: a["y0"])
+
     if not usable:
         return {
             "ok": False,
@@ -967,20 +1248,28 @@ def find_textarea_click(path, index=0):
             "sidebar_edge": edge,
             "look": [w, h],
             "count": 0,
+            "near": near,
+            "near_hit": near_hit,
             "note": "Do not click mark field \"\" near Expires; re-look after scroll",
         }
-    if index < 0 or index >= len(usable):
-        return {
-            "ok": False,
-            "why": f"textarea index {index} out of range (have {len(usable)})",
-            "sidebar_edge": edge,
-            "textareas": usable,
-            "look": [w, h],
-        }
-    a = usable[index]
-    # Click slightly below top border into the white fill
+    if prefer_best and near is None:
+        # No explicit index: best score (avoids topmost prompt slab beating rubric).
+        a = max(usable, key=lambda t: (t["score"], -t["y0"]))
+        index = usable.index(a)
+    else:
+        if index < 0 or index >= len(usable):
+            return {
+                "ok": False,
+                "why": f"textarea index {index} out of range (have {len(usable)})",
+                "sidebar_edge": edge,
+                "textareas": usable,
+                "look": [w, h],
+                "near": near,
+                "near_hit": near_hit,
+            }
+        a = usable[index]
     lx = int(a["cx"])
-    ly = int(min(a["y0"] + max(18, a["h"] // 3), a["y1"] - 8))
+    ly = _caret_ly(a)
     if lx <= edge + 20:
         return {"ok": False, "why": "refused: textarea in sidebar danger zone", "a": a}
     return {
@@ -990,15 +1279,29 @@ def find_textarea_click(path, index=0):
         "lx": lx,
         "ly": ly,
         "action": "click",
+        "snap": False,
+        "aim": False,
+        "prove": "letter",
         "sidebar_edge": edge,
         "look": [w, h],
         "count": len(usable),
         "box": a,
+        "near": near,
+        "near_hit": near_hit,
         "textareas": [
-            {"i": i, "lx": t["cx"], "ly": t["y0"] + max(18, t["h"] // 3), "w": t["w"], "h": t["h"]}
+            {
+                "i": i,
+                "lx": t["cx"],
+                "ly": _caret_ly(t),
+                "w": t["w"],
+                "h": t["h"],
+                "score": t.get("score"),
+                "kind": t.get("kind"),
+                "ink": t.get("ink"),
+            }
             for i, t in enumerate(usable)
         ],
-        "note": "click lx/ly then keys; never human:0; clear with Backspace only",
+        "note": "click lx/ly with snap:false aim:false; letter-prove; Backspace; keys; never human:0 / xdotool type",
     }
 
 
@@ -1093,12 +1396,37 @@ def scroll_complete(path):
     return out
 
 
+def _parse_textarea_args(argv):
+    """textarea [index] [--near needle…] → index, near, prefer_best."""
+    index = 0
+    near = None
+    prefer_best = True
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--near":
+            near = " ".join(argv[i + 1 :]).strip() or None
+            prefer_best = False
+            break
+        if re.fullmatch(r"-?\d+", a):
+            index = int(a)
+            prefer_best = False
+            i += 1
+            continue
+        if not a.startswith("-"):
+            near = " ".join(argv[i:]).strip()
+            prefer_best = False
+            break
+        i += 1
+    return index, near, prefer_best
+
+
 def main():
     if len(sys.argv) < 3:
         print(
             "usage: locate-click.py <look.png> "
             "zones|continue|next|back|start|radios|radio|sidebar|role|textarea|"
-            "blue-buttons|scroll-complete [title|index]",
+            "blue-buttons|scroll-complete [title|index] [--near needle]",
             file=sys.stderr,
         )
         sys.exit(2)
@@ -1127,8 +1455,15 @@ def main():
         title = " ".join(sys.argv[3:]) or ""
         print(json.dumps(find_role_card(path, title), indent=2))
     elif mode in ("textarea", "textareas", "field"):
-        idx = int(sys.argv[3]) if len(sys.argv) > 3 else 0
-        print(json.dumps(find_textarea_click(path, index=idx), indent=2))
+        idx, near, prefer_best = _parse_textarea_args(sys.argv[3:])
+        print(
+            json.dumps(
+                find_textarea_click(
+                    path, index=idx, near=near, prefer_best=prefer_best
+                ),
+                indent=2,
+            )
+        )
     elif mode in ("scroll-complete", "scroll_complete", "scrolled"):
         print(json.dumps(scroll_complete(path), indent=2))
     elif mode in ("blue-buttons", "blue"):

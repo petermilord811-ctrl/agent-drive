@@ -42,11 +42,12 @@ node skills/take-dataannotation-assessment/prepare-answer.js \
 
 ## C. Answer artifacts (offline)
 
-1. `{profile}/answer.md` from bank + **this** resume only (`answers.template.md`)
+1. `{profile}/answer.md` from bank + **this** resume only (`answers.template.md` **agent-v2**: Fields + Values fences; `near` on empty boxes)
 2. `humanize-text.py` / verb `humanize` → relay `POST /api/humanize` with `x-sm-join-key` = `SM_JOIN_KEY` (never `HUMANIZE_API_KEY`)
-3. `parse-answer-fill.js` → `answer.fill.json`
+3. `parse-answer-fill.js` → `answer.fill.json` (Values fences win; `claude[]` separate from DA actions)
 4. `validate-answers.js --slug … --answer …` exit 0
-5. `prepare-answer.js` again → `answer.pace.json` + `answer.playbook.json`
+5. **Best answer (HARD):** [`ANSWER-GATES.md`](./ANSWER-GATES.md) — meaning card → best correct → MeaningPass → QualityPass → voice → MQ again → DetectPass. **Required:** `answer-gates.py --profile … --run-aicheck` exit **0** before autofill. **Illegal:** keep ai≤20 if Meaning/Quality fail; done on aicheck alone.
+6. `prepare-answer.js` again → pace + playbook. **Must** emit `phase: autofill-ready` (re-runs gates; `gates-pending` / exit 1 = do not fill).
 
 ## D. Machine session rules (HARD)
 
@@ -68,8 +69,13 @@ node skills/take-dataannotation-assessment/prepare-answer.js \
 12e. **SM content marks:** Yes/No/Poor/`1` marks often click **x≈80** — use locate-click content lx or Tab; never trust those marks.
 12f. **Host lock:** only the operator-named host; pass `host` on every call. Prefer live UI model name over bank.
 12g. **Failure Yes extras:** round + describe + screenshot may appear — fill them; patch bank if missing. Share URL = real Claude chat then `keys` (never paste on DA).
-12h. **Read [`PART-B-FILL.md`](./PART-B-FILL.md)** before first live Part B `keys` this session.
-13. **Part B humanize:** relay `POST /api/humanize` (`x-sm-join-key` = `SM_JOIN_KEY`) or verb `{"do":"humanize",…}`. Optional `aicheck` / `aiusage`. **Never** `HUMANIZE_API_KEY` / Bearer / wisdom324.
+12h. **Read [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) + [`PART-B-FILL.md`](./PART-B-FILL.md)** before first live Part B `keys` this session.
+12i. **Claude setup:** [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md) — same DA email/name (+ password ask); **never** Continue with Google as a non-DA leftover account (99588 miss: geroge).
+12j. **Typer:** only SM `keys` — **never** `xdotool type` / machine type (99588: produced `xsleep…` garbage).
+12k. **Empty rubrics/Goal:** OCR white-box click (`y≈placeholder+35`, `snap:false aim:false`) — placeholder mark alone fails prove.
+12l. **One recheck** after last field — do not full-page verify after every textarea.
+12m. **Fill = tape replay** of `answer.md` Fields — answers prepared offline; live time is focus+type only (budget ≤25–35 min post-share).
+13. **Part B gates (HARD):** follow [`ANSWER-GATES.md`](./ANSWER-GATES.md). Remake/autofill only after `answer-gates.py --profile … --run-aicheck` exit **0**. **Never** `HUMANIZE_API_KEY` / Bearer / wisdom324.
 14. **Toolbar Scroll to Bottom:** can jump to Submit footer — prefer sidebar leaf / content PageDown. Prove wheel direction with a look; prefer PageDown after content focus.
 
 ## E. Autofill loop (from playbook)
@@ -92,6 +98,7 @@ For each `answer.playbook.json` action in order:
 - CAPTCHA → `captcha` (person only)
 - Wrong role assessment already started → ask operator; do not invent DS answers into SE form
 - `answer-ready` fails mid-flight → stop fill; fetch/fix bank
+- `session.phase === gates-pending` or `answer.gates.json` not ok → **stop**; fix Values + re-run gates (never fill on Detect alone)
 
 ## Evidence source
 
@@ -119,7 +126,17 @@ For each `answer.playbook.json` action in order:
 | Playbook pauseMs ~10 min/field | Shorter for feel-test unless operator wants full pace |
 | Long keys MCP 35s abort | Wait for late answer; do not double-type |
 | Wheel `n` direction wrong | Prove with look; prefer PageDown |
+| Claude Round 1 bare `\n` / bad Shift+Enter | Kate→Ctrl+V; `chord ShiftLeft+Enter`; blank line before Setup |
+| Placeholder rubric mark no focus | OCR white-box click + letter prove |
+| `xdotool type` / exec sleep typers | **Banned** — SM `keys` only; caused `xsleep…` corruption |
+| Expires chip stale `same≈0.83` | Fresh look → mark ASAP or snap:false screen xy |
+| Full verify after every field | **One** recheck before Submit ask |
+| Explore UI vs Fields tape | Follow [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md); fill budget ≤25–35 min |
+| Detect-only remake kept weak humanize | Meaning∧Quality∧Detect via [`ANSWER-GATES.md`](./ANSWER-GATES.md); prepare refuses autofill |
+| q2b fused order into coeffs / q4 praised A | QualityPass On form criteria |
+| Colon scrub broke share `https://` | URL-lock in `humanize-text.py` scrub |
+| False must_not on “locked labeling” | Bare phrases get word boundaries in `meaning-gate.py` |
 
-**Canonical never-again doc:** [`PART-B-FILL.md`](./PART-B-FILL.md).
+**Canonical runbook:** [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) · **Field contract:** [`PART-B-FILL.md`](./PART-B-FILL.md) · **Answer gates:** [`ANSWER-GATES.md`](./ANSWER-GATES.md).
 
-State after night try: Step 2 mostly filled (Goal, attach No, failure Yes, round 1, describe, Poor, rationale). Claude free account created; desktop Skip / share URL / screenshot / Section 2 still open. **No Submit.**
+State after full night try (2026-11-08/09): Section 1 (incl. share URL) + Q1–Q4 + both Q3a rubrics + S3 education/project filled; rationale cleaned of `xsleep` garbage; **not Submitted**; visit signed off for study.

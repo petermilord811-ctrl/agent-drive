@@ -4,8 +4,9 @@
 
 - **captureStatus:** stub → bio+track only
 - **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
-- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk for other in-progress starters). Resume with operator OK to expire, or after those tracks finish.
-- **Track:** **Chemistry Projects assessment** — distinct from Physics Projects / Math Projects / Programming Projects.
+- **Gaps:** Assessment steps **not started** — Start hit expire modal 2026-11-09; waiting operator **Expire OK**. Modal names target **[Qualification] Chemistry Starter Assessment** (intro page still says Chemistry Projects assessment · 30m cue).
+- **Track:** **Chemistry Projects assessment** / Chemistry Starter Assessment — distinct from Physics / Math / Programming Projects.
+- **Expire conflict shot:** `assets/chemist/expire-conflict.png` (lists IM, Surgical, Law, DS v2.4, Finance, Econ, Accounting, Radiology, Medical V4.2).
 - **Rule:** never Submit while fetching
 
 ### Role

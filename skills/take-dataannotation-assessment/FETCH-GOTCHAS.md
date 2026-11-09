@@ -12,6 +12,7 @@ Read this before writing a single line into `problems-{slug}.md`.
 | Bank **every** main-pane card on a leaf: section headers, “why this assessment…”, review notices, recap blocks, exclusive-option notes | Paraphrase shared intros as “early questions focus on general reasoning…” |
 | On **Section 1** first visit: shot + **verbatim** the intro card **before** Q1 stem | Jump straight to Q1 stem and assume intro is “boilerplate” |
 | Treat Expert Domain Section 1 intro as **shared** — still paste full copy (or link `ASSESSMENT-TRACK-DIFF.md` Shared section) into **each** major’s md | Omit because “same as Finance/Generalist” |
+| **Parallel reuse (2026-11-09):** Autonomously stem-match → copy from **`verified` only**; stamp `### Parallel`. Always **live-fetch** “Tell us about the most meaningful…” + Section 2 domain/Goal/Haiku + Experience | Wait for operator to say parallel; parallel from nearly-full; skip meaningful-experience leaf; Gen Fog → Expert Q6 |
 | Include intro/header cards in leaf inventory / reconcile checklist | Count only radio/write-in steps toward “nearly-full” completeness |
 
 **Gate:** for any Expert Domain major, `problems-*.md` Section 1 must contain the **Why general questions** + **reviewed by a person** blocks verbatim (or an explicit `*(see ASSESSMENT-TRACK-DIFF Shared Section 1 intro)*` pointer with the full text living in one canonical file). Paraphrase-only = **not** nearly-full for that leaf.

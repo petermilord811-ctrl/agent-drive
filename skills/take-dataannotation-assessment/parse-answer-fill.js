@@ -2,9 +2,13 @@
 /**
  * Parse profile answer.md → answer.fill.json for agent autofill.
  *
- * @run node skills/take-dataannotation-assessment/parse-answer-fill.js --answer path/answer.md --out path/answer.fill.json
+ * Agent-v2 (preferred):
+ *   ### Fields  → id | type | action | near | required   (short cells)
+ *   ### Values  → #### {id} + fenced ```text|json``` payload
  *
- * Reads each ## leaf's Fields table (preferred) or UI [✅] markers as fallback.
+ * Legacy still works: value column inside the Fields table.
+ *
+ * @run node skills/take-dataannotation-assessment/parse-answer-fill.js --answer path/answer.md --out path/answer.fill.json
  */
 const fs = require('fs');
 const path = require('path');
@@ -53,7 +57,7 @@ function splitLeaves(text) {
     const hm = part.match(/^##\s+(.+?)\s*\n/);
     if (!hm) continue;
     const title = hm[1].trim();
-    if (/^Timing$/i.test(title)) continue;
+    if (/^Timing$/i.test(title) || /^Style rules/i.test(title)) continue;
     leaves.push({ title, body: part });
   }
   return leaves;
@@ -77,6 +81,7 @@ function parseFieldsTable(body) {
   const rows = [];
   let header = null;
   for (const line of lines) {
+    // Stop at next ### that isn't Fields (Values / UI / Why / Claude)
     if (/^###\s+/.test(line) && !/^###\s+Fields/i.test(line)) break;
     if (!/^\|/.test(line)) continue;
     const cells = line
@@ -97,6 +102,23 @@ function parseFieldsTable(body) {
   return rows;
 }
 
+/** #### id  + optional human label/tips + fenced block → { id: text } */
+function parseValueBlocks(body) {
+  const map = {};
+  // Allow: #### q3_rubric1 — Enter your first rubric
+  //         > On form: …
+  //         ```text
+  // Agent id is only the first token; em-dash / | / : label is human sugar.
+  const re =
+    /####\s+([A-Za-z0-9_.:-]+)(?:\s*[—\-|:].*)?\s*\n(?:(?:>.*|[ \t]*)\n)*```(?:text|json|markdown|md|python|code)?\s*\n([\s\S]*?)```/g;
+  let m;
+  while ((m = re.exec(body))) {
+    const id = m[1].trim();
+    map[id] = m[2].replace(/\n$/, '');
+  }
+  return map;
+}
+
 function parseUiChecked(body) {
   const m = body.match(/###\s+UI\s*\n```[\s\S]*?```/i);
   if (!m) return [];
@@ -107,10 +129,6 @@ function parseUiChecked(body) {
     if (r) checked.push(r[1].trim());
     const input = line.match(/^\[input\]\s*(.*)$/);
     if (input) checked.push({ type: 'text', value: input[1].trim() });
-    const ta = line.match(/^\[textarea\]\s*$/);
-    if (ta) {
-      /* value often in Explanation (fill) */
-    }
   }
   return checked;
 }
@@ -144,15 +162,36 @@ function requiredOf(v) {
   return true;
 }
 
+function inferAction(type) {
+  if (type === 'radio' || type === 'agree') return 'select';
+  if (type === 'checkbox') return 'selectMany';
+  if (type === 'drag') return 'reorder';
+  if (type === 'skip') return 'skip';
+  if (type === 'claude') return 'paste';
+  if (type === 'note') return 'skip';
+  return 'type';
+}
+
+function isEmptyValue(v) {
+  return v == null || v === '' || (Array.isArray(v) && !v.length);
+}
+
+function looksLikePlaceholder(v) {
+  const s = String(v || '').trim();
+  return !s || s === '{humanized}' || s === '…' || s === '...' || s === '@block' || s === '(see Values)';
+}
+
 const meta = parseYamlFront(md);
 const leaves = splitLeaves(md);
 const actions = [];
 const leafSummaries = [];
+const claude = [];
 
 for (const leaf of leaves) {
   const step = stepOf(leaf.body);
   const conf = confidenceOf(leaf.body);
   const rows = parseFieldsTable(leaf.body);
+  const blocks = parseValueBlocks(leaf.body);
   const explain = parseExplanationFill(leaf.body);
   const uiChecked = parseUiChecked(leaf.body);
 
@@ -162,29 +201,61 @@ for (const leaf of leaves) {
     stepOf: step ? step.of : null,
     confidence: conf,
     fieldCount: rows.length,
+    valueBlocks: Object.keys(blocks).length,
   });
 
   if (rows.length) {
     let first = true;
     for (const row of rows) {
+      const id = row.id || `${leaf.title}-${actions.length}`;
       const type = (row.type || '').toLowerCase();
-      let value = parseJsonish(row.value);
-      if ((type === 'textarea' || type === 'text') && (!value || value === '{humanized}' || value === '…') && explain) {
+      let value = row.value != null && String(row.value).length ? parseJsonish(row.value) : '';
+
+      // Values fence wins when present (agent-v2).
+      if (Object.prototype.hasOwnProperty.call(blocks, id)) {
+        value = parseJsonish(blocks[id]);
+      } else if (
+        (type === 'textarea' || type === 'text' || type === 'code') &&
+        looksLikePlaceholder(value) &&
+        explain
+      ) {
         value = explain;
       }
-      actions.push({
-        id: row.id || `${leaf.title}-${actions.length}`,
+
+      const near = (row.near || row.locator || '').trim() || null;
+      const action = (row.action || '').toLowerCase() || inferAction(type);
+      const fill =
+        type !== 'claude' &&
+        type !== 'note' &&
+        action !== 'paste' &&
+        !(type === 'skip' && !requiredOf(row.required));
+
+      const item = {
+        id,
         leaf: leaf.title,
         step: step ? step.n : null,
         stepOf: step ? step.of : null,
         confidence: conf,
         type,
-        action: (row.action || '').toLowerCase() || inferAction(type),
+        action,
         value,
+        near,
         required: requiredOf(row.required),
+        fill: type === 'claude' || type === 'note' ? false : true,
         firstInStep: first,
         thinkMs: row.thinkms ? Number(row.thinkms) : null,
-      });
+      };
+
+      if (type === 'claude') {
+        claude.push({
+          id,
+          round: /round\s*2|round2/i.test(id) ? 2 : 1,
+          value: String(value || ''),
+          leaf: leaf.title,
+        });
+      }
+
+      actions.push(item);
       first = false;
     }
     continue;
@@ -203,7 +274,9 @@ for (const leaf of leaves) {
         type: labels.length > 1 ? 'checkbox' : 'radio',
         action: labels.length > 1 ? 'selectMany' : 'select',
         value: labels.length > 1 ? labels : labels[0],
+        near: null,
         required: true,
+        fill: true,
         firstInStep: true,
         thinkMs: null,
       });
@@ -218,7 +291,9 @@ for (const leaf of leaves) {
         type: 'textarea',
         action: 'type',
         value: explain,
+        near: null,
         required: true,
+        fill: true,
         firstInStep: false,
         thinkMs: null,
       });
@@ -226,33 +301,35 @@ for (const leaf of leaves) {
   }
 }
 
-function inferAction(type) {
-  if (type === 'radio' || type === 'agree') return 'select';
-  if (type === 'checkbox') return 'selectMany';
-  if (type === 'drag') return 'reorder';
-  if (type === 'skip') return 'skip';
-  return 'type';
-}
-
 const requiredEmpty = actions.filter(
   (a) =>
+    a.fill &&
     a.required &&
     a.type !== 'skip' &&
     a.type !== 'agree' &&
-    (a.value == null || a.value === '' || (Array.isArray(a.value) && !a.value.length))
+    a.type !== 'upload' &&
+    isEmptyValue(a.value)
 );
+
+const daActions = actions.filter((a) => a.fill !== false);
 
 const result = {
   ok: requiredEmpty.length === 0,
+  format: meta.format || (actions.some((a) => a.near) || leafSummaries.some((l) => l.valueBlocks > 0) ? 'agent-v2' : 'legacy'),
   source: path.resolve(answerPath),
   meta,
   leaves: leafSummaries,
-  actions,
+  actions: daActions,
+  allActions: actions,
+  claude,
   stats: {
     leaves: leafSummaries.length,
-    actions: actions.length,
-    required: actions.filter((a) => a.required).length,
+    actions: daActions.length,
+    allActions: actions.length,
+    claude: claude.length,
+    required: daActions.filter((a) => a.required).length,
     requiredEmpty: requiredEmpty.map((a) => a.id),
+    withNear: daActions.filter((a) => a.near).length,
   },
 };
 

@@ -104,6 +104,47 @@ def main() -> int:
     # Use employees as non-browse image → should fail ok or return cards;
     # For browse we may not have a saved browse png in assets — skip if missing.
 
+    # --- textarea fixtures (99588 empty-rubric / Goal-vs-strip upgrade) ---
+    fix = ASSETS / "fixtures"
+    empty = fix / "empty-rubrics.png"
+    if not empty.exists():
+        gen = fix / "make_textarea_fixtures.py"
+        if gen.exists():
+            subprocess.check_call([sys.executable, "-I", str(gen)])
+    if empty.exists():
+        t = run(empty, "textarea")
+        if not t.get("ok"):
+            fails.append(f"empty-rubrics textarea failed: {t.get('why')}")
+        else:
+            box = t.get("box") or {}
+            if box.get("y0", 0) < 300:
+                fails.append(f"empty-rubrics picked prompt slab y0={box.get('y0')} not rubric")
+            if t.get("ly", 0) <= box.get("y0", 0) + 20:
+                fails.append(f"empty-rubrics caret ly={t.get('ly')} too close to top (placeholder)")
+            if t.get("snap") is not False or t.get("prove") != "letter":
+                fails.append("empty-rubrics missing snap:false / prove:letter")
+        tn = run(empty, "textarea", "--near", "first rubric")
+        if not tn.get("ok") or not tn.get("near_hit"):
+            fails.append(f"empty-rubrics --near failed: {tn}")
+        elif (tn.get("box") or {}).get("y0", 0) < 300:
+            fails.append("empty-rubrics --near still picked prompt slab")
+        t1 = run(empty, "textarea", "1")
+        if not t1.get("ok"):
+            fails.append(f"empty-rubrics textarea 1 missing (second rubric): {t1.get('why')}")
+        elif t.get("ok") and t1.get("ly", 0) <= t.get("ly", 0):
+            fails.append(f"textarea 1 not below 0: ly0={t.get('ly')} ly1={t1.get('ly')}")
+        n2 = run(empty, "textarea", "--near", "second rubric")
+        if not n2.get("ok") or (n2.get("box") or {}).get("y0", 0) < 480:
+            fails.append(f"empty-rubrics --near second rubric failed: {n2}")
+
+    goal = fix / "goal-tall-vs-strip.png"
+    if goal.exists():
+        g = run(goal, "textarea")
+        if not g.get("ok"):
+            fails.append(f"goal-tall textarea failed: {g.get('why')}")
+        elif (g.get("box") or {}).get("h", 0) < 180:
+            fails.append(f"goal-tall picked short strip h={((g.get('box') or {}).get('h'))}")
+
     if fails:
         print("FAIL")
         for f in fails:

@@ -14,6 +14,9 @@ run: node skills/take-dataannotation-assessment/prepare-answer.js --profile "pat
 |------|------|-----|
 | **A. Fetch** | captureStatus not yet `full` | this README (HARD RULES + Capture sequence) |
 | **B. Answer** | bank `full` + re-catch clean → real take | [`ANSWER.md`](./ANSWER.md) + [`PREFLIGHT.md`](./PREFLIGHT.md) |
+| **B. Live runbook** | connect → Claude → fill → Submit gate | [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) (**read first** on live host) |
+| **B. Fill contract** | every DA `keys` | [`PART-B-FILL.md`](./PART-B-FILL.md) |
+| **B. Claude gate** | Section 1 share URL | [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md) |
 
 ## Problem bank (Part A)
 
@@ -35,7 +38,8 @@ skills/take-dataannotation-assessment/problems/problems-{role-slug}.md
 | Verbatim gate | `validate-verbatim.js --slug …` |
 | Figure gate | `validate-figures.js --slug …` (no half-hidden chart crops) |
 | **Answer (B)** | [`ANSWER.md`](./ANSWER.md), [`answers.template.md`](./answers.template.md) |
-| Humanize | relay `/api/humanize` + `SM_JOIN_KEY` (`humanize-text.py` / verb `humanize`) — never `HUMANIZE_API_KEY` |
+| **Answer gates (B)** | [`ANSWER-GATES.md`](./ANSWER-GATES.md) + `answer-gates.py` — MeaningPass ∧ QualityPass ∧ DetectPass required before autofill (Herman never-again) |
+| Humanize / AI-check | after MQ on best: one humanize or spoken variant; `aicheck-answer.py` DetectPass only — never `HUMANIZE_API_KEY` / not MCP |
 | Fill plan | `parse-answer-fill.js` → `{profile}/answer.fill.json` |
 | Pace | `pace-plan.js` → `{profile}/answer.pace.json` |
 | Validate | `validate-answers.js --slug … --answer …` |
@@ -46,6 +50,22 @@ skills/take-dataannotation-assessment/problems/problems-{role-slug}.md
 | **Local OCR (Browse)** | `look-ocr.js <look.png> --find "Data Scientist"` — when host OCR is chrome-blind |
 
 ## HARD RULES (operator 2026-11-07)
+
+### 1a. Parallel reuse — autonomous (HARD — operator 2026-11-09)
+
+Do **not** wait for the operator to say “parallel.” On every Part A fetch/recheck:
+
+1. Load `problems/ASSESSMENT-TRACK-DIFF.md` § Parallel reuse + verified source list (`captureStatus: verified` **only**).
+2. After Bio + Instructions, for each Section 1 leaf: **stem-match gate** (2+ checks) against verified Generalist / verified Expert Domain sibling.
+3. On match → **copy verified bank verbatim** into this slug; stamp `### Parallel: {source} · {date} · stem-matched`. Do not re-OCR long A/B.
+4. On mismatch / no verified source → live OCR that leaf only.
+5. **Always live-fetch** (never parallel):
+   - **Tell us about the most meaningful…** (domain-templated write-in) — every role
+   - Section 2 domain string + Goal example cue + Haiku version
+   - Experience / Degrees / credential radios / specialization lists
+   - Bios / track line / pay
+6. Expert Domain **Q6 London Fog** / **Q7 complex prompt** → parallel from verified **Economist** (not Generalist Fog/Q8).
+7. Conversation Yes-branch follow-ups → parallel structure from verified Economist with domain-string swap; still spot-check one distinctive phrase live.
 
 ### 1. Verbatim only — never summarize (HARD — operator 2026-11-08)
 
@@ -150,7 +170,7 @@ node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile
 # read session.phase / nextSteps — do not invent a path around a blocked bank
 ```
 
-Then: generate `answer.md` → humanize (relay join key) → parse/validate → re-run `prepare-answer` (emits playbook) → **read PART-B-FILL** → timed autofill from `answer.playbook.json` (prove focus before every `keys`; never Ctrl+V on DA; never Expires marks) → recheck → operator **Submit** yes only.
+Then: generate `answer.md` (best-correct + `drafts/meaning.json`) → parse/validate → **`answer-gates.py --run-aicheck`** (Meaning∧Quality∧Detect; never aicheck alone) → re-run `prepare-answer` until `phase: autofill-ready` → **read PART-B-FILL** → timed autofill → recheck → operator **Submit** yes only.
 
 ## Evidence / debt (2026-11-07 / 11-08 host 34123)
 
@@ -166,3 +186,4 @@ Then: generate `answer.md` → humanize (relay join key) → parse/validate → 
 - **Fetch never-again (99588 DS 2026-11-08):** Source-OCR dumps, select-for-OCR, stuck host OCR, vision-as-verbatim, half-hidden charts → gates in `validate-verbatim.js` + `validate-figures.js` + [`FETCH-GOTCHAS.md`](./FETCH-GOTCHAS.md).
 - **Part B feel-test 99588 / Daniel Herman (2026-11-08):** pick PDF/binary + `ui`/`Chemist⊂biochemistry` fixed; role gray-title+segment fix; `answer-ready.js` gate.
 - **Part B live fill never-again (99588 night):** scroll-on-space without focus; Expires false marks; SM marks→sidebar; `aim:false` still snaps; Ctrl+C/V ban on DA; Tab+prove-focus; Failure-Yes extras (round/desc/screenshot); TIMER must; relay humanize only → [`PART-B-FILL.md`](./PART-B-FILL.md).
+- **Claude setup never-again (99588):** never Continue with Google as leftover account; Claude = same DA email/name (+ password ask or operator self-login) → [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md).

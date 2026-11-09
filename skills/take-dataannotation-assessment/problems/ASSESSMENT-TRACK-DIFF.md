@@ -16,6 +16,55 @@
 - **Section 1 intro card** (above Q1): “Why does this assessment include general questions?” + “Every assessment is reviewed by a person.” — foundational reasoning/comms, not domain trivia. Banked verbatim in Finance + Legal; reuse on other Expert Domain majors.
 - **Q1–Q7 pattern** often parallel (Doyle / time-travel / NYT / sandwich sonnet / Olympics / London Fog rubric / complex prompt) with domain Conversation later.
 
+## Parallel reuse (operator rule 2026-11-09)
+
+**Goal:** When the same question body already exists in a **verified** bank, copy it — do not re-OCR long Response A/B. Wrong parallel = silent corruption.
+
+### Source priority (hard rule)
+
+**Only `captureStatus: verified` banks may be parallel sources.** Never copy from `nearly-full` / stub / paraphrased banks.
+
+1. **Verified Generalist** — preferred for shared Section 1 items that stem-match Generalist.
+2. **Verified Expert Domain sibling** (e.g. Economist once verified) — for Expert Domain–only variants (London Fog diabetes/Oregon Mist; Q7 “keep topic general / no domain prompt”).
+3. **Live OCR** — when stems diverge or no verified source exists.
+
+As of 2026-11-09 verified sources: **Software Engineer**, **Generalist**, **Economist**.
+
+### Stem-match gate (required before copy)
+
+On the live leaf, confirm **at least two** of:
+
+- Question title / stem first sentence identical
+- Distinctive phrase (e.g. “gold models”, “Doyle Brunson”, “Oregon Mist”, “how lending works”)
+- Choice labels identical (e.g. “Response A is a better response”)
+
+If any fail → **OCR that leaf**; do not copy.
+
+### Known parallel map (Expert Domain Section 1 ↔ Generalist)
+
+| Expert Domain | Generalist verified source | Notes |
+|---------------|----------------------------|--------|
+| Q1 Doyle / The Wager | Gen Q2 (book) | Same stem |
+| Q2 time-travel | Gen Q3 | Same stem |
+| Q3 NYT date | Gen Q4 | Same A/B |
+| Q4 sandwich sonnet | Gen Q5 | Same poems |
+| Q5 1948 Olympics | Gen Q6 | Same A/B incl. **gold models** |
+| Q6 London Fog rubrics | **Economist Q6**, not Gen Q7 | Expert Domain prompt ≠ Generalist Fog |
+| Q7 write prompt + 2 rubrics | **Economist Q7**, not Gen Q8 | Expert Domain adds “keep topic general / no specialist field” |
+
+### What is *never* parallel across domains
+
+- Section 2 Conversation: domain string + Goal example cue (Economics “Supply and Demand” vs Finance “how lending works”) + model name (**live-check Haiku 5.5 vs 3.5**)
+- Experience / Degrees / Background write-ins
+- Yes-branch conversation follow-ups (upload / overall / rationale / share) — structure shared, still domain Notes may differ
+- Bios / track lines / pay strips
+
+### Bank hygiene when paralleling
+
+- Add a `### Parallel` note: source slug + date + “stem-matched”
+- Update `Gaps` / captureStatus; do not leave “see PNG / parallel” stubs
+- Sibling roles sharing one `task_response_id` inherit the **primary** bank’s Section 1 (FE ← siblings; Economist ← research/quant/applied)
+
 ## What usually differs between majors
 
 1. **Leaf count** (17 / 18 / 19 / 16…).

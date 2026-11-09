@@ -98,7 +98,12 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
    (“Why general questions?” + “reviewed by a person”), Conversation recap, exclusive-option
    notes. Paraphrase = bug (2026-11-08 Finance miss). See
    [`FETCH-GOTCHAS.md`](../take-dataannotation-assessment/FETCH-GOTCHAS.md) §0.
-3. Re-catch → `.capture.md` → `compare-problems.js --slug …` → update if the **exact** text drifted.
+3. **Parallel without asking** (operator 2026-11-09): if a leaf stem-matches a
+   **`captureStatus: verified`** bank, copy that bank’s body (see
+   [`ASSESSMENT-TRACK-DIFF.md`](../take-dataannotation-assessment/problems/ASSESSMENT-TRACK-DIFF.md)
+   § Parallel reuse). **Always re-fetch live:** “Tell us about the most meaningful…” for every
+   role; Section 2 domain/Goal/Haiku; Experience/Degrees; bios. Do not parallel from nearly-full.
+4. Re-catch → `.capture.md` → `compare-problems.js --slug …` → update if the **exact** text drifted.
    Mark `captureStatus: full` only when reconcile + bios are complete.
 
 **Part B — Answer** (last step)
@@ -107,9 +112,11 @@ Details: `skills/pick-dataannotation-assessment/README.md`.
 node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full
 ```
 
-Follow `session.json` → [`PREFLIGHT.md`](../take-dataannotation-assessment/PREFLIGHT.md) → [`ANSWER.md`](../take-dataannotation-assessment/ANSWER.md). Autofill from `answer.playbook.json` only. **Never Submit** until operator yes.
+Follow `session.json` → [`PREFLIGHT.md`](../take-dataannotation-assessment/PREFLIGHT.md) → live runbook [`WORKFLOW-LIVE.md`](../take-dataannotation-assessment/WORKFLOW-LIVE.md) → [`ANSWER.md`](../take-dataannotation-assessment/ANSWER.md).
 
-Details: `skills/take-dataannotation-assessment/README.md` + `ANSWER.md` + `PREFLIGHT.md`.
+Live order: TIMER → Claude identity ([`CLAUDE-SETUP.md`](../take-dataannotation-assessment/CLAUDE-SETUP.md)) → Round 1/2 + Share → DA Fields tape fill ([`PART-B-FILL.md`](../take-dataannotation-assessment/PART-B-FILL.md)) → **one** recheck → operator yes. Autofill from `answer.playbook.json` only. **Never Submit** until operator yes. **Never `xdotool type`** — SM `keys` only.
+
+Details: `skills/take-dataannotation-assessment/README.md` + `WORKFLOW-LIVE.md` + `ANSWER.md` + `PREFLIGHT.md`.
 
 ## Pitfalls
 
@@ -120,14 +127,15 @@ Details: `skills/take-dataannotation-assessment/README.md` + `ANSWER.md` + `PREF
 - Role pick must use `assessments.json` + resume scoring, not a gut click on the first card.
 - Never skip problem capture / re-catch on step 4; never paste No-LLMs boilerplate into the bank.
 - Never skip **non-question UI cards** (Section 1 intro, review notices, recap blocks) — bank verbatim; one-line paraphrase is a fetch fail.
-- Before machine resume on step 4: run `prepare-answer.js --strict-full` and read `PREFLIGHT.md`.
+- Before machine resume on step 4: run `prepare-answer.js --strict-full` and read `PREFLIGHT.md` + `WORKFLOW-LIVE.md`.
 - PDF resumes must be extracted (not binary-scored). OCR `clickText` is unreliable on some hosts.
-- Part B fill: **Backspace** to clear fields (never Ctrl+A); humanize via relay `/api/humanize` + `SM_JOIN_KEY` (verb `humanize` / `humanize-text.py` — never `HUMANIZE_API_KEY`); never Submit until operator says Submit. See take-assessment `PREFLIGHT.md` 99588 evening feel-test table.
+- Part B fill: **Backspace** to clear fields (never Ctrl+A); letter-prove before `keys`; SM `keys` only (never machine type); humanize via relay `/api/humanize` + `SM_JOIN_KEY`; never Submit until operator says Submit. See `WORKFLOW-LIVE.md` / `PART-B-FILL.md` (99588 full night).
 - Part B **ScreenMirror timer MUST**: immediately after **Start assessment**, arm `status`/`mission` tree; on every leaf `status.step` + append `{profile}/answer.timer.json`. See [`TIMER.md`](../take-dataannotation-assessment/TIMER.md).
 
 ## Evidence
 
 Configured 2026-11-07 from operator workflow spec + Welcome / Browse roles screenshots
 (`learn-about-you`, `workers/projects`). Step 4 skeleton from Physician/Medical bio + requirements
-+ instructions example. Step 1 proven on host 34123. Step 4 Part B upgraded 2026-11-08 after
-host **99588 / Daniel Herman** feel-test (pick/click/radio/preflight/playbook).
++ instructions example. Step 1 proven on host 34123. Step 4 Part B upgraded 2026-11-08 feel-test +
+2026-11-08/09 full night fill on **99588 / Daniel Herman** (Claude gate, share URL, Fields tape,
+WORKFLOW-LIVE).

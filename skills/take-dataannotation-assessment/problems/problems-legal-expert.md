@@ -8,7 +8,8 @@
 - **Assessment:** Law Starter Assessment V4.1 / Law Projects assessment
 - **IDs:** `task_response_id=01a1bb09-37a4-7cab-8108-74f8997e0cde` · `project_id=a89d27e9-2b7b-43fb-be59-5a2117127a94`
 - **Gaps:** Claude setup/share URL via Ctrl+L still pending.
-- **Re-fetch 2026-11-08:** Legal Experience **full 10 options** ✅; Q1–Q7 stems ✅; Conversation leaf ✅ (**Haiku 3.5**, Effort Low, Legal Domain; Goal write-in + 1–3 rounds recap).
+- **Re-fetch 2026-11-08:** Legal Experience **full 10 options** ✅; Q1–Q7 stems ✅; Conversation leaf (then mis-banked as Haiku 3.5).
+- **Re-check 2026-11-09 host 34123:** Live `01a1bb09…` / `a89d27e9…`. S2 local OCR **Haiku 5.5 · Effort Low · Legal Domain** ✅ (corrects prior 3.5). Meaningful Law write-in prompt live-fetched verbatim ✅. Q4–Q7 Parallel-filled from verified Economist ✅. Never Submit.
 - **Rule:** never Submit while fetching (stopped at Step 16 **Submit and Begin Next Task** footer)
 
 ### Role
@@ -259,17 +260,19 @@ September 18, 1851.
 
 ### Response B
 
-The first issue of the New York Times was published on September 18, 1851. At the time, the paper was called the New York Daily Chronicle. Source: …year.html
+The first issue of the New York Times was published on September 18, 1851. At the time, the paper was called the New York Daily Chronicle. Source: https://www.nytimes.com/insider/new-york-times-year.html
 
 **Choices:**
 
 - [ ] Response A
 - [ ] Response B
 
-**Write-in — Question 3a:**  
-In 2-3+ full sentences, please explain your answer. (Include any factual inaccuracies in your explanation.)
+**Question 3a:**  
+In 2-3+ full sentences, please explain your answer. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
 
 *(empty text box)*
+
+### Parallel: economist · 2026-11-09 · stem-matched (NYT)
 
 ### Assets
 
@@ -279,7 +282,9 @@ In 2-3+ full sentences, please explain your answer. (Include any factual inaccur
 
 **Step:** Step 6 of 16  
 **Type:** compare  
-**Scroll:** long list
+**Scroll:** long
+
+### Parallel: economist · 2026-11-09 · stem-matched (sandwich sonnet)
 
 Given the following request to an AI chatbot, which response is better?
 
@@ -287,16 +292,59 @@ Given the following request to an AI chatbot, which response is better?
 
 > Write a love poem about someone longing for a sandwich. Make it a sonnet, and give it a tone that straddles a serious love poem and whimsy appropriate for a poem about a sandwich.
 
-### Response A / Response B
+### Response A
 
-*(sonnet vs free-verse sandwich poems — full text in `le_s06.png`; parallel to Finance/Generalist sandwich-sonnet item)*
+```text
+In famished depths, I pine upon my bed,
+Sweet thoughts of thy most holy meat and bread
+Drift through my mind like a beauty newlywed,
+So near yet so far be my true desire.
+
+The fridge stands there, nary ten feet away.
+Yet here I sprawl in lazy disarray,
+Too tired to move, I fall into dismay
+My lust a tempest to my course most dire.
+
+O mustard bright! O pickles, crisp and tart!
+Thy sumptuous flesh a wonder of art!
+Thick cheddar slices beg my lips to part,
+Of thy essence never shall I tire.
+
+Ne'er to be surpassed in my inner heart
+Thy taste alone doth lift me higher
+```
+
+### Response B
+
+```text
+Oh, sandwich, where art thou, my bread?
+I love you, your ham, your cheese.
+My stomach rumbles and my tummy grumbles.
+I can't wait for you to fill my belly!
+
+The lettuce is crisp and crunchy.
+The tomatoes are red and sweet.
+The mustard is spicy!
+The bread is soft and yummy.
+
+Between two slices, I found paradise.
+It's like an orgasm for my soul, and I cry at the sweetness.
+It's a simple and deeply profound pleasure.
+It abates my hunger and gives my muscles fuel.
+
+Thank you for nourishing me.
+With every bite, joy does resound.
+```
 
 **Choices:**
 
 - [ ] Response A is a better response
 - [ ] Response B is a better response
 
-**Write-in:** explanation (2-3+ sentences)
+**Question 4a:**  
+Please explain your answer in 2-3+ sentences. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
 
 ### Assets
 
@@ -307,22 +355,83 @@ Given the following request to an AI chatbot, which response is better?
 
 **Step:** Step 7 of 16  
 **Type:** compare  
-**Scroll:** long list
+**Scroll:** long
+
+### Parallel: economist · 2026-11-09 · stem-matched (Olympics / gold models)
+
+Given the following request to an AI chatbot, which response is better? (Be sure to fact-check both responses and remember, the use of AI on any part of this assessment is NOT allowed.)
 
 **Prompt:**
 
 > I was wondering about the first Summer Olympics after WWII. Who were some event winners and which country took home the most gold medals (also 2nd and 3rd would be nice to know).
 
-### Response A / Response B
+### Response A
 
-*(1948 London Olympics verbose vs concise — see `le_s07.png`; parallel to Finance/Generalist Olympics item)*
+The first Summer Olympics after WWII took place in the 1940s, a bit more than 50 years before the turn of the millennium in the year 2000. The 1948 Summer Olympics were held during the summer of 1948 and hosted by London, United Kingdom.
+
+**Event Winners:**
+
+Generating a full, comprehensive, and complete list of winners would cause the response to become unnecessarily complex and lengthy, so I will instead list a few notable event winners for the sake of simplicity. Some notable champions are:
+
+- Bob Mathias (USA): At just age 17, he won gold in the decathlon.
+- Fanny Blankers-Koen (Netherlands): Blankers-Koen secured four gold medals in the following track and field competitions: 100m, 200m, 80m hurdles, 4x100m relay.
+- Delfo Cabrera (Great Britain): Cabrera claimed the gold in an exciting marathon event.
+
+**Medal Standings:**
+
+1. USA: The United States managed to win the most medals. The country brought home more gold models than any other country by winning 38 gold medals.
+   - In addition to their 38 gold medals, the United States also was awarded 27 silver medals.
+   - For bronze medals, the United States brought home 19.
+   - Their total number of medals won was 84.
+2. Sweden: The country of Sweden came in a second place for most gold medals, finishing behind the leader. Sweden had less than half the amount of gold medals compared to the United States. Their final gold medal count at the event's conclusion was 16.
+   - In the silver medal category, Sweden hauled in 11 of these.
+   - Sweden finished just behind the United States for number of bronze medals with 17. They were only two behind the United States, who won 19 bronze medals.
+   - Combining all gold, silver, and bronze medals, one can see that Sweden won 44 total medals.
+3. France: Rounding out third place was France with 10 gold medals.
+   - France was able to win 6 silver medals at this event.
+   - The country's official bronze medal count was 13.
+   - 29 is the number of total medals won by France throughout the entirety of the event at its conclusion.
+
+**Interesting Facts:**
+
+- The 1948 Olympics were nicknamed the "Austerity Olympics" due to the limited amount of resources in a post-war time period where rationing was a concern.
+- The defeated nations of Germany and Japan were not invited to participate following their loss in the war.
+- Sigfrid Edström was the president of the International Olympic Committee during this time.
+
+### Response B
+
+The first Summer Olympics after WWII took place in 1948. It was hosted by London, United Kingdom. Listed below is the information you requested.
+
+**Event Winners:**
+
+For the sake of simplicity, I'll name some notable champions rather than a full list of event winners. Some notable champions are:
+
+- Bob Mathias (USA): At just age 17, he won gold in the decathlon.
+- Fanny Blankers-Koen (Netherlands): Blankers-Koen secured four gold medals in the following track and field competitions: 100m, 200m, 80m hurdles, 4x100m relay.
+- Delfo Cabrera (Great Britain): Cabrera claimed the gold in an exciting marathon event.
+
+**Medal Standings:**
+
+1. USA: 38 gold, 27 silver, 19 bronze (total: 84)
+2. Sweden: 16 gold, 11 silver, 17 bronze (total: 44)
+3. France: 10 gold, 6 silver, 13 bronze (total: 29)
+
+**Interesting Facts:**
+
+- The 1948 Olympics were nicknamed the "Austerity Olympics" due to post-war rationing and limited resources.
+- Germany and Japan, as defeated nations, were not invited to participate.
+- Sigfrid Edström was the president of the International Olympic Committee during this time.
 
 **Choices:**
 
 - [ ] Response A
 - [ ] Response B
 
-**Write-in:** explanation
+### Question 5a:
+
+In 2-3+ full sentences, please explain your answer. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
 
 ### Assets
 
@@ -331,10 +440,69 @@ Given the following request to an AI chatbot, which response is better?
 ## Step 8 · Question 6
 
 **Step:** Step 8 of 16  
-**Type:** compare  
-**Scroll:** long list
+**Type:** rubric Yes/No  
+**Scroll:** long
 
-Rubric / London Fog recipe prompt (constraints: numbered one-sentence steps, flavor + vegan variations, no almond/soy, diabetes / no added sugar, etc.) + Response + Yes/No rubric criteria + explanations. Parallel to Finance Starter Q6.
+### Parallel: economist · 2026-11-09 · stem-matched (London Fog Expert Domain)
+
+In the context of AI Assistants, a rubric is a set of criteria used to evaluate the Assistant's performance and quality. A rubric typically breaks down the evaluation into several key areas, such as accuracy, relevance, tone, and/or efficiency; each individual check is called a rubric criterion.
+
+Given the following prompt, evaluate whether the Assistant successfully addresses the rubric criteria below.
+
+**Prompt:**
+
+> I'd like to create a recipe for making a London Fog. I'd like to structure the recipe as a main recipe followed by variations. The first variation should change the flavor, and the second should be a vegan alternative of a normal London Fog.
+>
+> I want the main recipe to be written as a step-by-step set of instructions. Let's make sure to make each step is limited to one sentence in length. Also please make sure to number the steps in the main recipe. I'm going to transfer the recipe to a website, and I don't want to miss any steps.
+>
+> The two variations shouldn't be rewritten as a new step-by-step list. We can just have a bold text as a sub-heading for the variation and then an explanation of what the variation entails.
+>
+> Oh, and this is going to be eventually published in a resource for people with diabetes, so the recipe and variations shouldn't include added sugar. Ingredients that have natural sugars like milk are okay. Additionally, to avoid common allergies, don't include almond or soy as ingredients.
+
+### Response
+
+```text
+Greetings,
+It is a pleasure to assist you with this request. Here are the instructions for preparing a London Fog.
+London Fog
+1. Bring a kettle of water to a boil.
+2. Steep one Earl Grey tea bag in 1/2 cup of hot water for 3-5 minutes.
+3. In a large microwave safe measuring cup, heat 1/2 cup milk until hot (30-60 seconds on high).
+4. Add one teaspoon of pure vanilla extract to the heated milk.
+5. Using a whisk or milk frother, froth the milk until foamy and slightly thickened.
+6. Pour the frothed milk over the tea.
+7. Stir gently to combine all ingredients.
+Flavor Variation: Oregon Mist
+Substitute a green tea bag for the Earl Grey tea bag, and reduce the steeping time to a maximum of 3 minutes. Instead of pure vanilla extract, use two tablespoons of amaretto syrup. This creates a more fragrant and unique variation, with the the amaretto enhancing the flavor of the frothed milk.
+Vegan Alternative
+A vegan London Fog is easily made by substituting dairy milk with a plant-based alternative (oat milk, soy milk, or coconut milk). Oat milk is the best alternative here for its creamy texture, which closely mimics the feel of dairy milk when frothed.
+```
+
+### Rubric Criterion One:
+
+The response followed all of the user's formatting instructions.
+
+**Choices:**
+
+- [ ] Yes
+- [ ] No
+
+Please explain your answer in 2 or more complete sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
+
+### Rubric Criterion Two:
+
+The response followed all of the ingredient restrictions provided by the user.
+
+**Choices:**
+
+- [ ] Yes
+- [ ] No
+
+Please explain your answer in 2 or more complete sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
 
 ### Assets
 
@@ -346,11 +514,29 @@ Rubric / London Fog recipe prompt (constraints: numbered one-sentence steps, fla
 **Type:** form  
 **Scroll:** none
 
-**Write-in:** Create a long and complex prompt (2 paragraphs, 6–8 sentences, backstory, ≥3 requirements; general enough for non-specialists — do not write a domain-specific prompt from your professional field).
+### Parallel: economist · 2026-11-09 · stem-matched (complex prompt + rubrics)
 
-**Write-in:** first rubric criterion (“The response…” structure from Q6)
+Create a long and complex prompt that includes at least two paragraphs and a total of 6–8 sentences, providing some backstory or context around why you're asking that prompt.
 
-**Write-in:** second rubric criterion
+Keep the topic general: your prompt should be one that anyone could understand, without any specialist knowledge — please do not write a domain-specific prompt from your professional field.
+
+The prompt must also include at least three clear requirements. Some examples could be format, tone, style, details to include, things to focus on, character to embody, length, and so on - be creative!
+
+Note: you MUST write at least six sentences.
+
+*(empty text box)*
+
+Based on the prompt you created above, please write two separate rubric criteria that could be used to evaluate an AI's response. Use the same sort of "The response..." structure from Question 6.
+
+**Write-in (first rubric):**  
+Enter your first rubric criterion here.
+
+*(empty text box)*
+
+**Write-in (second rubric):**  
+Enter your second rubric criterion here.
+
+*(empty text box)*
 
 ### Assets
 
@@ -358,22 +544,66 @@ Rubric / London Fog recipe prompt (constraints: numbered one-sentence steps, fla
 
 ## Step 10 · Section 2 Conversation
 
-**Step:** Step 10 of 16  
+**Step:** Step 10 of 16 · re-confirmed 2026-11-09 (Haiku version live OCR)  
 **Section:** Section 2: Conversation: Challenging an AI Model  
-**Type:** form  
-**Scroll:** long list
+**Type:** form · **Scroll:** long
 
-Law-domain conversation challenge using **Claude.ai · Haiku 3.5** (Effort: Low; free account OK). Background + Your Task: create challenging, realistic, natural **Legal Domain** conversations to elicit meaningful model failures (not softball questions).
+### Parallel: economist · 2026-11-09 · domain-swapped (Economics→Legal); Haiku/domain live-confirmed
 
-**To recap:** 1–3 rounds/user prompts; stop early on meaningful failure; if none in 3 prompts, start a new conversation.
+### Section 2: Conversation: Challenging an AI Model
 
-**Write-in — Conversation Goal:** Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences (not “generate a meaningful model failure”; specific task/learning expectation). Cue bullets: multi-source work situations, missed key details, professional judgment, early errors cascading.
+In this section of the assessment, you'll participate in a mock project task. This is intended to help familiarize you with common project formats, and to give a glimpse of one kind of project you may be invited to join. Below, you'll see instructions similar to those found on some of our real projects. Please carefully read through the provided instructions and the linked instruction document.
+
+Note: For this project, you will need access to Claude.ai. You do not require a paid account to use the Haiku 5.5 model, but you may encounter some limitations in the number of messages you can try as free accounts can be throttled during periods of higher demand.
+
+### Background
+
+AI Assistant models have been getting better and better, and we need new, challenging prompts to really test how well they perform in various domains. AI Assistants have seen many common questions and academic-style quiz requests before, and we expect them to generally perform very well when answering these sorts of softball questions.
+
+A lot of the work we do aims to put the models in situations where they are likely to make real, meaningful errors when trying to answer. The more we do this, the more we understand and collect data about their shortcomings. As you might imagine, lobbing softball questions doesn't really help us, which is why the first part of your assessment is to have a challenging conversation with an AI model to display your domain expertise.
+
+You shouldn't start out by asking random trivia that's interesting to you to see what the models do. You should be trying to come up with the most difficult and realistic prompts you can think of. You'll quickly learn what the models have no problems with and what they're bad at. It's totally appropriate for you to rely on your own domain expertise when creating a question—we want to see your domain knowledge at work. Really do your best to show off what you know and stump a state-of-the-art model in the process!
+
+### Your Task
+
+Have a conversation using Haiku 5.5 on Claude.ai (with "Effort" set to Low).
+
+We'd like you to have a conversation that is relevant to the Legal Domain which is challenging, but also realistic and natural. In other words, we don't find prompts that test if the model can "end every other sentence with the letter Y" as useful. Haiku might fail to carry out that sort of request, but it's not a meaningful error in the model's ability to address a Legal Domain prompt.
+
+Your goal is to get the AI Assistant to respond in ways that are "meaningful failures" — that is, they're completely incorrect, misleading, contain some kind of essential flaw in their reasoning or explanations, or similar. If the Claude Haiku 5.5 model provides a generally accurate and / or suitable response to your prompt (that is, its conclusions and logic are correct on the whole, even if there are minor errors), you'll need to create a new conversation with a more challenging variation of your prompt, or test out a new idea entirely.
+
+Not familiar with Claude.ai? Here are some basic set up instructions.
+
+**To recap:**
+
+- Create a conversation between 1-3 "rounds" / user prompts long
+- Make sure your first prompt in the conversation is a challenging, realistic, and natural request
+- If you get a meaningful failure on the first turn, you are free to stop the conversation there (but don't have to)
+- If your first prompt didn't cause a failure, you should continue the conversation with up to two more user prompts
+  - Stay within the topic of your original prompt, but try turning up the difficulty or ask a challenging follow-up question
+- If you're unable to elicit a notable or meaningful failure within 3 prompts, it's best to start a new conversation
+  - You might revise your initial prompt with added complexity, or start with a totally new concept, either is fine
+
+### Conversation Goal
+
+Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences.
+
+This should not be "generate a meaningful model failure" or general concepts like "I want to learn more about Supply and Demand." You're describing what the user in the conversation (you) specifically would expect to learn from the model or the task you wanted the model to accomplish.
+
+If you're not sure where to start, think along these lines:
+
+- What's a situation at work where you had to pull information from multiple sources to get the right answer?
+- When have you seen someone make a mistake because they didn't check everything or missed a key detail?
+- What part of your job requires the most professional judgment?
+- Is there a task where getting one thing wrong early makes everything else wrong too?
+
+You don't need to answer all of these. They're just meant to help you land on a strong scenario / conversation goal. You'll notice that these are all fairly focused on workplace use of the models, which is on purpose. You don't necessarily have to go this direction, but it's a great way of both demonstrating your expertise in your niche of the Legal Domain and sufficiently challenging the models so that they make a "meaningful error".
 
 *(empty text box)*
 
 ### Notes
 
-- Model on UI (re-fetched 2026-11-08): **Haiku 3.5** (prior bank “Haiku 5.5” was OCR error).
+- Live OCR 2026-11-09: **Haiku 5.5** (bank previously wrong as 3.5 — vision also misreads 5.5 as 3.5).
 - Setup / share URL: capture via Ctrl+L when re-catching links.
 
 ### Assets
@@ -458,18 +688,19 @@ That's it for the test questions! A few quick background questions on familiarit
 
 ## Step 15 · Meaningful Law experience
 
-**Step:** Step 15 of 16  
+**Step:** Step 15 of 16 · live-fetched 2026-11-09 host 34123  
 **Type:** form  
 **Scroll:** none
 
 **Write-in:**  
-Tell us about the most meaningful Law-related course or experience you had in your education. Which one was your favorite and why? … We really appreciate detailed responses here!
+Tell us about the most meaningful Law-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!
 
 *(empty text box)*
 
 ### Assets
 
 - `assets/legal-expert/le_s15.png`
+- `assets/legal-expert/le_s15_meaningful_20261109.png` *(pending copy from look-209)*
 
 ## Step 16 · Optional comments
 

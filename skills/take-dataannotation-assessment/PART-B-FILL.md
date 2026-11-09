@@ -1,9 +1,10 @@
 # Part B fill — never-again contract (99588 Daniel Herman)
 
 Evidence: live host **99588**, Data Scientist, 2026-11-08 evening + night.
-If anything here conflicts with habit or improvisation, **this file wins**.
+If anything here conflicts with habit or improvisation on **field focus / keys**, **this file wins**.
+For **phase order** (Claude → Share → fill → one recheck → Submit), **[`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) wins**.
 
-Companion docs: [`CLICK.md`](./CLICK.md) · [`PREFLIGHT.md`](./PREFLIGHT.md) · [`TIMER.md`](./TIMER.md) · [`ANSWER.md`](./ANSWER.md)
+Companion docs: [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) · [`CLICK.md`](./CLICK.md) · [`PREFLIGHT.md`](./PREFLIGHT.md) · [`TIMER.md`](./TIMER.md) · [`ANSWER.md`](./ANSWER.md) · [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md)
 
 ---
 
@@ -66,6 +67,16 @@ Proven Tab chains (99588):
 
 If prove fails: **stop typing**. Re-focus. Never “just send the answer.”
 
+**Kate / editor overlay (99588):** leftover Kate centered on screen steals clicks+keys; prove chars never appear in DA. `windows` → minimize/close editor (`xdotool windowminimize`) → `focus` Chrome → re-click field → prove again before typing.
+
+**Empty answer boxes:** `locate-click.py … textarea` may return label/prompt slabs (fill248) not the real caret box. Crop/look for the white empty rectangle under the question line; click **inside** it (often ~30–50px below the “Question Na” instruction), then prove.
+
+**99588 rubric empty-box recipe (worked):** `ocr {rect, boxes:true}` on the placeholder row → click screen `x≈440`, `y ≈ placeholder_y + 30..40` with `snap:false, aim:false` (center of white field, not the gray placeholder words). Blue border = focused. Prove with one non-space letter → Backspace → `keys` chunks. Placeholder-label mark click alone often fails prove.
+
+**Upgraded locator (2026-11-09):** prefer
+`python -I …/locate-click.py <look.png> textarea --near "first rubric"`
+(or `textarea` / `textarea N`). Returns caret `lx/ly` + `prove:letter` + `snap:false`. Pass-3 soft/#f8 scoring rejects prompt slabs; min height 20px catches single-line Optional; `--near` uses look-ocr.js. Still **letter-prove** before spaces — geometry ≠ focus.
+
 ---
 
 ## 4. Clipboard / keys bans (HARD)
@@ -75,8 +86,12 @@ If prove fails: **stop typing**. Re-focus. Never “just send the answer.”
 | **Forbidden:** Ctrl+C, Ctrl+V, Ctrl+A | Ctrl+L → Ctrl+C address bar OK |
 | Fill with `keys` only | Read clipboard via `exec` (`xclip` / `Get-Clipboard`) |
 | Linux guest `exec` ≠ Windows host clipboard | Do not assume `Get-Clipboard` works on Linux guest |
+| **Never `xdotool type` / machine type for form text** (99588 operator hard rule) | Focus with click/xdotool mousemove+click OK; **type only via ScreenMirror `keys`** |
+| **Why:** live undo log showed `xdotool type` / `ctrl+a` / sleep wrappers in exec — those produced `xsleep…` garbage in DA fields and forced rewrite | If tempted to “speed up” with machine type: **stop**. SM `keys` is the only legal typer |
 
 Share URL: type with `keys` into DA field — never paste on the assessment page.
+
+**Garbage prefix in DA text (`xsleep0.3xZ…`):** treat as field corruption — select in-field (`Ctrl+Home` then `Ctrl+Shift+End`, never page-wide Ctrl+A) → Delete → retype clean answer with `keys`. Re-verify share URL still intact after rewrite.
 
 ---
 
@@ -115,7 +130,8 @@ Share URL: type with `keys` into DA field — never paste on the assessment page
   - describe meaningful failure (3+ sentences)
   - screenshot upload
 - If bank lacks them: draft from conversation theme, fill live, then **patch bank + answer.fill** before next take.
-- Share URL + screenshot require a **real Claude conversation** (Haiku, Effort Low per live Instructions). Onboarding may show plans → “Use Claude for free” → desktop Skip — complete those, then chat, share, type URL with keys.
+- Share URL + screenshot require a **real Claude conversation** (Haiku, Effort Low per live Instructions). **Identity first:** see [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md) — same email/name as DataAnnotation; **never** Continue with Google on a leftover session. Onboarding may show plans → “Use Claude for free” → desktop Skip — then chat, share, type URL with keys.
+- **Claude composer (99588):** Enter = **Send**; newlines = **Shift+Enter**. **Ctrl+V is OK on Claude** for long prompts; still **never** Ctrl+V on the DA assessment page. Do not `keys` a multi-line prompt with bare `\n` into Claude.
 
 ---
 
@@ -147,3 +163,24 @@ node skills/take-dataannotation-assessment/answer-ready.js --slug <slug> --profi
 ```
 
 Agent must have read this file + [`CLICK.md`](./CLICK.md) in the same session before first Part B `keys` on a live host.
+
+---
+
+## 11. Why fill took forever (99588 postmortem — answers already prepared)
+
+**Root cause:** fill was treated as exploratory UI recovery, not a scripted replay of `answer.md` Fields. Answer text was ready; time burned on failed focus / wrong navigation / re-verification loops.
+
+| Time sink | What happened | Fast path next time |
+|-----------|---------------|---------------------|
+| Unproven focus + spaces | `keys` with spaces while document focused → page scrolls to Section 3; text lost | Letter/digit prove **before** any space; stop on fail |
+| Placeholder-mark click | Mark `"Enter your first rubric"` hit label; prove `D` never appeared | `ocr {boxes:true}` → click white box `y≈placeholder+35`, `snap:false aim:false` |
+| Expires chip stale | Timer ticks → `same≈0.83` refuses lx/ly clicks | Prefer **mark** click immediately on fresh look, or `snap:false aim:false` screen xy |
+| PageUp / Scroll hunting | Dozens of PageUp to re-find Q3 after scroll bug | After recover: `Back to Top` → PageDown **counted** to known section, or OCR-jump |
+| `find` / `clickText` chrome-blind | Titles/address bar only in `saw` | Forbidden for DA body; look-ocr / marks / locate-click |
+| Wheel `scroll {dy}` / `of` | API refuse; wrong axis | `scroll {x,y,n}` only; prefer content focus + PageUp/Down |
+| `xdotool type` temptation | Operator hard ban | **Only** SM `keys` (auto-type) for form text |
+| `xsleep0.3xZ` garbage in rationale | Corrupted prefix / truncated sentence | In-field select (`Ctrl+Home`→`Ctrl+Shift+End`) → Delete → retype; never page Ctrl+A |
+| Re-verify whole form after each field | Extra PageUp tours | Prove field → next Field row; one end-to-end verify before Submit ask |
+| Long `keys` human typing | 300+ char fields ≈ 30–50s each | Expected; chunk ~80 chars; do **not** double-type on late answers |
+
+**Fill budget target (prepared answer):** measure+prove+type per field ≤ 2–3 min; whole Part B fill ≤ ~25–35 min once Claude share URL exists. Exceeding that = focus/nav regression, not “thinking.”

@@ -8,109 +8,217 @@ problems: skills/take-dataannotation-assessment/problems/problems-{slug}.md
 bioMinutes: {min: 30, max: 60}
 generated: YYYY-MM-DD
 status: draft | ready | filled | reviewed
-# status ready = validate-answers.js ok + humanized; filled = autofill done; reviewed = operator signed off
+format: agent-v2
 ```
 
-> Agent: parse with `parse-answer-fill.js`. Autofill top→bottom using each leaf's **Fields** rows.
-> Never Submit until operator review.
+> **Agent tape (HARD):** parse with `parse-answer-fill.js`. Fill **only** from `### Fields` + `### Values`.
+> Long text lives under `#### {id}` fences — never invent from `### Why`.
+> Never Submit until operator yes. Prefer `answer.fill.json` / playbook at runtime.
 
 ---
 
 ## Timing
 
-| Phase | Minutes (example) |
-|-------|-------------------|
+| Phase | Minutes |
+|-------|---------|
 | Fetch + re-catch/diff | {10} |
-| Generate + humanize answers | {10} |
+| Generate + humanize | {10} |
 | Bio expected total | {30}–{60} |
 | **Remaining for fill** | **{10}–{40}** |
 
-Pace file: `answer.pace.json` (from `pace-plan.js`).
+Pace: `answer.pace.json`.
+
+---
+
+## Style rules (agent-v2)
+
+1. **Fields table** = control plan (short cells only). Columns: `id | type | action | near | required`
+2. **Values** = one `#### {id} — Human label` fence per payload (id token only is parsed)
+3. Under each Values header, optional `> On form: …` tip (human + agent; not typed)
+4. Per leaf, optional `**On form:**` one-liner summarizing the DA question block
+5. Short radios may use Values fence **or** legacy inline `value` column
+6. `near` = locator hint for empty boxes (`first rubric`, `Optional`, `Conversation Goal`)
+7. `### UI` / `### Why` = notes only (never typed on DA)
+8. Claude prompts = Fields `type: claude` + Values fences (not DA form keys)
 
 ---
 
 ## Instructions
 
 **Step:** Step 1 of N  
-**Action:** agree / next only  
 **Confidence:** 1.00
 
-### UI
-```text
-[✅] I agree
-```
-
 ### Fields
-| id | type | action | value | required | thinkMs |
-|----|------|--------|-------|----------|---------|
-| instructions_agree | agree | click | I agree | true | (from pace) |
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| instructions_agree | agree | click | | true |
+
+### Values
+
+#### instructions_agree
+```text
+I agree
+```
 
 ---
 
-## Question 1: {exact title from problems bank}
+## Question 1: {title from bank}
 
 **Step:** Step 2 of N  
-**Confidence:** 0.00–1.00
+**Confidence:** 0.90  
+**On form:** Which solution best follows programming best practices? Then explain.
+
+### Fields
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| q1_choice | radio | select | | true |
+| q1_explain | textarea | type | | true |
+
+### Values
+
+#### q1_choice — Best solution radio
+> On form: pick the radio for the strongest solution (A/B/C/…)
+
+```text
+Solution B most closely follows programming best practices and principles
+```
+
+#### q1_explain — Why that solution
+> On form: short reasoning textarea under the choice
+
+```text
+{humanized short reasoning — no : ; or long dashes}
+```
 
 ### UI
 ```text
-[ ] Solution A most closely follows programming best practices and principles
-[✅] Solution B most closely follows programming best practices and principles
-[ ] Solution C most closely follows programming best practices and principles
-[ ] All three solutions do an equally good job following programming best practices and principles
+[ ] Solution A …
+[✅] Solution B …
+[ ] Solution C …
 ```
 
-### Fields
-| id | type | action | value | required | thinkMs |
-|----|------|--------|-------|----------|---------|
-| q1_choice | radio | select | Solution B most closely follows programming best practices and principles | true | |
-| q1_explain | textarea | type | {humanized short reasoning — no : ; or long dashes} | true | |
-
-### Explanation (fill)
-{Same text as q1_explain value, easy to read.}
-
-### Why (agent note — do not type on form)
-{One short internal reason. Optional.}
+### Why
+{one short internal reason}
 
 ---
 
-## Question 2: {title}
+## Section 1 Conversation (example with Claude)
 
-**Step:** Step 3 of N  
+**Step:** Step 2 of N  
 **Confidence:** 0.85
 
-### UI
+### Fields
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| conv_goal | textarea | type | Conversation Goal | true |
+| conv_attach | radio | select | | true |
+| conv_failure | radio | select | | true |
+| conv_failure_round | text | type | | true |
+| conv_failure_desc | textarea | type | | true |
+| conv_failure_screenshot | upload | skip | | true |
+| conv_performance | radio | select | | true |
+| conv_rationale | textarea | type | | true |
+| conv_share | textarea | type | Share Your Conversation | true |
+| claude_round1 | claude | paste | | false |
+| claude_round2 | claude | paste | | false |
+
+### Values
+
+#### conv_goal
 ```text
-[✅] Response A is more helpful
-[ ] Response B is more helpful
-[ ] Both responses are equally helpful
+{goal text}
 ```
 
-### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| q2_choice | radio | select | Response A is more helpful | true |
-| q2_explain | textarea | type | {humanized} | true |
+#### conv_attach
+```text
+No
+```
 
-### Explanation (fill)
-…
+#### conv_failure
+```text
+Yes
+```
+
+#### conv_failure_round
+```text
+1
+```
+
+#### conv_failure_desc
+```text
+{3+ sentences}
+```
+
+#### conv_failure_screenshot
+```text
+(after real Claude chat — crop failure turn)
+```
+
+#### conv_performance
+```text
+Poor
+```
+
+#### conv_rationale
+```text
+{3+ sentences}
+```
+
+#### conv_share
+```text
+https://claude.ai/share/…
+```
+
+#### claude_round1
+```text
+{Haiku Effort Low Round 1 — blank line before Setup; Shift+Enter newlines}
+```
+
+#### claude_round2
+```text
+{press only if Round 1 did not fail meaningfully}
+```
+
+### Why
+{domain fit note}
 
 ---
 
-## Question N: short numeric / text
+## Question: rubrics
 
 **Step:** Step k of N  
-**Confidence:** 0.90
-
-### UI
-```text
-[input] 8.7
-```
+**Confidence:** 0.88  
+**On form:** Write an original DS/stats prompt, then two “Did the response…” rubrics.
 
 ### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| qN_value | text | type | 8.7 | true |
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| q3_prompt | textarea | type | | true |
+| q3_rubric1 | textarea | type | first rubric | true |
+| q3_rubric2 | textarea | type | second rubric | true |
+
+### Values
+
+#### q3_prompt — New example prompt (Question 3)
+> On form: create an original, challenging, realistic Data Science / Analytics / Stats prompt with a clear solution
+
+```text
+{prompt}
+```
+
+#### q3_rubric1 — Enter your first rubric
+> On form: Question 3a — begin with “Did the response…”
+
+```text
+Did the response …
+```
+
+#### q3_rubric2 — Enter your second rubric
+> On form: Question 3a — second empty box under first rubric
+
+```text
+Did the response …
+```
 
 ---
 
@@ -119,22 +227,17 @@ Pace file: `answer.pace.json` (from `pace-plan.js`).
 **Step:** Step k of N  
 **Confidence:** 0.88
 
-### UI
-```text
-[drag order]
-1. initialize an empty dictionary frequency_map
-2. while n is greater than 0
-3. digit = n mod 10
-4. if digit is not in frequency_map keys
-5. add digit to frequency_map with an initial value of 1
-6. else add 1 to the value of digit in frequency_map
-7. n = integer part of (n / 10)
-```
-
 ### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| q_drag | drag | reorder | ["initialize an empty dictionary frequency_map","while n is greater than 0","digit = n mod 10","if digit is not in frequency_map keys","add digit to frequency_map with an initial value of 1","else add 1 to the value of digit in frequency_map","n = integer part of (n / 10)"] | true |
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| q_drag | drag | reorder | | true |
+
+### Values
+
+#### q_drag
+```json
+["step one","step two","step three"]
+```
 
 ---
 
@@ -143,75 +246,34 @@ Pace file: `answer.pace.json` (from `pace-plan.js`).
 **Step:** Step k of N  
 **Confidence:** 0.95
 
-### UI
-```text
-[✅] Python
-[✅] Javascript
-[✅] SQL
-[ ] Rust
-```
-
 ### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| languages | checkbox | selectMany | ["Python","Javascript","SQL"] | true |
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| languages | checkbox | selectMany | | true |
+
+### Values
+
+#### languages
+```json
+["Python","Javascript","SQL"]
+```
 
 ---
 
-## Coding / long code
-
-**Step:** Step k of N  
-**Confidence:** 0.80
-
-### UI
-```text
-[code:python]
-def decode(url: str) -> None:
-    ...
-```
-
-### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| coding_code | code | type | {full source} | true |
-| coding_explain | textarea | type | {humanized 2-3 sentences} | true |
-
----
-
-## Tell us about yourself — Professional Experience
-
-**Step:** Step k of N  
-**Confidence:** 0.95  
-**Source:** resume only (this profile)
-
-### UI
-```text
-[✅] Software Engineering
-[ ] Data Science
-...
-```
-
-### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| experience | radio | select | Software Engineering | true |
-
----
-
-## Tell us about yourself — (Optional)
+## Optional blank
 
 **Step:** Step N of N  
 **Confidence:** 1.00
 
-### UI
+### Fields
+| id | type | action | near | required |
+|----|------|--------|------|----------|
+| optional_comments | textarea | skip | Optional | false |
+
+### Values
+
+#### optional_comments
 ```text
-[textarea]
-(leave blank)
 ```
 
-### Fields
-| id | type | action | value | required |
-|----|------|--------|-------|----------|
-| optional_comments | textarea | skip | | false |
-
-**Footer:** Back | Submit ← **stop here for operator review**
+**Footer:** Back | Submit ← **stop for operator review**

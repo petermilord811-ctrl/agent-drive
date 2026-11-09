@@ -101,6 +101,39 @@ const sessionPath = path.join(path.resolve(profileDir), 'session.json');
 
 const bio = ready.bioMinutes || { min: 60, max: 90, cue: 'default 60-90' };
 
+function readGatesReport() {
+  const gatesPath = path.join(path.resolve(profileDir), 'answer.gates.json');
+  if (!fs.existsSync(gatesPath)) {
+    return { exists: false, ok: false, path: gatesPath, report: null };
+  }
+  try {
+    const report = JSON.parse(fs.readFileSync(gatesPath, 'utf8'));
+    const ok =
+      !!report.ok &&
+      report.meaningPass !== false &&
+      report.qualityPass !== false &&
+      report.detectPass !== false;
+    return { exists: true, ok, path: gatesPath, report };
+  } catch (e) {
+    return { exists: true, ok: false, path: gatesPath, report: null };
+  }
+}
+
+function runAnswerGates() {
+  // Fail-closed: re-check Meaning∧Quality∧Detect before autofill-ready.
+  // Uses existing answer.aicheck.json (no --run-aicheck) so prepare stays offline-safe.
+  const script = path.join(skillDir, 'answer-gates.py');
+  const r = spawnSync('python', [script, '--profile', path.resolve(profileDir)], {
+    encoding: 'utf8',
+    maxBuffer: 8e6,
+  });
+  return {
+    status: r.status == null ? 1 : r.status,
+    stdout: r.stdout || '',
+    stderr: r.stderr || '',
+  };
+}
+
 // 3) If fill exists, build pace + playbook
 let playbook = null;
 let pace = null;
@@ -205,6 +238,7 @@ if (fs.existsSync(fillPath)) {
         type: a.type,
         action: a.action,
         value: a.value,
+        near: a.near || null,
         required: a.required,
         confidence: a.confidence,
         firstInStep: a.firstInStep,
@@ -247,16 +281,38 @@ function recipeFor(a) {
     return ['leave blank', 'locate-click.py next'];
   }
   if (t === 'text' || t === 'textarea' || t === 'code') {
+    const near = a.near ? ` textarea --near "${a.near}"` : ' textarea';
     return [
       'look',
       'pause thinkMs',
-      'focus field (radio→Tab or click textarea cx/cy from scroll-complete)',
-      'press Backspace only to clear (NEVER Ctrl+A — selects page)',
-      'keys { text: value }  # auto-type — NEVER human:0',
-      'look prove',
+      `locate-click.py <look>${near}  # snap:false aim:false; prove:letter`,
+      'click lx/ly → keys one non-space letter → look prove focus',
+      'Backspace clear prove char (NEVER Ctrl+A / NEVER xdotool type)',
+      'keys { text: value } chunks ~80 chars — NEVER human:0 / Ctrl+V on DA',
+      'look prove value',
     ];
   }
+  if (t === 'claude' || t === 'note') {
+    return ['not a DA field — use Values fence / claude[] in fill.json'];
+  }
+  if (t === 'upload') {
+    return ['skip or upload after real Claude share screenshot'];
+  }
   return ['look', 'apply', 'look prove'];
+}
+
+// 4) Fail-closed answer gates before autofill-ready (Herman never-again)
+let gates = readGatesReport();
+let gatesRun = null;
+if (ready.ok && fs.existsSync(answerPath) && fs.existsSync(fillPath) && playbook) {
+  gatesRun = runAnswerGates();
+  gates = readGatesReport();
+  if (gatesRun.stdout) {
+    process.stderr.write(gatesRun.stdout.slice(-4000));
+  }
+  if (gatesRun.stderr) {
+    process.stderr.write(gatesRun.stderr.slice(-2000));
+  }
 }
 
 const phase =
@@ -268,7 +324,9 @@ const phase =
         ? 'parse-validate'
         : !playbook
           ? 'build-playbook'
-          : 'autofill-ready';
+          : !gates.ok
+            ? 'gates-pending'
+            : 'autofill-ready';
 
 const session = {
   version: 1,
@@ -280,6 +338,15 @@ const session = {
   pick: pick ? pick.pick : null,
   alternatives: pick ? pick.alternatives : null,
   ready,
+  gates: {
+    ok: gates.ok,
+    exists: gates.exists,
+    path: gates.path,
+    meaningPass: gates.report ? gates.report.meaningPass : null,
+    qualityPass: gates.report ? gates.report.qualityPass : null,
+    detectPass: gates.report ? gates.report.detectPass : null,
+    rc: gatesRun ? gatesRun.status : null,
+  },
   bioMinutes: bio,
   paths: {
     bank: fs.existsSync(bankPath) ? bankPath : null,
@@ -287,6 +354,7 @@ const session = {
     fillJson: fillPath,
     paceJson: pacePath,
     playbookJson: playbook ? playbookPath : null,
+    gatesJson: gates.path,
     sessionJson: sessionPath,
   },
   artifacts: {
@@ -294,6 +362,8 @@ const session = {
     fillJson: fs.existsSync(fillPath),
     paceJson: fs.existsSync(pacePath),
     playbookJson: !!playbook,
+    gatesJson: gates.exists,
+    gatesOk: gates.ok,
   },
   phase,
   nextSteps: nextSteps(phase, ready, slug),
@@ -308,6 +378,8 @@ const session = {
     'TIMER MUST: after Start assessment arm status/mission tree; status.step + answer.timer.json every leaf (TIMER.md) — never skip',
     'Clear fields with Backspace only — never Ctrl+A',
     'Humanize via relay /api/humanize + SM_JOIN_KEY (verb humanize) — never HUMANIZE_API_KEY',
+    'After answer.md: answer-gates.py --run-aicheck must exit 0 (MeaningPass ∧ QualityPass ∧ DetectPass) — never keep ai≤20 if Meaning/Quality fail; never done on aicheck alone (ANSWER-GATES.md)',
+    'prepare-answer never emits autofill-ready unless answer.gates.json ok — fix Values / re-run gates first',
     'PART-B-FILL.md before first live keys: prove focus (non-space char) before typing; never Ctrl+C/V on DA; never SM field/Expires marks; snap:false for small targets; only operator-named host',
   ],
 };
@@ -325,10 +397,10 @@ function nextSteps(phase, ready, slug) {
   }
   if (phase === 'generate-answer-md') {
     return [
-      'Write answer.md from bank + resume (answers.template.md + generating_rule.md)',
-      'humanize-text.py / verb humanize (relay join key) on every textarea/code prose',
-      'parse-answer-fill.js → answer.fill.json',
-      'validate-answers.js must exit 0',
+      'Write drafts/meaning.json + answer.md from bank + resume (ANSWER-GATES.md)',
+      'Best-correct Values → MeaningPass → QualityPass → spoken/humanize → MQ again',
+      'parse-answer-fill.js → answer.fill.json; validate-answers.js exit 0',
+      'answer-gates.py --profile {profile} --run-aicheck must exit 0',
       're-run prepare-answer.js to emit playbook',
     ];
   }
@@ -336,10 +408,26 @@ function nextSteps(phase, ready, slug) {
     return [
       'parse-answer-fill.js --answer answer.md --out answer.fill.json',
       'validate-answers.js --slug ' + slug + ' --answer answer.md',
+      'answer-gates.py --profile {profile} --run-aicheck must exit 0',
       're-run prepare-answer.js',
     ];
   }
+  if (phase === 'gates-pending') {
+    return [
+      'FAIL-CLOSED: answer.gates.json not ok — do not live fill',
+      'Fix Values from drafts/meaning.json best (surgical restore if humanize undercut)',
+      'python skills/take-dataannotation-assessment/answer-gates.py --profile {profile} --run-aicheck',
+      'Re-run prepare-answer.js only after gates exit 0',
+    ];
+  }
+  if (phase === 'build-playbook') {
+    return [
+      'answer.fill.json present but playbook missing — re-run prepare-answer.js',
+      'answer-gates.py --profile {profile} --run-aicheck must exit 0 before fill',
+    ];
+  }
   return [
+    'Gates green (answer.gates.json ok) — live fill allowed',
     'Read PART-B-FILL.md + CLICK.md before first live keys',
     'Mission: Part B autofill from answer.playbook.json',
     'Start assessment only when operator confirms real take (or already started)',
@@ -351,5 +439,11 @@ function nextSteps(phase, ready, slug) {
 
 fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2) + '\n', 'utf8');
 process.stdout.write(JSON.stringify(session, null, 2) + '\n');
-// Exit 0 only when gate passed (even if answer.md still missing — phase tells next work).
-process.exit(ready.ok ? 0 : 1);
+// Exit 0 only when bank ready AND (not yet at fill, or gates ok for autofill).
+const exitOk =
+  ready.ok &&
+  (phase === 'generate-answer-md' ||
+    phase === 'parse-validate' ||
+    phase === 'build-playbook' ||
+    phase === 'autofill-ready');
+process.exit(exitOk ? 0 : 1);

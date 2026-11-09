@@ -22,13 +22,19 @@ This file is the contract. **Do not invent `lx/ly`.**
 | **Auto-type scrolls to Section 3 (99588)** | `keys` with spaces while **document** focused scrolls the page; Goal stays empty | **Prove focus first:** after `textarea` click (or label→Tab), type a single letter (no space) → look — letter must appear in the box. Only then `keys` the full answer. Spaces on body scroll = this bug |
 | **Ctrl+C / Ctrl+V on DA task page (99588)** | Clipboard shortcuts while assessment is open | **Forbidden** on any DataAnnotation task page. Fill with `keys` only. Ctrl+L/C only on outside-link tabs during Part A fetch |
 | **Checkbox miss / text-select (Claude onboarding 99588)** | Aimed wrong Y; or `aim:false` still **snapped** onto nearby field/button | 1) `look-ocr.js --find "agree"` (or label) on **current** look → checkbox ≈ `bbox.x0 - 16`, same `ly`. 2) `click {lx,ly,of,snap:false,aim:false}`. Never trust mark clicks for small checks. Prove with look (checked / error gone) before Create |
+| **Claude Continue as leftover Google (99588)** | Agent used “Continue as geroge” — wrong identity for DA share | **Forbidden.** Same DA email/name; email path or operator self-login — [`CLAUDE-SETUP.md`](./CLAUDE-SETUP.md) |
 | **SM content marks → sidebar (99588)** | Mark “O Yes” / “O Poor” / “1” clicked at **screen x≈80** | Marks lie for content radios/digits — use locate-click `lx > content_x_min` or content→Tab |
 | **Short #f8 above Goal (99588)** | Typed into wrong / unfocused strip; Goal empty | `textarea` prefers **taller** box first; prove focus in Goal |
 | **Wheel direction (99588)** | `scroll n` went opposite of assumed | Prove with look after first nudge; prefer content focus + PageDown |
 | **Long keys timeout (99588)** | MCP “no answer in 35s” while keys still running | `pause` / wait for `answeredLate`; do not re-type |
 | **OCR trust** | `clickText` / `find` aimed at chrome | On 34123/99588 host OCR often only browser chrome |
+| **Empty rubric placeholder (99588)** | Mark `"Enter your first rubric"` clicked; prove letter never appears | `ocr {boxes:true}` → click white box `y≈ph+35`, `snap:false aim:false`; blue border = focused |
+| **Expires stale look (99588)** | Timer tick → `same≈0.83` refuses lx/ly | Fresh look → mark click immediately, or screen xy `snap:false aim:false` |
+| **`xdotool type` (99588)** | Operator ban; undo log showed type/ctrl+a/sleep → `xsleep…` in DA fields | **Only** SM `keys` for form text; click/mousemove OK |
+| **Scroll API misuse (99588)** | `scroll {dy}` / `of` refused; wrong direction | `scroll {x,y,n}` only; prove with look; prefer PageUp/Down after content focus |
+| **Toolbar Scroll to Bottom (99588)** | Jumps near Submit footer | Forbidden for nav; content focus + PageDown / sidebar |
 
-**Full Part B contract:** [`PART-B-FILL.md`](./PART-B-FILL.md) — read before first live `keys`.
+**Live runbook:** [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md) · **Fill contract:** [`PART-B-FILL.md`](./PART-B-FILL.md) — read both before first live `keys`.
 
 ## Hard rules (every click)
 
@@ -52,8 +58,9 @@ python -I skills/take-dataannotation-assessment/locate-click.py <look.png> radio
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> radio 2           # index inside choice cluster
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> sidebar 4
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> role "Data Scientist"
-python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea      # empty Goal / explain boxes
-python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea 1    # 2nd box on page
+python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea      # best-score editable box
+python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea 1    # 2nd box top→bottom
+python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea --near "first rubric"
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> scroll-complete
 # When host OCR is blind (Browse cards):
 node skills/take-dataannotation-assessment/look-ocr.js <look.png> --find "Data Scientist"
@@ -74,7 +81,7 @@ Regression: `python -I skills/take-dataannotation-assessment/test-locate-click.p
 | `radios-raw` | Debug only | Unclustered ring hits — do not autofill from this |
 | `sidebar N` | Jump assessment left-nav | **Only** left of sidebar_edge |
 | `role "Title"` | Browse card | Returns **`action: dbl`** on card **body**; refuses ambiguous titles instead of defaulting to col 0 |
-| `textarea` / `textarea N` | Empty Goal / explain boxes | Content white boxes only; **never** SM blank `field` marks (Expires false hit) |
+| `textarea` / `textarea N` / `--near` | Goal / explain / empty rubrics / optional | Scored geometry + OCR label anchor; caret below placeholder; returns `snap:false` `prove:letter`; never SM blank `field` marks |
 
 ## Proven geometry (@ look 1280×720)
 
@@ -88,12 +95,12 @@ Regression: `python -I skills/take-dataannotation-assessment/test-locate-click.p
 
 ## Autofill (Part B)
 
-Same click stack as fetch. After `answer.fill.json` + `answer.pace.json` exist ([`ANSWER.md`](./ANSWER.md)):
+Same click stack as fetch. Sequencing: [`WORKFLOW-LIVE.md`](./WORKFLOW-LIVE.md). After `answer.fill.json` + `answer.pace.json` exist ([`ANSWER.md`](./ANSWER.md)):
 
 1. `pause { ms: thinkMs }` from pace (first field/step 10–30s+, later ~5–15s+).
 2. Radio/checkbox: `locate-click.py <look> radio N` / label — never sidebar.
-3. Text: Prefer **content click → Tab into field** when direct `textarea` click fails focus (99588 live: Goal via label→Tab; round via Notes→Tab×2). Prove focus with one non-space letter → look. Then **Backspace** clear (never Ctrl+A) → `keys` in **~80-char chunks** (never `human:0`, never Ctrl+V on DA pages). After each chunk, if viewport jumped → re-measure → append. Never click SM `field ""` near Expires. **SM content marks often click at x≈80 (sidebar)** — do not trust mark clicks for Yes/No/Poor/“1”; use `locate-click` lx>content_x_min or Tab.
-4. Look after each action. Never Submit during fill.
+3. Text: Prefer **content click → Tab into field** when direct `textarea` click fails focus (99588 live: Goal via label→Tab; round via Notes→Tab×2). Empty rubrics: OCR white-box (`y≈ph+35`, `snap:false aim:false`). Prove focus with one non-space letter → look. Then **Backspace** clear (never Ctrl+A) → `keys` in **~80-char chunks** (never `human:0`, never Ctrl+V on DA, **never `xdotool type`**). After each chunk, if viewport jumped → re-measure → append. Never click SM `field ""` near Expires. **SM content marks often click at x≈80 (sidebar)** — do not trust mark clicks for Yes/No/Poor/“1”; use `locate-click` lx>content_x_min or Tab.
+4. Look after each action. **One** form recheck after last field. Never Submit during fill.
 
 ## Agent recipe (assessment step)
 

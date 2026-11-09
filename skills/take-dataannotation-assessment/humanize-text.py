@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -88,22 +89,29 @@ def relay_api(path: str, body: dict | None = None, timeout: int = 120) -> dict:
     return out
 
 
+_URL_TOKEN = "\0URLCOLON\0"
+
+
 def scrub(text: str) -> str:
+    # Protect URL schemes before ":" → " -" (share links must stay https://…).
+    text = re.sub(r"(?i)\b([a-z][a-z0-9+.-]*)://", rf"\1{_URL_TOKEN}//", text)
     text = (
         text.replace("—", "-")
         .replace("–", "-")
         .replace(":", " -")
         .replace(";", ",")
     )
+    text = text.replace(_URL_TOKEN, ":")
     while "  " in text:
         text = text.replace("  ", " ")
     return text.strip()
 
 
 def looks_bad(text: str) -> bool:
-    if ":" in text or ";" in text or "—" in text or "–" in text:
-        return True
     if not text.strip():
+        return True
+    probe = re.sub(r"(?i)\b[a-z][a-z0-9+.-]*://", "", text)
+    if ":" in probe or ";" in probe or "—" in probe or "–" in probe:
         return True
     return False
 

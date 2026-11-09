@@ -7,8 +7,9 @@
 - **Leaves:** **16** (re-counted 2026-11-08; prior bank said 15) · `assets/finance-expert/sidebar-inventory.json`
 - **IDs:** `task_response_id=01a1bae0-a32d-7940-9ea9-a52c7d91d75b` · `project_id=82dc8649-89f4-41ff-bb4e-9247da232829`
 - **Assessment:** Finance Starter Assessment V4.1 / Finance Projects assessment
-- **Gaps:** Section 1 Q long Response A/B full bodies digit re-OCR; Claude setup Ctrl+L.
-- **Re-fetch 2026-11-08:** Leaves **16**; Experience Part 1 + Part 2 (**12** roles) ✅; Conversation Haiku 3.5 Finance Domain ✅; Q1–Q7 titles/prompts spot-confirmed (`fe_q01`–`fe_q07.png`).
+- **Gaps:** Experience Part 1 Other-branch write-in optional. Claude setup URL Ctrl+L optional.
+- **Re-fetch 2026-11-08:** Leaves **16**; Experience Part 1 + Part 2 (**12** roles) ✅; Q1–Q7 titles/prompts spot-confirmed (`fe_q01`–`fe_q07.png`).
+- **Re-check 2026-11-09 host 34123:** Live `task_response_id=01a1bae0…` / `project_id=82dc8649…` · expires ~5d. Q3–Q5 filled (Generalist/Economist parallel); Q5 **gold models** live-confirmed; Section 2 full prose + **Haiku 5.5** (corrects prior 3.5). Part 2 MCQ expand: **Position Tenure** + **all 10** Investment/Corporate year leaves + Other write-in ✅ (full expand → **28** steps). Never Submit.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -35,8 +36,10 @@
 13. [Step 12 · Share conversation](#step-12--share-conversation)
 14. [Step 13 · Academic and Professional Experience Part 1](#step-13--academic-and-professional-experience-part-1)
 15. [Step 14 · Academic and Professional Experience Part 2](#step-14--your-academic-and-professional-experience--part-2)
-16. [Step 15 · Meaningful Finance experience](#step-15--meaningful-finance-experience) *(renumber if needed)*
-17. [Step 16 · Optional comments](#step-16--optional-comments)
+16. [Case: Position Tenure](#case-position-tenure) *(spawned by Investment/Corporate roles)*
+17. [Case: Per-role year leaves](#case-per-role-year-leaves)
+18. [Step 15 · Meaningful Finance experience](#step-15--meaningful-finance-experience)
+19. [Step 16 · Optional comments](#step-16--optional-comments)
 
 ---
 
@@ -228,17 +231,23 @@ September 18, 1851.
 
 ### Response B
 
-The first issue of the New York Times was published on September 18, 1851. At the time, the paper was called the New York Daily Chronicle. Source: …year.html
+The first issue of the New York Times was published on September 18, 1851. At the time, the paper was called the New York Daily Chronicle. Source: https://www.nytimes.com/insider/new-york-times-year.html
+
+_(Source URL is plain text on-screen, not a clickable link.)_
 
 **Choices:**
 
 - [ ] Response A
 - [ ] Response B
 
-**Write-in — Question 3a:**  
-In 2-3+ full sentences, please explain your answer.
+**Question 3a:**  
+In 2-3+ full sentences, please explain your answer. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
 
 *(empty text box)*
+
+### Parallel
+
+- Verbatim from verified **Generalist** Q4 (stem-matched 2026-11-09).
 
 ### Assets
 
@@ -246,7 +255,7 @@ In 2-3+ full sentences, please explain your answer.
 
 ## Step 5 · Question 4
 
-**Step:** Step 5 of 15  
+**Step:** Step 5 of 16 · filled from Generalist parallel 2026-11-09  
 **Type:** compare  
 **Scroll:** long list
 
@@ -256,16 +265,63 @@ Given the following request to an AI chatbot, which response is better?
 
 > Write a love poem about someone longing for a sandwich. Make it a sonnet, and give it a tone that straddles a serious love poem and whimsy appropriate for a poem about a sandwich.
 
-### Response A / Response B
+### Response A
 
-*(sonnet vs free-verse sandwich poems — full text in `fe_s05.png`; parallel to Generalist sandwich-sonnet item)*
+```text
+In famished depths, I pine upon my bed,
+Sweet thoughts of thy most holy meat and bread
+Drift through my mind like a beauty newlywed,
+So near yet so far be my true desire.
+
+The fridge stands there, nary ten feet away.
+Yet here I sprawl in lazy disarray,
+Too tired to move, I fall into dismay
+My lust a tempest to my course most dire.
+
+O mustard bright! O pickles, crisp and tart!
+Thy sumptuous flesh a wonder of art!
+Thick cheddar slices beg my lips to part,
+Of thy essence never shall I tire.
+
+Ne'er to be surpassed in my inner heart
+Thy taste alone doth lift me higher
+```
+
+### Response B
+
+```text
+Oh, sandwich, where art thou, my bread?
+I love you, your ham, your cheese.
+My stomach rumbles and my tummy grumbles.
+I can't wait for you to fill my belly!
+
+The lettuce is crisp and crunchy.
+The tomatoes are red and sweet.
+The mustard is spicy!
+The bread is soft and yummy.
+
+Between two slices, I found paradise.
+It's like an orgasm for my soul, and I cry at the sweetness.
+It's a simple and deeply profound pleasure.
+It abates my hunger and gives my muscles fuel.
+
+Thank you for nourishing me.
+With every bite, joy does resound.
+```
 
 **Choices:**
 
 - [ ] Response A is a better response
 - [ ] Response B is a better response
 
-**Write-in:** explanation (2-3+ sentences)
+**Question 4a:**  
+Please explain your answer in 2-3+ sentences. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
+
+### Parallel
+
+- Verbatim from verified **Generalist** Q5 sandwich sonnet (stem-matched).
 
 ### Assets
 
@@ -273,26 +329,83 @@ Given the following request to an AI chatbot, which response is better?
 
 ## Step 6 · Question 5
 
-**Step:** Step 6 of 16 · spot-confirmed 2026-11-08  
+**Step:** Step 6 of 16 · re-confirmed 2026-11-09 (live OCR; same Olympics bodies as Economist/Generalist)  
 **Type:** compare  
 **Scroll:** long list
 
-**Stem:** Given the following request to an AI chatbot, which response is better? (Be sure to fact-check both responses and remember, the use of AI on any part of this assessment is NOT allowed.)
+Given the following request to an AI chatbot, which response is better? (Be sure to fact-check both responses and remember, the use of AI on any part of this assessment is NOT allowed.)
 
 **Prompt:**
 
 > I was wondering about the first Summer Olympics after WWII. Who were some event winners and which country took home the most gold medals (also 2nd and 3rd would be nice to know).
 
-### Response A / Response B
+### Response A
 
-Both cover **1948 London** Olympics; Event Winners include Bob Mathias (USA, decathlon), Fanny Blankers-Koen (Netherlands); B also lists Delfo Cabrera (marathon — nationality disputed in prose). Long medal-table bodies — see shots. Parallel to Generalist Olympics item.
+The first Summer Olympics after WWII took place in the 1940s, a bit more than 50 years before the turn of the millennium in the year 2000. The 1948 Summer Olympics were held during the summer of 1948 and hosted by London, United Kingdom.
+
+**Event Winners:**
+
+Generating a full, comprehensive, and complete list of winners would cause the response to become unnecessarily complex and lengthy, so I will instead list a few notable event winners for the sake of simplicity. Some notable champions are:
+
+- Bob Mathias (USA): At just age 17, he won gold in the decathlon.
+- Fanny Blankers-Koen (Netherlands): Blankers-Koen secured four gold medals in the following track and field competitions: 100m, 200m, 80m hurdles, 4x100m relay.
+- Delfo Cabrera (Great Britain): Cabrera claimed the gold in an exciting marathon event.
+
+**Medal Standings:**
+
+1. USA: The United States managed to win the most medals. The country brought home more gold models than any other country by winning 38 gold medals.
+   - In addition to their 38 gold medals, the United States also was awarded 27 silver medals.
+   - For bronze medals, the United States brought home 19.
+   - Their total number of medals won was 84.
+2. Sweden: The country of Sweden came in a second place for most gold medals, finishing behind the leader. Sweden had less than half the amount of gold medals compared to the United States. Their final gold medal count at the event's conclusion was 16.
+   - In the silver medal category, Sweden hauled in 11 of these.
+   - Sweden finished just behind the United States for number of bronze medals with 17. They were only two behind the United States, who won 19 bronze medals.
+   - Combining all gold, silver, and bronze medals, one can see that Sweden won 44 total medals.
+3. France: Rounding out third place was France with 10 gold medals.
+   - France was able to win 6 silver medals at this event.
+   - The country's official bronze medal count was 13.
+   - 29 is the number of total medals won by France throughout the entirety of the event at its conclusion.
+
+**Interesting Facts:**
+
+- The 1948 Olympics were nicknamed the "Austerity Olympics" due to the limited amount of resources in a post-war time period where rationing was a concern.
+- The defeated nations of Germany and Japan were not invited to participate following their loss in the war.
+- Sigfrid Edström was the president of the International Olympic Committee during this time.
+
+### Response B
+
+The first Summer Olympics after WWII took place in 1948. It was hosted by London, United Kingdom. Listed below is the information you requested.
+
+**Event Winners:**
+
+For the sake of simplicity, I'll name some notable champions rather than a full list of event winners. Some notable champions are:
+
+- Bob Mathias (USA): At just age 17, he won gold in the decathlon.
+- Fanny Blankers-Koen (Netherlands): Blankers-Koen secured four gold medals in the following track and field competitions: 100m, 200m, 80m hurdles, 4x100m relay.
+- Delfo Cabrera (Great Britain): Cabrera claimed the gold in an exciting marathon event.
+
+**Medal Standings:**
+
+1. USA: 38 gold, 27 silver, 19 bronze (total: 84)
+2. Sweden: 16 gold, 11 silver, 17 bronze (total: 44)
+3. France: 10 gold, 6 silver, 13 bronze (total: 29)
+
+**Interesting Facts:**
+
+- The 1948 Olympics were nicknamed the "Austerity Olympics" due to post-war rationing and limited resources.
+- Germany and Japan, as defeated nations, were not invited to participate.
+- Sigfrid Edström was the president of the International Olympic Committee during this time.
 
 **Choices:**
 
 - [ ] Response A
 - [ ] Response B
 
-**Write-in:** explanation
+### Question 5a:
+
+In 2-3+ full sentences, please explain your answer. Note: you MUST write at least two sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
 
 ### Assets
 
@@ -301,17 +414,68 @@ Both cover **1948 London** Olympics; Event Winners include Bob Mathias (USA, dec
 
 ## Step 7 · Question 6
 
-**Step:** Step 7 of 16 · spot-confirmed 2026-11-08  
-**Type:** rubric Yes/No  
-**Scroll:** long list
+**Step:** Step 7 of 16 · filled from Expert-Domain parallel (Economist verified 2026-11-09)  
+**Type:** rubric Yes/No · **Scroll:** long  
+**Parallel note:** Expert Domain London Fog ≠ Generalist London Fog — do **not** copy Generalist Q7 here.
 
-**Stem:** In the context of AI Assistants, a rubric is a set of criteria used to evaluate the Assistant's performance and quality… each individual check is called a rubric criterion. Given the following prompt, evaluate whether the Assistant successfully addresses the two rubric criteria below.
+In the context of AI Assistants, a rubric is a set of criteria used to evaluate the Assistant's performance and quality. A rubric typically breaks down the evaluation into several key areas, such as accuracy, relevance, tone, and/or efficiency; each individual check is called a rubric criterion.
 
-**Prompt (London Fog):** recipe as main + variations (flavor change + vegan); numbered one-sentence steps; variations as bold sub-headings not new lists; diabetes resource — no added sugar (natural milk OK); no almond or soy.
+Given the following prompt, evaluate whether the Assistant successfully addresses the rubric criteria below.
 
-**Response:** starts “Greetings…” then numbered London Fog steps (kettle → Earl Grey → microwave milk…).
+**Prompt:**
 
-Yes/No per rubric criterion + explanations (scroll for criteria text).
+> I'd like to create a recipe for making a London Fog. I'd like to structure the recipe as a main recipe followed by variations. The first variation should change the flavor, and the second should be a vegan alternative of a normal London Fog.
+>
+> I want the main recipe to be written as a step-by-step set of instructions. Let's make sure to make each step is limited to one sentence in length. Also please make sure to number the steps in the main recipe. I'm going to transfer the recipe to a website, and I don't want to miss any steps.
+>
+> The two variations shouldn't be rewritten as a new step-by-step list. We can just have a bold text as a sub-heading for the variation and then an explanation of what the variation entails.
+>
+> Oh, and this is going to be eventually published in a resource for people with diabetes, so the recipe and variations shouldn't include added sugar. Ingredients that have natural sugars like milk are okay. Additionally, to avoid common allergies, don't include almond or soy as ingredients.
+
+### Response
+
+```text
+Greetings,
+It is a pleasure to assist you with this request. Here are the instructions for preparing a London Fog.
+London Fog
+1. Bring a kettle of water to a boil.
+2. Steep one Earl Grey tea bag in 1/2 cup of hot water for 3-5 minutes.
+3. In a large microwave safe measuring cup, heat 1/2 cup milk until hot (30-60 seconds on high).
+4. Add one teaspoon of pure vanilla extract to the heated milk.
+5. Using a whisk or milk frother, froth the milk until foamy and slightly thickened.
+6. Pour the frothed milk over the tea.
+7. Stir gently to combine all ingredients.
+Flavor Variation: Oregon Mist
+Substitute a green tea bag for the Earl Grey tea bag, and reduce the steeping time to a maximum of 3 minutes. Instead of pure vanilla extract, use two tablespoons of amaretto syrup. This creates a more fragrant and unique variation, with the the amaretto enhancing the flavor of the frothed milk.
+Vegan Alternative
+A vegan London Fog is easily made by substituting dairy milk with a plant-based alternative (oat milk, soy milk, or coconut milk). Oat milk is the best alternative here for its creamy texture, which closely mimics the feel of dairy milk when frothed.
+```
+
+### Rubric Criterion One:
+
+The response followed all of the user's formatting instructions.
+
+**Choices:**
+
+- [ ] Yes
+- [ ] No
+
+Please explain your answer in 2 or more complete sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
+
+### Rubric Criterion Two:
+
+The response followed all of the ingredient restrictions provided by the user.
+
+**Choices:**
+
+- [ ] Yes
+- [ ] No
+
+Please explain your answer in 2 or more complete sentences. (The more insightful and well-reasoned explanation you write, the better, since we prioritize high-quality writing.)
+
+*(empty text box)*
 
 ### Assets
 
@@ -320,15 +484,30 @@ Yes/No per rubric criterion + explanations (scroll for criteria text).
 
 ## Step 8 · Question 7
 
-**Step:** Step 8 of 16 · spot-confirmed 2026-11-08  
-**Type:** form  
-**Scroll:** none
+**Step:** Step 8 of 16 · filled from Expert-Domain parallel (Economist verified 2026-11-09)  
+**Type:** form
 
-**Write-in:** Create a long and complex prompt that includes at least two paragraphs and a total of 6–8 sentences, providing some backstory… Keep the topic general (no specialist/domain prompt). Must include at least three clear requirements. Note: MUST write at least six sentences.
+Create a long and complex prompt that includes at least two paragraphs and a total of 6–8 sentences, providing some backstory or context around why you're asking that prompt.
 
-**Write-in:** first rubric criterion (“The response…” structure from Q6) — “Enter your first rubric criterion here.”
+Keep the topic general: your prompt should be one that anyone could understand, without any specialist knowledge — please do not write a domain-specific prompt from your professional field.
 
-**Write-in:** second rubric criterion — “Enter your second rubric criterion here.”
+The prompt must also include at least three clear requirements. Some examples could be format, tone, style, details to include, things to focus on, character to embody, length, and so on - be creative!
+
+Note: you MUST write at least six sentences.
+
+*(empty text box)*
+
+Based on the prompt you created above, please write two separate rubric criteria that could be used to evaluate an AI's response. Use the same sort of "The response..." structure from Question 6.
+
+**Write-in (first rubric):**  
+Enter your first rubric criterion here.
+
+*(empty text box)*
+
+**Write-in (second rubric):**  
+Enter your second rubric criterion here.
+
+*(empty text box)*
 
 ### Assets
 
@@ -337,34 +516,85 @@ Yes/No per rubric criterion + explanations (scroll for criteria text).
 
 ## Step 9 · Section 2 Conversation
 
-**Step:** Step 9 of 15  
+**Step:** Step 9 of 16 · re-confirmed 2026-11-09 (live OCR; structure parallel Economist with **Finance Domain**)  
 **Section:** Section 2: Conversation: Challenging an AI Model  
-**Type:** form  
-**Scroll:** long list
+**Type:** form · **Scroll:** long
 
-Finance-domain conversation challenge using **Claude.ai · Haiku 3.5** (Effort: Low). Background + Your Task parallel Data Science starter structure but **Finance Domain** prompts.
+### Section 2: Conversation: Challenging an AI Model
 
-**Write-in — Conversation Goal:** Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences.
+In this section of the assessment, you'll participate in a mock project task. This is intended to help familiarize you with common project formats, and to give a glimpse of one kind of project you may be invited to join. Below, you'll see instructions similar to those found on some of our real projects. Please carefully read through the provided instructions and the linked instruction document.
+
+Note: For this project, you will need access to Claude.ai. You do not require a paid account to use the Haiku 5.5 model, but you may encounter some limitations in the number of messages you can try as free accounts can be throttled during periods of higher demand.
+
+### Background
+
+AI Assistant models have been getting better and better, and we need new, challenging prompts to really test how well they perform in various domains. AI Assistants have seen many common questions and academic-style quiz requests before, and we expect them to generally perform very well when answering these sorts of softball questions.
+
+A lot of the work we do aims to put the models in situations where they are likely to make real, meaningful errors when trying to answer. The more we do this, the more we understand and collect data about their shortcomings. As you might imagine, lobbing softball questions doesn't really help us, which is why the first part of your assessment is to have a challenging conversation with an AI model to display your domain expertise.
+
+You shouldn't start out by asking random trivia that's interesting to you to see what the models do. You should be trying to come up with the most difficult and realistic prompts you can think of. You'll quickly learn what the models have no problems with and what they're bad at. It's totally appropriate for you to rely on your own domain expertise when creating a question—we want to see your domain knowledge at work. Really do your best to show off what you know and stump a state-of-the-art model in the process!
+
+### Your Task
+
+Have a conversation using Haiku 5.5 on Claude.ai (with "Effort" set to Low).
+
+We'd like you to have a conversation that is relevant to the Finance Domain which is challenging, but also realistic and natural. In other words, we don't find prompts that test if the model can "end every other sentence with the letter Y" as useful. Haiku might fail to carry out that sort of request, but it's not a meaningful error in the model's ability to address a Finance Domain prompt.
+
+Your goal is to get the AI Assistant to respond in ways that are "meaningful failures" — that is, they're completely incorrect, misleading, contain some kind of essential flaw in their reasoning or explanations, or similar. If the Claude Haiku 5.5 model provides a generally accurate and / or suitable response to your prompt (that is, its conclusions and logic are correct on the whole, even if there are minor errors), you'll need to create a new conversation with a more challenging variation of your prompt, or test out a new idea entirely.
+
+Not familiar with Claude.ai? Here are some basic set up instructions.
+
+**To recap:**
+
+- Create a conversation between 1-3 "rounds" / user prompts long
+- Make sure your first prompt in the conversation is a challenging, realistic, and natural request
+- If you get a meaningful failure on the first turn, you are free to stop the conversation there (but don't have to)
+- If your first prompt didn't cause a failure, you should continue the conversation with up to two more user prompts
+  - Stay within the topic of your original prompt, but try turning up the difficulty or ask a challenging follow-up question
+- If you're unable to elicit a notable or meaningful failure within 3 prompts, it's best to start a new conversation
+  - You might revise your initial prompt with added complexity, or start with a totally new concept, either is fine
+
+### Conversation Goal
+
+Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences.
+
+This should not be "generate a meaningful model failure" or general concepts like "I want to learn more about how lending works." You're describing what the user in the conversation (you) specifically would expect to learn from the model or the task you wanted the model to accomplish.
+
+If you're not sure where to start, think along these lines:
+
+- What's a situation at work where you had to pull information from multiple sources to get the right answer?
+- When have you seen someone make a mistake because they didn't check everything or missed a key detail?
+- What part of your job requires the most professional judgment?
+- Is there a task where getting one thing wrong early makes everything else wrong too?
+
+You don't need to answer all of these. They're just meant to help you land on a strong scenario / conversation goal. You'll notice that these are all fairly focused on workplace use of the models, which is on purpose. You don't necessarily have to go this direction, but it's a great way of both demonstrating your expertise in your niche of the Finance domain and sufficiently challenging the models so that they make a "meaningful error".
 
 *(empty text box)*
 
 ### Notes
 
-- Model name on UI: **Haiku 3.5** (not 5.5).
-- Setup / share URL: capture via Ctrl+L when re-catching links.
+- Model on UI (2026-11-09): **Haiku 5.5** (prior bank **3.5** was wrong).
+- Domain string: **Finance Domain** / Goal example cue: **how lending works**.
 
 ### Assets
 
 - `assets/finance-expert/fe_s09.png`
 - `assets/finance-expert/fe_s09_pd.png`
 
-## Step 10 · Attached Files
+## Steps 10–15 · Conversation follow-ups (parallel Economist verified)
 
-**Step:** Step 10 of 15  
-**Type:** mcq  
-**Scroll:** none
+**Parallel:** structure + shared prose from verified **Economist** (2026-11-09); domain strings swapped to **Finance**. Yes-branch expands step count (16 → ~19). Experience Part 1/2 below remain Finance-specific (not from Economist).
 
-**Choice question:** Are you attaching any files in your conversation with the models?
+### Step 10 · Attached Files
+
+**Step:** Step 10 of 16  
+**Type:** mcq
+
+**Attached Files**
+
+Are you attaching any files in your conversation with the models?
+
+This isn't something that you have to do (it's perfectly possible to challenge AI models without them), but in real-world use of AI models in workplaces, people do often attach files. For example, a spreadsheet of data or a document that provides some context that may or may not be helpful to the answering models.
 
 **Choices:**
 
@@ -375,40 +605,106 @@ Finance-domain conversation challenge using **Claude.ai · Haiku 3.5** (Effort: 
 
 - `assets/finance-expert/fe_s10.png`
 
-## Step 11 · Meaningful failure
+### Step 11 · Meaningful failure
 
-**Step:** Step 11 of 15  
-**Type:** mcq  
-**Scroll:** none
+**Step:** Step 11 of 16 (Yes branch expands further UI)  
+**Type:** mcq (+ conditional write-ins)
 
-**Choice question:** Did you get the model to produce at least one response with a meaningful failure?
+Did you get the model to produce at least one response with a **meaningful failure**?
+
+**Notes**
+
+The main reasons this "Conversation: Challenging an AI Model" exercise is part of your assessment:
+
+- We want you to display your expertise within the Domain of Finance. Have you studied or worked in a subdomain of the Finance field that many wouldn't understand without significant research or learning? These are areas that the models will tend to also make mistakes. Don't just ask about a commonly understood Finance principle or how to compute the optimal price of a product from a toy problem; anyone could think of that sort of prompt and the Assistant can easily answer these sorts of academic questions.
+- Display your understanding of where AI models tend to make mistakes. If you use AI often, this will come much easier to you. If you don't use AI very often, you can still do well here as long as you take your time and focus on what is truly a meaningful failure (instead of looking for just any mistake so you can move on).
+
+If you didn't elicit any meaningful failures, you'll need to start over with a new conversation. Generally the way this works is that even if you didn't get a very good failure, you learned something about model behavior along the way — which helps you more effectively target weaknesses in the next conversation.
+
+Generally, we suggest restarting your conversation if you weren't able to elicit a meaningful failure within the first three rounds. However, you can choose to extend your conversation beyond three rounds if you feel your conversation concept will elicit meaningful failures in later rounds.
 
 **Choices:**
 
 - [ ] Yes
 - [ ] No
 
-### Assets
+#### When Yes is selected
 
-- `assets/finance-expert/fe_s11.png`
+**On which round did the meaningful failure occur?**
 
-## Step 12 · Share conversation
+A single user prompt with the model's response is a "round". If more than one issue occurred in your conversation, please choose the round with the most egregious issue.
 
-**Step:** Step 12 of 15  
-**Type:** form  
-**Scroll:** none
+In the space below, just provide an integer value (e.g. "1" or "5")
 
-**Write-in:** Paste the link / URL to the conversation that you shared.
+*(empty integer field)*
+
+**Please describe the meaningful failure. (3+ sentences)**
+
+If more than one issue occurred, please focus on the most notable error made by the model.
+
+*(empty text box)*
+
+**Sidebar / steps that appear after Yes:** Upload a screenshot… · Overall Model Performance · Overall Model Performance Rationale · Share Your Conversation
+
+### Step 12 · Upload screenshot (Yes branch)
+
+Upload a screenshot of the meaningful failure you observed in the conversation.
+
+Use your best judgement as to how to best capture the error you spotted. You can highlight the relevant text with your mouse cursor, or you can use screenshot software or an image editing tool to crop or zoom into where you spotted the issue. If you're not sure how to screenshot something on your screen, look it up (both MacOS and Windows have ways of doing it without having to install something new). You can refer to the basic setup instructions for help.
+
+**Screenshot Upload**
+
+Drag a file here, click here to browse, or paste it in here. All file formats accepted.
+
+### Step 13 · Overall Model Performance (Yes branch)
+
+**Overall Model Performance**
+
+How would you score the overall quality of model responses in the conversation?
+
+Did the model mostly help you achieve your goal, or were there so many errors that the conversation would be unhelpful or misleading for the typical user?
+
+**Choices:**
+
+- [ ] Amazing
+- [ ] Good
+- [ ] Okay
+- [ ] Poor
+- [ ] Horrible
+
+### Step 14 · Overall Model Performance Rationale (Yes branch)
+
+**Overall Model Performance Rationale**
+
+Explain your overall rating above. (3+ sentences)
+
+Please write the explanation as if you are writing a report for someone who cannot review your shared conversation. This means they may not understand if you say "Error X happened in turn 2", so it's important to communicate clearly what the error is and how it negatively impacted the quality of the model's response(s) in the conversation.
+
+*(empty text box)*
+
+### Step 15 · Share Your Conversation (Yes branch)
+
+**Share Your Conversation**
+
+In the space provided below, paste the link / URL to the conversation that you shared. If you don't share the conversation correctly, we won't be able to access it and review it.
+
+You can double-check that you've correctly shared the link by opening your pasted URL in the tab of a browser you usually don't use or an incognito/private browser tab. If you see your conversation, your link is correct and we'll be able to see your shared conversation.
+
+🚨 Note 🚨 Please be sure that you've selected the "Anyone with the link" option when you share your conversation with us. This is a common mistake. Our basic set up instructions include an illustrated guide to help you pick the correct sharing options.
+
+Only paste the conversation link, with no other comments.
 
 *(empty text box)*
 
 ### Assets
 
+- `assets/finance-expert/fe_s10.png`
+- `assets/finance-expert/fe_s11.png`
 - `assets/finance-expert/fe_s12.png`
 
 ## Step 13 · Academic and Professional Experience (Part 1)
 
-**Step:** Step 13 of 16  
+**Step:** Step 13 of 16 on the **No**-failure path (on Yes-branch path this is later — footer may show ~17–19). Finance-specific — **not** from Economist.  
 **Type:** multi-select
 
 Please indicate your primary field(s) of experience (select all that apply).
@@ -430,47 +726,121 @@ Please indicate your primary field(s) of experience (select all that apply).
 
 ## Step 14 · Your Academic and Professional Experience — Part 2
 
-**Step:** Step 14 of 16  
+**Step:** Step 17 of 25 on Yes-branch with multi-role expand (live 2026-11-09; base path shorter)  
 **Type:** multi-select (checkboxes)  
-**Scroll:** long — definitions above fold; checkbox list below
+**Scroll:** long — role definitions above fold; checkbox list + conditional write-in below
 
-**Q:** Which of the following best describes your primary experience with the Finance Domain? If more than one option is true… **select all** that describe your professional experience.
+**Q:** Which of the following best describes your primary experience with the Finance Domain? If more than one option is true for you (e.g. you have worked in investment banking and also have professional experience in FP&A), please select all of the options that describe your professional experience.
 
-**Non-Professional / Non-Finance** (exclusive if selected):
+**Non-Professional or Non-Finance Roles** (exclusive if selected):
 
-1. Academic Experience — current students / recent graduates with no full-time professional finance experience *(don’t choose other options)*
-2. Other / Non-Finance — backgrounds outside finance *(don’t choose other options)*
+1. Academic Experience — For current students or recent graduates with no full-time professional finance experience. If you select this option, don't choose any other answer options.
+2. Other / Non-Finance — For those with academic or professional backgrounds outside of the finance sector. If you select this option, don't choose any other answer options.
 
 **Investment Finance Roles:**
 
-3. Asset & Wealth Management — portfolio construction, mutual funds, ETFs, private client wealth advising
-4. Equity & Credit Research — buy-/sell-side analysis, modeling, credit rating
-5. Investment Banking & Capital Markets — M&A, underwriting, debt/equity offerings
-6. Private Equity & Venture Capital — LBOs, growth equity, fund management, alternatives
-7. Quantitative Finance & Trading — algo trading, derivatives, risk modeling, HFT
+3. Asset & Wealth Management — Portfolio construction, mutual fund management, ETFs, and private client wealth advising.
+4. Equity & Credit Research — Buy-side or sell-side security analysis, financial modeling, and credit rating.
+5. Investment Banking & Capital Markets — M&A advisory, underwriting, and structuring debt or equity offerings.
+6. Private Equity & Venture Capital — Leveraged buyouts, growth equity, fund management, and alternative asset investing.
+7. Quantitative Finance & Trading — Algorithmic trading, derivatives pricing, risk modeling, and high-frequency trading.
 
 **Corporate Finance Roles:**
 
-8. Accounting & Controllership — reporting, GAAP/IFRS, bookkeeping, controls
-9. Commercial & Retail Banking — corporate lending, credit underwriting, retail FS
-10. Corporate Tax & Audit — tax strategy, filings, internal/external audit
-11. FP&A and Corporate Finance — planning, budgeting, forecasting, corporate strategy
-12. Treasury & Cash Management — liquidity, capital structure, FX / rate risk
+8. Accounting & Controllership — Financial reporting, GAAP/IFRS compliance, bookkeeping, and internal controls.
+9. Commercial & Retail Banking — Corporate lending, credit underwriting, and retail financial services.
+10. Corporate Tax & Audit — Tax strategy, regulatory filings, and internal or external auditing.
+11. FP&A and Corporate Finance — Financial planning and analysis, budgeting, forecasting, and corporate strategy.
+12. Treasury & Cash Management — Managing corporate liquidity, capital structure, and FX or interest rate risk.
+
+### Case: Other / Non-Finance checked
+
+**Write-in** (appears below the checkbox list):  
+Briefly, please describe your Other or Non-Finance experience (1-2 sentences). If you answered Other (explain in the box below) for the previous question, it's okay to reuse your brief "Other" answer here.
+
+*(empty text box)*
+
+### Notes
+
+- Checking any **Investment** or **Corporate** role spawns **Position Tenure** plus one year-Select leaf per selected role (Asset’s year lives on the Tenure page; other roles get named sidebar leaves). Step count expands (live multi-role Yes-branch reached **25** steps).
+- Academic / Other are marked exclusive in UI copy; live UI still allows combining with roles (do not invent exclusivity behavior beyond the printed warning).
 
 ### Assets
 
 - `assets/finance-expert/fe_s13.png` — Part 1 (pending refresh)
 - `assets/finance-expert/fe_exp_p2.png`
 - `assets/finance-expert/fe_exp_p2_full.png`
+- `assets/finance-expert/fe_exp_p2_other_writein.png`
 
-## Step 14 · Meaningful Finance experience
+## Case: Position Tenure
 
-**Step:** Step 14 of 15  
+**Spawned when:** any Investment or Corporate Part 2 role is checked  
+**Step:** Step 18 of 25 on multi-role Yes-branch (live 2026-11-09)  
+**Type:** form (instructions + year Select per role shown on this page)
+
+**Title:** Position Tenure
+
+**Prose:**  
+For each option you selected above, please indicate the number of years of professional experience you hold in the role. Any internships contribute to the duration you report.
+
+Round your answer down to the number of years completed. For example, if you spent 5 years and 11 months working in retail banking, you should report 5 years.
+
+If you held a hybrid position where you filled multiple roles, do your best to estimate the number of full time years equivalent you spent working in each role you selected.
+
+**Live layout:** with Asset & Wealth Management checked, this page shows one year dropdown labeled **Asset & Wealth Management** (other selected roles appear as separate leaves — see below).
+
+**Year choices** (Select…):
+
+- `<1 year`
+- `1 year`
+- `2 years` … `9 years`
+- `10+ years`
+
+### Assets
+
+- `assets/finance-expert/fe_position_tenure.png`
+
+## Case: Per-role year leaves
+
+**Spawned when:** each checked Investment/Corporate role other than Asset & Wealth Management (Asset’s year is on Position Tenure)  
+**Type:** single year Select; title = role name; same year choices as Tenure  
+**Confirmed live 2026-11-09** (all Investment + Corporate roles; year Select identical):
+
+| Sidebar leaf | Title on page |
+|---|---|
+| Equity & Credit Research | Equity & Credit Research |
+| Investment Banking & Capital Markets | Investment Banking & Capital Markets |
+| Private Equity & Venture Capital | Private Equity & Venture Capital |
+| Quantitative Finance & Trading | Quantitative Finance & Trading |
+| Accounting & Controllership | Accounting & Controllership |
+| Commercial & Retail Banking | Commercial & Retail Banking |
+| Corporate Tax & Audit | Corporate Tax & Audit |
+| FP&A and Corporate Finance | FP&A and Corporate Finance |
+| Treasury & Cash Management | Treasury & Cash Management |
+
+**Year choices:** identical to Position Tenure (`<1 year` … `10+ years`).  
+**Layout note:** some Next-chain pages may stack an unfilled role Select above an already-filled role (e.g. Tax Select + FP&A `<1 year` on one screen). Full multi-role expand reached **28** steps.
+
+### Assets
+
+- `assets/finance-expert/fe_equity_credit_research.png`
+- `assets/finance-expert/fe_investment_banking.png`
+- `assets/finance-expert/fe_private_equity.png`
+- `assets/finance-expert/fe_quantitative_finance.png`
+- `assets/finance-expert/fe_accounting_controllership.png`
+- `assets/finance-expert/fe_commercial_retail_banking.png`
+- `assets/finance-expert/fe_corporate_tax_audit.png`
+- `assets/finance-expert/fe_fpa_corporate.png`
+- `assets/finance-expert/fe_treasury_cash.png`
+
+## Step 15 · Meaningful Finance experience
+
+**Step:** Step 27 of 28 on full multi-role Yes-branch (live 2026-11-09) · **always live-fetch — never parallel**  
 **Type:** form  
 **Scroll:** none
 
 **Write-in:**  
-Tell us about the most meaningful Finance-related course or experience you had in your education. Which one was your favorite and why? … We really appreciate detailed responses here!
+Tell us about the most meaningful Finance-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!
 
 *(empty text box)*
 
@@ -478,9 +848,9 @@ Tell us about the most meaningful Finance-related course or experience you had i
 
 - `assets/finance-expert/fe_s14.png`
 
-## Step 15 · Optional comments
+## Step 16 · Optional comments
 
-**Step:** Step 15 of 15  
+**Step:** last step before Submit (Step 28 of 28 on full multi-role Yes-branch)  
 **Type:** form  
 **Scroll:** none
 
