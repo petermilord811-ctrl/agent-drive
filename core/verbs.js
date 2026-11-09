@@ -90,6 +90,9 @@ const V = {
   confirm:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'confirm needs text: what you are about to do, said to everyone', what: 'ask before something hard to undo; a no always wins' },
   captcha:     { f: ['text'], what: 'a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one' },
   done:        { f: ['text', 'file', 'w', 'h'], what: 'sign off (with a picture) and hand the grant back' },
+  // ---- relay text services (HTTP to the relay; gated by SM_JOIN_KEY; no provider key in the agent .env) ----
+  humanize:    { f: ['text', 'mode', 'style', 'ultra'], need: (c) => nonEmpty(c.text) ? '' : 'humanize needs text', what: 'rewrite text via the relay\'s Humanize (SM_HUMANIZE_KEY stays on the relay; never put a HumanizeAI key in the agent .env)' },
+  aicheck:     { f: ['text'], need: (c) => nonEmpty(c.text) ? '' : 'aicheck needs text', what: 'score how much of a text reads as AI via the relay\'s detector (SM_GPTZERO_KEY stays on the relay)' },
   // ---- ScreenMirror's own features ----
   'note-list': { f: [], what: 'the host\'s sticky notes' },
   'note-add':  { f: ['text', 'x', 'y'], need: (c) => nonEmpty(c.text) ? '' : 'note-add needs text', what: 'leave a sticky note' },
@@ -126,6 +129,8 @@ const VERB_ALIAS = { sleep: 'pause', delay: 'pause', type: 'keys', write: 'keys'
                      run: 'exec', shell: 'exec', view: 'look', recaptcha: 'captcha', hcaptcha: 'captcha', 'ask-access': 'access', 'request-access': 'access', term: 'terminal', console: 'terminal', 'list-windows': 'windows', activate: 'focus', 'bring-to-front': 'focus', start: 'launch', 'open-app': 'launch', ui: 'controls', accessibility: 'controls' };
 const FIELD_ALIAS = {
   keys:      { keys: 'text', value: 'text', string: 'text', chars: 'text', input: 'text', person: 'human', natural: 'human', pace: 'speed' },
+  humanize:  { value: 'text', string: 'text', body: 'text', strength: 'mode' },
+  aicheck:   { value: 'text', string: 'text', body: 'text', detect: 'text' },
   chat:      { message: 'text', msg: 'text', body: 'text' },
   confirm:   { message: 'text', msg: 'text', question: 'text' },
   'note-add': { message: 'text' },

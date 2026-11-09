@@ -112,6 +112,8 @@ it explain each verb.
 | `confirm` | `text` | ask before something hard to undo; a no always wins | `message`→`text`, `msg`→`text`, `question`→`text` |
 | `captcha` | `text` | a CAPTCHA is for a person: ask the operator in chat to solve it, and wait for their reply -- never solve one | `recaptcha`, `hcaptcha` |
 | `done` | `text` `file` `w` `h` | sign off (with a picture) and hand the grant back |  |
+| `humanize` | `text` `mode` `style` `ultra` | rewrite text via the relay's Humanize (SM_HUMANIZE_KEY stays on the relay; never put a HumanizeAI key in the agent .env) | `value`→`text`, `string`→`text`, `body`→`text`, `strength`→`mode` |
+| `aicheck` | `text` | score how much of a text reads as AI via the relay's detector (SM_GPTZERO_KEY stays on the relay) | `value`→`text`, `string`→`text`, `body`→`text`, `detect`→`text` |
 | `note-list` | — | the host's sticky notes |  |
 | `note-add` | `text` `x` `y` | leave a sticky note | `message`→`text` |
 | `note-done` | `id` `undo` | cross a note off |  |

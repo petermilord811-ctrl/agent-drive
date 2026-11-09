@@ -70,6 +70,8 @@
 //                                     (core/consent.js); --auto-confirm: only a window NOBODY answered is a yes
 //            captcha {text,timeout}   a CAPTCHA is for a person: ask the operator in chat to solve it, and wait
 //            done {text,file}         sign off (with a picture) and hand the grant back
+//   TEXT     humanize {text,mode,style,ultra}  rewrite via the relay's Humanize (SM_JOIN_KEY gate; no provider key here)
+//            aicheck {text}           AI score via the relay's detector (same gate)
 //   NOTES    note-list                the host's sticky notes -> {notes:[{id,text,name,resolved,...}]}
 //            note-add {text,x,y}       leave a sticky note (x,y are 0..1; default top-left)
 //            note-done {id,undo}       cross a task off by resolving its note (undo:true un-resolves)
@@ -260,6 +262,41 @@ if (!RELAY) die(1, 'no --relay. Give the relay\'s WebSocket address, e.g. wss://
 if (!/^[0-9]{5}$/.test(HOST)) die(1, 'no --host, or not a five-digit machine number (got "' + HOST + '")');
 if (!KEY) die(1, 'no SM_JOIN_KEY in the environment. The relay must be given the same secret, or it answers "off".');
 if ((OPEN_URL || CLICK || SCROLL || FILL) && !WANT_CONTROL) die(1, '--open, --click, --scroll and --fill need --control, which is what the person is asked to allow.');
+// HTTP origin of the same relay (wss→https, ws→http) for agent-only text APIs: /api/humanize, /api/detect.
+// Gated by SM_JOIN_KEY (header x-sm-join-key). Provider keys stay on the relay — never in this .env.
+function relayHttpOrigin() {
+  const u = new URL(RELAY);
+  u.protocol = (u.protocol === 'wss:' || u.protocol === 'https:') ? 'https:' : 'http:';
+  return u.protocol + '//' + u.host;
+}
+function agentTextApi(pathname, method, body) {
+  return new Promise((resolve) => {
+    let u;
+    try { u = new URL(pathname, relayHttpOrigin()); }
+    catch (e) { resolve({ ok: false, why: 'bad relay URL: ' + ((e && e.message) || e) }); return; }
+    const lib = u.protocol === 'https:' ? require('https') : require('http');
+    const payload = body != null ? Buffer.from(JSON.stringify(body), 'utf8') : null;
+    const headers = { 'x-sm-join-key': KEY, accept: 'application/json' };
+    if (payload) { headers['content-type'] = 'application/json'; headers['content-length'] = payload.length; }
+    const req = lib.request({
+      method: method || 'GET', hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search, headers, timeout: 90000,
+    }, (res) => {
+      let buf = '';
+      res.setEncoding('utf8');
+      res.on('data', (d) => { if (buf.length < 2000000) buf += d; });
+      res.on('end', () => {
+        let j = null;
+        try { j = JSON.parse(buf); } catch (_) {}
+        if (!j || typeof j !== 'object') resolve({ ok: false, why: 'relay returned unreadable JSON', status: res.statusCode });
+        else resolve(Object.assign({ status: res.statusCode }, j.ok === undefined && res.statusCode >= 400 ? { ok: false } : {}, j));
+      });
+    });
+    req.on('error', (e) => resolve({ ok: false, why: String((e && e.message) || e) }));
+    req.on('timeout', () => { try { req.destroy(); } catch (_) {} resolve({ ok: false, why: 'the relay timed out' }); });
+    if (payload) req.end(payload); else req.end();
+  });
+}
 // --serve without --control is a WATCH-ONLY visit: looking, reading and talking work, and an acting verb is refused
 // with needs:'control' -- {"do":"access","control":1} asks the operator for the keyboard and mouse on a new card.
 const NEEDS_CONTROL = new Set(['click', 'clicks', 'dbl', 'right', 'clickText', 'keys', 'press', 'chord', 'open', 'scroll', 'stroke', 'strokes', 'lock']);
@@ -2916,6 +2953,21 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             reply({ ok: true, from: String(last.from || ''), name: String(last.name || ''), text: String(last.text || ''), ts: Number(last.ts) || 0, dm: !!last.dm,
                     lines: lines.length > 1 ? lines.slice(-10).map((m) => ({ name: m.name, text: m.text, dm: m.dm || undefined })) : undefined });
           }
+        } else if (cmd.do === 'humanize') {            // rewrite via the relay's Humanize (agent HTTP API; join-key gate)
+          const r = await agentTextApi('/api/humanize', 'POST', {
+            text: String(cmd.text),
+            mode: cmd.mode != null ? String(cmd.mode) : undefined,
+            style: cmd.style != null ? String(cmd.style) : undefined,
+            ultra: !!cmd.ultra,
+          });
+          if (r && r.ok && r.text != null) reply({ ok: true, text: String(r.text), was: r.was, now: r.now, ms: r.ms });
+          else reply({ ok: false, why: (r && (r.detail || r.message || r.error || r.why)) || 'humanize failed', error: r && r.error, status: r && r.status });
+        } else if (cmd.do === 'aicheck') {             // AI score via the relay's detector (agent HTTP API; join-key gate)
+          const r = await agentTextApi('/api/detect', 'POST', { text: String(cmd.text) });
+          if (r && r.ok && typeof r.ai === 'number') {
+            const out = { ok: true, ai: r.ai, words: r.words, label: r.label, verdict: r.verdict, conf: r.conf, cls: r.cls, flags: r.flags, usage: r.usage };
+            reply(out);
+          } else reply({ ok: false, why: (r && (r.detail || r.message || r.error || r.why)) || 'aicheck failed', error: r && r.error, status: r && r.status });
         } else if (cmd.do === 'captcha') {             // a CAPTCHA is for a PERSON: say so in chat, and wait for them
           // The agent never solves, bypasses or clicks through a CAPTCHA ("I'm not a robot", a picture puzzle): it is a
           // check that a person is there, and an agent passing it would be passing for one. 10002's plan had a step

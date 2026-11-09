@@ -158,6 +158,8 @@ function actPhrase(cmd) {
     case 'expect': return 'Checking the screen';
     case 'wait': return 'Waiting for the screen';
     case 'ping': return 'Checking the connection';
+    case 'humanize': return 'Rewriting text (Humanize)';
+    case 'aicheck': return 'Checking text for AI';
     case 'chat': return c.to ? 'Sending a direct message' : 'Posting to the session chat';
     case 'chat-img': return c.to ? 'Sending an image privately' : 'Posting an image to the chat';
     case 'chat-wait': return 'Waiting for a reply';
@@ -204,6 +206,8 @@ function pastPhrase(cmd) {
     case 'expect': return 'Checked the screen';
     case 'wait': return 'Waited for the screen';
     case 'ping': return 'Checked the connection';
+    case 'humanize': return 'Rewrote text (Humanize)';
+    case 'aicheck': return 'Checked text for AI';
     case 'chat': return c.to ? 'Sent a direct message' : 'Posted to the session chat';
     case 'chat-img': return c.to ? 'Sent an image privately' : 'Posted an image to the chat';
     case 'chat-wait': return 'Waited for a reply';
