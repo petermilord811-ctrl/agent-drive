@@ -1,67 +1,66 @@
-# Obstetrician — Medical Assessment assessment
+# Obstetrician — Gynecology Projects assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
+- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
+- **Track:** **Gynecology Projects assessment** — **shared with Gynecologist** (same track line). Cue: **1 hour 30 minutes or more**. Rate: Up to $125+/hr. Popularity: **9 hired recently**.
+- **Rule:** never Submit while fetching
+
+### Role
+
 - **Role:** Obstetrician
 - **Category:** Medical
 - **Slug:** `obstetrician`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. _(Steps pending — Start not clicked)_
+
+---
 
 ## Bio
 
 **Role:** Obstetrician  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 9 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+We're looking for an experienced Obstetrician to help train AI models — measure how well models answer clinical questions in OB/GYN. New area for the company (women's health). Open to board-certified OB/GYNs and nurses, NPs, and PAs licensed in the field.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Review AI responses to clinical questions.
+- Rate accuracy, completeness, safety, and usefulness.
+- Compare two independent responses; log discrepancies.
+- Write detailed rationales.
+- Pinpoint incomplete differentials to missed red flags.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Board-certified OB/GYN with ≥3 years post-residency, or nurse/NP/PA licensed in the field.
+- Hands-on clinical experience.
+- Fluency in English (native or bilingual).
 
-### Common backgrounds
+### Sidebar
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible · Independent contractor · Weekly
+- CTA: Continue
 
-## Requirements
+**Assets:** `assets/obstetrician/bio.png`
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+---
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
-## Instructions
+- **Title:** Obstetrician
+- **Subtitle / track:** **Gynecology Projects assessment** (shared w/ Gynecologist)
+- **Pay line:** Up to $125+ per hour · remote, no minimum
+- **What it takes:** **1 hour 30 minutes or more**; reasoning; several days; No LLMs; one attempt
+- **CTA:** Start — **not clicked**
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Obstetrician | assessmentId: medical | category: Medical -->
-
+**Assets:** `assets/obstetrician/track-intro.png`

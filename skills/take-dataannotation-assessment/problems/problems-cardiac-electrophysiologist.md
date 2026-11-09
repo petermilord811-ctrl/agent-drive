@@ -1,67 +1,29 @@
-# Cardiac Electrophysiologist — Medical Assessment assessment
+# Cardiac Electrophysiologist — Cardiology Projects assessment
 
-- **Captured:** PENDING-CAPTURE
-- **Role:** Cardiac Electrophysiologist
-- **Category:** Medical
-- **Slug:** `cardiac-electrophysiologist`
-- **Source:** DataAnnotation assessment UI
+### Bank
 
-## Bio
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123
+- **Gaps:** Steps not started — Start not clicked.
+- **Track:** **Cardiology Projects assessment** — **shared with Cardiologist + Interventional Cardiologist**. Cue: **1h30+**. $125+/hr. **6 hired recently**.
+- **Rule:** never Submit while fetching
 
-**Role:** Cardiac Electrophysiologist  
-**Category:** Medical  
-**Hiring cue:** _pending_
+### Role
 
-### Overview
+- **Role:** Cardiac Electrophysiologist · Medical · `cardiac-electrophysiologist`
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+### Bio
 
-### What you’ll actually do
+**Hiring cue:** Medical • 6 hired recently
 
-- _pending_
-- …
-- _pending_
+Overview: Train AI on cardiology / cardiovascular clinical questions; open to cardiologists and clinicians who practice alongside them. Look for: board-certified cardiologist 3+ years post-fellowship OR nurse/NP/PA/other licensed clinician with clinical cardiology experience; hands-on experience; English fluency; clear writing.
 
-### What we look for
+**Assets:** `assets/cardiac-electrophysiologist/bio.png`
 
-- _pending_
-- …
-- _pending_
+### Bio (assessment intro)
 
-### Common backgrounds
+- **Track:** **Cardiology Projects assessment**
+- **Cue:** 1 hour 30 minutes or more
+- **Start:** not clicked
 
-- _pending_
-- …
-
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
-## Instructions
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Cardiac Electrophysiologist | assessmentId: medical | category: Medical -->
-
+**Assets:** `assets/cardiac-electrophysiologist/track-intro.png`

@@ -1,67 +1,67 @@
-# Paralegal — Legal Assessment assessment
+# Paralegal — Legal Assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `legal-expert`
+- **Gaps:** Role Bio from Legal filter card + shared Law Starter (Attorney Start confirmed same `task_response_id`). Re-open for full Bio screenshots if needed.
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Law Projects / Law Starter Assessment V4.1
+
+### Role
+
 - **Role:** Paralegal
 - **Category:** Legal
 - **Slug:** `paralegal`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Legal filter · 22 hired recently)
+
+### Contents
+
+1. [Bio](#bio)
+2. [Assessment steps](#assessment-steps-shared-law-starter) → see [`problems-legal-expert.md`](./problems-legal-expert.md)
+
+---
 
 ## Bio
 
 **Role:** Paralegal  
 **Category:** Legal  
-**Hiring cue:** _pending_
+**Hiring cue:** Legal • 22 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+A model will draft a checklist that looks airtight and still miss that the case was already decided — or invent a filing deadline. As a Paralegal you'll catch those misses before they reach a lawyer's desk.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Draft prompts for procedural checklists, filings, and case support work.
+- Review AI output for missed deadlines, wrong courts, and invented procedure.
+- Write corrections when the model falls short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Hands-on paralegal / legal assistant experience.
+- Clear written English.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Paralegal
+- Legal Assistant
+- Law Clerk
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+---
 
-## Instructions
+## Assessment steps (shared Law Starter)
 
-_pending_
+→ [`problems-legal-expert.md`](./problems-legal-expert.md)
 
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Paralegal | assessmentId: legal | category: Legal -->
-
+<!-- role: Paralegal | assessmentId: legal | category: Legal | assessmentVersion: Law Starter V4.1 | sharedAssessment: legal/legal-expert -->

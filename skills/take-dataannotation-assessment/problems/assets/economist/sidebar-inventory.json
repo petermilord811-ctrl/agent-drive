@@ -1,0 +1,30 @@
+{
+  "slug": "economist",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Economist Starter Assessment V4.1",
+  "track": "Economist Projects assessment",
+  "task_response_id": "01a1bb26-4858-7002-ab46-f0b7916d8685",
+  "project_id": "0d87aa7c-af0a-4cb9-b907-2bf57fe9e3e5",
+  "ui": "left-sidebar",
+  "total": 16,
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Section 1: Assessment Questions" },
+    { "step": 3, "label": "Question 2" },
+    { "step": 4, "label": "Question 3" },
+    { "step": 5, "label": "Question 4" },
+    { "step": 6, "label": "Question 5" },
+    { "step": 7, "label": "Question 6" },
+    { "step": 8, "label": "Question 7" },
+    { "step": 9, "label": "Section 2: Conversation: Challenging an AI Model" },
+    { "step": 10, "label": "Attached Files" },
+    { "step": 11, "label": "Did you get the model to produce..." },
+    { "step": 12, "label": "Share Your Conversation" },
+    { "step": 13, "label": "Section 3: Your Background" },
+    { "step": 14, "label": "Economics Degrees" },
+    { "step": 15, "label": "Tell us about the most meaningful..." },
+    { "step": 16, "label": "(Optional) Any other comments?" }
+  ],
+  "note": "16 leaves like Law Starter (extra Economics Degrees). Section 2 = Economics Domain Haiku 5.5. Verify Economist Projects before Start. Never Submit."
+}

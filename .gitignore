@@ -26,3 +26,8 @@ SESSION-LOG.md
 Thumbs.db
 *.swp
 node_modules/
+
+__pycache__/
+*.pyc
+.cursor/mcp.json.bak*
+

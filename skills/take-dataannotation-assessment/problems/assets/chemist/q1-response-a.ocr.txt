@@ -1,0 +1,10 @@
+I'll break down this reaction into steps:
+High temperature favors elimination over substitution, and a double bond facilitates a second
+elimination, so this is a sequential two-step double elimination reaction.
+The mechanism proceeds through a carbocation intermediate after methoxide abstracts the
+bromine, followed by deprotonation. This gives C6H10Br- first:
+C6H11Br + NaOMe → C6H10Br- + H+ + NaOMe
+A halide elimination occurs after the proton abstraction to produce C6H10:
+C6H10Br- + H+ + NaOMe → C6H10 + HBr + NaOMe
+Thus, HBr is eliminated to yield hexa-2,4-diene as the hydrocarbon product. The final product
+is hexa-2,4-diene.

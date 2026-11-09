@@ -145,6 +145,13 @@ const FIELDS = {
 const BY_VERB = {
   clicks: { at: POINTS },
   keys: { text: S('the characters to type') },
+  humanize: {
+    text: S('prose to rewrite (omit for GET ready)'),
+    mode: S('quality | balanced | bypass (default balanced)'),
+    style: S('standard | academic | simple | flowing | informal | formal | expand | shorten'),
+    ultra: B('optional harder rewrite'),
+  },
+  aicheck: { text: S('paragraph to score (omit for GET ready)') },
   clickText: { text: S('the word to find and click') },
   find: { text: S('the word to find') },
   plan: { steps: { type: 'array', items: { type: 'object' }, description: 'commands {"do":"<verb>",...}, run in order and stopped at the first that fails; also {if:<predicate>, then:[...], else:[...]} and {repeat:N, until:<predicate>, steps:[...], poll:ms}' } },
@@ -216,6 +223,9 @@ const EXTRA = {
   exec: 'Needs a grant that may run commands: connect {shell:true}, or access {shell:true}.',
   done: 'Ends the visit, like disconnect.',
   quit: 'Ends the visit, like disconnect.',
+  humanize: 'Relay HTTP /api/humanize with x-sm-join-key (SM_JOIN_KEY). No Bearer / HUMANIZE_API_KEY. Omit text for ready.',
+  aicheck: 'Relay HTTP /api/detect with x-sm-join-key. Omit text for ready.',
+  aiusage: 'Relay HTTP GET /api/aiusage balance only.',
 };
 const sentence = (s) => { s = String(s || '').trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) + (/[.!?]$/.test(s) ? '' : '.') : ''; };
 function verbTool(verb, name) {
@@ -314,7 +324,9 @@ const INSTRUCTIONS = [
   '4. Read every answer: ok and why; fixed (a name was corrected: use the real one next time); refused (nothing was sent); inbox (new: what the operator wrote since your last answer -- answer in chat); room (what the people watching did on the board: a pause, a stop, an answer, an undo -- act on it first); paused / hold / approval (wait in chat_wait, then send again); pending (still running on the machine: ping {host} collects its answer); remind and hint (do those first).',
   '5. Any command may carry intent (its name on the watchers\' panel), why (your reason, shown on the panel as your thinking: give one where a watcher could not guess it -- a choice, a retry, a workaround), quiet, expect (a predicate that must hold after it), show/secret (what the panel may show of typed text; never show a password), timeout (ms).',
   '6. Plan a job of more than a step or two with mission; ask with confirm before anything hard to undo; never solve a CAPTCHA (captcha asks the operator); finish each task with a picture (status {fin:1, say, file}), then chat_wait for their reply -- it listens about ' + LISTEN_S + ' s a call, so call it again while you wait.',
-  '7. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
+  '7. LISTEN LOOP (HARD): while the visit is live, never end your turn without chat_wait. If chat_wait returns timedOut / listening / pending / busy:chat-wait, call chat_wait again immediately in the SAME turn — loop. Cursor does not auto-wake on ScreenMirror inbox; ending the turn makes you deaf. Only stop listening after done/bye or disconnect.',
+  '8. When inbox.n > 0 or remind says the operator wrote: seen + typing + chat in session chat BEFORE any screen act. Editor transcript alone is not a reply.',
+  '9. disconnect {host} only once they are finished. The full rules: ' + path.join(KIT, 'AGENTS.md'),
 ].join('\n');
 
 // ---- how long a command may take -------------------------------------------------------------------------
@@ -794,8 +806,15 @@ async function answerOf(v, cmd, a) {
     forget(v);
     more.push(textBlock({ ended: true, exit: v.exited ? v.exited.code : null, dir: v.dir }));
   }
+  // chat-wait timedOut is not a failure to surface-and-stop — it is "keep listening". Mark soft so the
+  // model is less likely to abort the turn; next/remind on the payload already say to re-call.
+  const listenAgain = a && a.timedOut && cmd.do === 'chat-wait';
+  if (listenAgain) {
+    if (!a.listening) a.listening = true;
+    if (!a.remind) a.remind = 'VISIT STILL LIVE — call chat_wait again NOW. Do NOT end your turn.';
+  }
   const res = { content: [textBlock(a)].concat(more) };
-  if (!a || a.ok === false) res.isError = true;
+  if ((!a || a.ok === false) && !listenAgain) res.isError = true;
   return res;
 }
 

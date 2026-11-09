@@ -1,0 +1,14 @@
+---
+description: Part B DataAnnotation real take — ScreenMirror timer MUST after Start assessment; record every leaf
+globs: agent-drive/skills/take-dataannotation-assessment/**,**/10-*/**,**/answer.playbook.json,**/answer.timer.json
+alwaysApply: false
+---
+
+# DA Part B — ScreenMirror timer (HARD MUST)
+
+Full contract: `skills/take-dataannotation-assessment/TIMER.md`
+
+1. **Immediately after Start assessment** (before any field fill): arm `status` tree from `playbook.timer.treeTemplate` (optional `mission plan`). Write `{profile}/answer.timer.json` event `start_assessment`.
+2. **Every assessment leaf** before fill: `status { step: "Step k · {leaf}" }` so the panel stopwatch records that step; after fill flip tree `done` + append `step_done`.
+3. Chat-only “started fill” or only the DA “Expires in” badge does **not** satisfy this.
+4. Missing timer = workflow fail — same severity as Submit without approval.

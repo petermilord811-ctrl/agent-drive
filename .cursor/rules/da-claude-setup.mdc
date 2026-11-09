@@ -1,0 +1,20 @@
+---
+description: Claude.ai for DA assessments — same email/name as DataAnnotation; never Continue with Google on a leftover session
+globs: agent-drive/skills/take-dataannotation-assessment/**,**/10-*/**,**/answer.md
+alwaysApply: false
+---
+
+# DA Claude setup (HARD)
+
+Full contract: `skills/take-dataannotation-assessment/CLAUDE-SETUP.md`  
+Live sequencing: `WORKFLOW-LIVE.md` phases 3–4
+
+1. Claude identity **must** match this profile’s DataAnnotation **email + name**. Password = DA password or ask operator.
+2. **Forbidden:** “Continue with Google” / “Continue as \<other\>” on a random logged-in browser Google (99588 miss: Continue as geroge).
+3. Wrong leftover Claude session → navigate **`https://claude.ai/logout`**, then email-path with DA identity (do not finish onboarding under the wrong Google).
+4. Prefer email signup/login with the DA email. Dismiss Chrome autofill of leftover addresses (e.g. geroge). If Claude says account exists → ask operator to log in themselves, then `chat_wait` for **ready**. If Claude sends a verify magic-link → `open {url}` (not omnibox keys / not code unless told).
+5. Prove **Email verified as \<DA email\>** → terms → Create → free → Skip/Continue → DA name. Magic-link create often skips password.
+6. “Before your first chat” / name / role / Skip desktop are **normal** after a correct signup — go through them.
+7. Only after on-screen identity matches (welcome/sidebar DA name) → Haiku / Effort Low chat → share URL typed with `keys` on DA (no Ctrl+V on DA).
+8. **Claude composer:** Enter = Send; newlines = `chord {mod:\"ShiftLeft\", code:\"Enter\"}` (NOT `code:\"Shift+Enter\"`). Ctrl+V OK on Claude — prefer Kate/Notepad copy while editor stays open. Never bare `\n` via `keys` into Claude. After intro sentence, **two** Shift+Enter (blank line) before `Setup`.
+9. Round 2 only if Round 1 did not meaningfully fail; then Share → Anyone with the link → type URL into DA with `keys` only.

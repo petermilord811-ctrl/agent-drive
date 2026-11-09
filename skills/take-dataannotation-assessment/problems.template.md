@@ -1,15 +1,29 @@
-# {Role} — {Assessment type} assessment
+# {Role} — {Assessment type} Assessment
 
-- **Captured:** YYYY-MM-DD
-- **captureStatus:** stub | bio-only | full
+### Bank
+
+- **captureStatus:** stub | bio-only | nearly-full | full
+- **Captured:** YYYY-MM-DD · host {id}
+- **Leaves:** {N} · `assets/{slug}/sidebar-inventory.json`
+- **Gaps:** …                 <!-- or omit -->
+- **Rule:** never Submit while fetching
+
+### Role
+
 - **Role:** {Role}
 - **Category:** {Category}
 - **Slug:** `{slug}`
 - **Source:** DataAnnotation UI (verbatim — do not summarize)
 
-## Bio
+### Contents
 
-<!-- PAGE 1: role overview — exact text from the page -->
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Step 1 · …](#step-1--)
+3. …
+
+---
+
+## Bio
 
 **Role:** {Role}  
 **Category:** {Category}  
@@ -19,7 +33,7 @@
 
 {Exact Overview paragraphs.}
 
-### What you’ll actually do
+### What you'll actually do
 
 {Exact bullets.}
 
@@ -35,9 +49,11 @@
 
 {Exact pay / location / commitment / type / payouts lines.}
 
-## Bio (assessment intro)
+### Assets
 
-<!-- PAGE 2: after Continue, before Start assessment — exact text; OMIT only the No-LLMs bullet -->
+- `assets/{slug}/bio1.png`
+
+## Bio (assessment intro)
 
 **Title:** {exact}  
 **Track line:** {e.g. Programming Projects assessment}
@@ -50,69 +66,88 @@
 
 {Exact bullets except any No-LLMs / anti-AI line.}
 
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
+
 ### What happens next
 
 {Exact bullets.}
 
-## Instructions
+### Assets
 
-<!-- First step(s) inside the assessment after Start — verbatim welcome / section intros -->
+- `assets/{slug}/bio2.png`
 
-{Exact text.}
+---
 
-## Questions
+## Step 1 · Instructions
 
-<!-- Loop every sidebar step. Scroll content pane fully. For answer-dependent UI, one Case subsection per option. Never Submit while capturing. -->
+**Step:** Step 1 of {N}  
+**Type:** info  
+**Scroll:** none | long list
 
-## Question 1: {exact title}
+{Exact welcome / section intros.}
 
-**Section:** {e.g. SECTION 1 OF 4 | Part 1: …}  
-**Step:** {e.g. Step 2 of 11}
-
-{Exact stem / user request / scenario.}
-
-### Solutions / responses (as shown)
-
-#### Solution A
-
-{Exact code or text — scroll until complete.}
-
-#### Solution B
-
-{…}
-
-#### Solution C
-
-{…}
-
-### Choices
-
-{Exact radio/checkbox labels.}
-
-### Case: {choice label selected}
-
-<!-- Only when selecting this option changes visible content -->
-
-{Exact follow-up UI text / new fields.}
+<!-- Omitted: No-LLMs / integrity block (bank rule). -->
 
 ### Assets
 
-- optional: `assets/{slug}/q1-full.png`
+- `assets/{slug}/instructions.png` — top
 
-## Question 2: …
+## Step 2 · {Short title}
+
+**Step:** Step 2 of {N}  
+**Section:** {e.g. SECTION 1 OF 4 | Part 1: …}  
+**Type:** mcq | mcq+write-in | compare | drag | coding | form | info  
+**Scroll:** none | below-fold write-in | long list
+
+{Exact stem.}
+
+**Prompt:**
+
+> {exact user / chatbot request}
+
+### Solution A
+
+```text
+…
+```
+
+### Solution B
 
 …
 
-## Tell us about yourself
+**Choice question:**  
+{exact radio stem}
 
-### Professional Experience
+**Choices:**
 
-{Exact prompts and options.}
+- [ ] …
+- [ ] …
 
-### Programming Languages
+**Write-in:**  
+{Exact explanation prompt.}
 
-{…}
+*(empty text box)*
 
-### (Optional) Any other comments?
+### Notes
 
-{…}
+{Capture / case notes only.}
+
+### Assets
+
+- `assets/{slug}/q1.png` — top
+
+## Step 3 · …
+
+…
+
+---
+
+## Step {k} · Tell us about yourself — …
+
+**Step:** Step {k} of {N}  
+**Type:** form  
+**Scroll:** none | long list
+
+…
+
+<!-- role: {Role} | assessmentId: {slug} | category: {Category} -->

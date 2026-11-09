@@ -1,67 +1,109 @@
-# Financial Reporting Manager — Accounting Assessment assessment
+# Financial Reporting Manager — Accounting Assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 2 · `assets/financial-reporting-manager/sidebar-inventory.json`
+- **Gaps:** Role-specific Bio only unique; **assessment steps = Accounting Starter V4.1 shared with `corporate-accountant`** (same `task_response_id` after Start).
+- **Re-fetch 2026-11-08:** Track **Accounting Projects** ✅; confirmed shared `task_response_id=01a1baf5-…` / `project_id=238f6896-…` with Corporate (Experience already banked there).
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Accounting Projects / Accounting Starter Assessment V4.1
+
+### Role
+
 - **Role:** Financial Reporting Manager
 - **Category:** Accounting
 - **Slug:** `financial-reporting-manager`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (search sole card; verified **Accounting Projects assessment**)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-accounting-starter) → see [`problems-corporate-accountant.md`](./problems-corporate-accountant.md)
+
+---
 
 ## Bio
 
 **Role:** Financial Reporting Manager  
 **Category:** Accounting  
-**Hiring cue:** _pending_
+**Hiring cue:** Accounting • 21 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Hand a model a revenue arrangement and it writes a confident memo, then misapplies the standard. Evaluate AI on technical accounting and SEC reporting (ASC 606, ASC 842, and related) — write what a careful preparer would file.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Draft prompts for technical accounting memos and SEC disclosure.
+- Review AI for misapplied standards and missing citations.
+- Write correct memos reviewers expect.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Hands-on experience with US GAAP / SEC reporting.
+- Comfort applying ASC standards to messy fact patterns.
+- Clear written English.
+- No degree required. We care about what you can do, not where you learned it.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- SEC Reporting Manager
+- Technical Accounting Manager
+- (Similar roles on role page)
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
 
-## Instructions
+- `assets/financial-reporting-manager/frm_bio0.png`
+- `assets/financial-reporting-manager/frm_bio1.png`
 
-_pending_
+## Bio (assessment intro)
 
-## Professional experience
+**Title:** Financial Reporting Manager  
+**Track line:** Accounting Projects assessment
 
-_pending or omit_
+### Pay / hours strip
 
-## Questions
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-## Question 1
+### What it takes
 
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+- People who pass usually spend **1 hour or more**. Take the time you need.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
 
-## Question 1a
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
 
-_pending_
+### What happens next
 
-## Question 2
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
 
-_…_
+### Assets
 
-<!-- role: Financial Reporting Manager | assessmentId: accounting | category: Accounting -->
+- `assets/financial-reporting-manager/frm_bio1.png`
 
+---
+
+## Assessment steps (shared Accounting Starter)
+
+After **Start assessment**, same Accounting Starter task as Corporate Accountant (`task_response_id=01a1baf5-…`, Step 1 of 2).
+
+→ [`problems-corporate-accountant.md`](./problems-corporate-accountant.md)
+
+### Assets
+
+- `assets/financial-reporting-manager/sidebar-inventory.json`
+
+<!-- role: Financial Reporting Manager | assessmentId: accounting | category: Accounting | assessmentVersion: Accounting Starter V4.1 | sharedAssessment: accounting/corporate-accountant -->

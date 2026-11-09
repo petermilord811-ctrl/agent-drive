@@ -1,0 +1,16 @@
+C020. 1890.8
+C021. o. 500. 30
+C022, 5, -200, 40
+C023. 8, 1349.5.45
+C024. 11. 1540.5. so
+C02S, 12, 1540.5, 42
+C026. 9, 114325.38
+C027. 7.5. 890. 20
+e task then cisplays three possible responses to the prompt.
+Response A
+Analysis Results
+Based on the dataset provided and the requirements. here are the key findings after
+petforrntng data cleantng and eligibdity filtering:
+Number of eligible customers (N_eligible): 22
+After removing duplicates, invalid values (negatö;e revenue, zero orders, and inconsistent
+order counts), and applying activity criteria (minirnum orders 3 and days since last

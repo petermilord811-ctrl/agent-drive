@@ -1,0 +1,3 @@
+Did you get the model to produce at least one response with a meaningful failure?
+The man reasons this "Conversation: Challengng an Al Moder exerctse is part of your assessment:
+o We want you to dsplayyour expertise within the Data Sctence domatn. Have you studied or *Oiked in a subdomain of Data Science that many wouldnt undetstand without sigruficant research ot learning? These are areas that the models will tend to also make nystakes.

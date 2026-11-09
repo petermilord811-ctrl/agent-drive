@@ -133,6 +133,9 @@ it explain each verb.
 | `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
 | `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
 | `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
+| `humanize` | `text` `mode` `style` `ultra` | rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready | `strength`→`mode`, `body`→`text`, `content`→`text` |
+| `aicheck` | `text` | AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready | `detect`, `ai-check`, `ai_check`, `body`→`text`, `content`→`text`, `detect`→`text` |
+| `aiusage` | — | Humanize/detect usage balance via relay GET /api/aiusage (x-sm-join-key) | `ai-usage`, `ai_usage` |
 
 Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `fresh` `timeout` `why` `cid`.
 <!-- verbs:end -->
@@ -234,7 +237,7 @@ reaching for the text verbs on that host.
 |------|--------------|
 | `chat {text, to?}` | say it in this host's session chat — the room (all viewers), or `to:"<tag>"` for a DM |
 | `chat-img {file, text?, to?}` | post an **image** (a cropped screenshot) to the room. The driver prepares a small PNG/JPEG **file** (`vision/crop.py`); this inlines it as a `data:` URL, capped at ~45 KB — name the crop `.jpg` and crop.py shrinks it to fit, or it's rejected with the size. Posting one pays a result picture a finish still owes (see `status` `file`). |
-| `chat-wait {timeout?, since?}` | what the room said: every line a person wrote since your last answer comes back at once (`text` the newest, `lines` all of them) — a reply written while you were still deciding is not missed; with none, it waits for the next one. Not the agent's own echo, not system notices, and not a board button (that reaches you as `room`). Use it right after `chat` to ask a question and wait for the answer. `since` (ms) starts it elsewhere. |
+| `chat-wait {timeout?, since?}` | what the room said: every line a person wrote since your last answer comes back at once (`text` the newest, `lines` all of them) — a reply written while you were still deciding is not missed; with none, it waits for the next one. Not the agent's own echo, not system notices, and not a board button (that reaches you as `room`). Use it right after `chat` to ask a question and wait for the answer. `since` (ms) starts it elsewhere. On timeout the answer carries `listening:true` + `remind` — **re-call in the same turn** (Cursor MCP often aborts longer tools and does not auto-wake on session inbox). |
 | `seen {ids?}` | mark the operator's message(s) **read** — posts a receipt so their chat shows "seen". No `ids` = all unread. The incoming ids are logged in `chat.json`. |
 | `typing {on}` | show / hide **"Claude typing…"** while you compose a reply. It repeats on a beat until you send a message (`chat`/`chat-img`/`done` clear it) or `typing {on:false}`. |
 | `inbox` | the operator's recent messages. Every answer also carries `inbox`: `{n:0}`, or `{n, latest, new:[{name, text}]}` — the lines written since your last answer, every one, each handed over once |

@@ -1,67 +1,87 @@
-# Imaging Specialist — Medical Assessment assessment
+# Imaging Specialist — Radiologists Projects assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** bio
+- **Captured:** 2026-11-08 · host **34123**
+- **Assessment:** Radiology Starter Assessment V4.1 / **Radiologists Projects** assessment
+- **IDs:** shared with Radiologist — `task_response_id=01a1bcf2-15db-768c-9291-de599e667b2d` · `project_id=a99b0c81-4d05-4d08-b811-3f9ccebf3b91`
+- **Rule:** never Submit while fetching
+- **Targeting:** Medical filter → **Imaging Specialist** titled card → verify **Radiologists Projects assessment** before Start (**not** Medical Projects / Physician / Medical Starter `01a1b7f8`).
+- **Steps:** shared with `problems-radiologist.md` (Branch A 17 / Branch B 16). This file banks the role bio only.
+- **Gaps:** none for sibling bio; full leaves live on radiologist bank.
+
+### Role
+
 - **Role:** Imaging Specialist
 - **Category:** Medical
 - **Slug:** `imaging-specialist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Medical → Imaging Specialist; verified **Radiologists Projects**)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. Steps → see [problems-radiologist.md](problems-radiologist.md)
+
+---
 
 ## Bio
 
 **Role:** Imaging Specialist  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 8 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Help train AI models by measuring how well they interpret medical images (chest x-rays, ultrasounds, and more) — open to radiologists and imaging technologists.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Review de-identified studies alongside their clinical context.
+- Write comprehensive, structured reports including subtle and incidental findings.
+- Give clear impressions and recommended next steps / workup.
+- Compare independent interpretations and log each discrepancy.
+- Pinpoint what model-generated reports miss or leave incomplete.
+- Draw on radiography, ultrasound/sonography, nuclear medicine / molecular imaging, and cross-sectional imaging (CT / MRI).
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+_(same Radiology Domain bar as Radiologist — see sibling bank)_
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/imaging-specialist/img_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
-## Instructions
+**Title:** Imaging Specialist  
+**Track line:** **Radiologists Projects assessment** ← verified before Start
 
-_pending_
+### Pay / hours strip
 
-## Professional experience
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-_pending or omit_
+### What it takes
 
-## Questions
+- People who pass usually spend **1 hour 30 minutes or more**.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
 
-## Question 1
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
 
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+### What happens next
 
-## Question 1a
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
 
-_pending_
+### Assets
 
-## Question 2
+- `assets/imaging-specialist/img_bio1.png`
 
-_…_
-
-<!-- role: Imaging Specialist | assessmentId: medical | category: Medical -->
-
+<!-- role: Imaging Specialist | assessmentId: radiology | category: Medical | assessmentVersion: Radiology Starter V4.1 | sharedAssessment: radiology/radiologist -->

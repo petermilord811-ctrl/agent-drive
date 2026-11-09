@@ -1,0 +1,8 @@
+The reaction between 5-bromohex-2-ene and sodium methoxide in methanol proceeds
+through an E2 (second-order elimination) mechanism.
+In this case, sodium methoxide acts as the strong base, performing a concerted elimination
+where it abstracts a β-hydrogen while bromide departs as a leaving group.
+Thus,
+C6H11Br + NaOMe → C6H10 + NaBr + CH3OH
+The conjugated (E,E)-hexa-2,4-diene is the preferred product due to orbital overlap in the
+conjugated π system. Na+ and Br- are present as spectator ions in solution.

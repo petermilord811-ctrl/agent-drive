@@ -1,67 +1,43 @@
-# Clinical Documentation Specialist — Healthcare Operations Assessment assessment
+# Clinical Documentation Specialist — assessment bank (stub)
 
-- **Captured:** PENDING-CAPTURE
-- **Role:** Clinical Documentation Specialist
-- **Category:** Healthcare Ops
-- **Slug:** `clinical-documentation-specialist`
-- **Source:** DataAnnotation assessment UI
+> **Fetched:** 2026-11-09 · host 34123 · Browse → Healthcare Ops → Clinical Documentation Specialist
+> **Status:** stub (bio + track verified; assessment NOT started)
+> **Track:** **Healthcare Operations Projects assessment** (shared with all 6 Healthcare Ops leaves)
+> **Cue:** People who pass usually spend **30 minutes or more** · Up to $125+/hr · remote, no minimum
+> **Do not Start** without operator OK (Data Science Starter Assessment already in progress).
 
-## Bio
+## Role bio (Browse leaf)
 
-**Role:** Clinical Documentation Specialist  
-**Category:** Healthcare Ops  
-**Hiring cue:** _pending_
+**Title:** Clinical Documentation Specialist · tag **Healthcare Ops** · "18 hired recently" · Up to $125+/hour
 
-### Overview
+**Overview:** Models produce documentation that reads well and fails on integrity (e.g. MS-DRG impact, HIPAA/privacy). Evaluate AI and write the guidance a seasoned CDI professional would give.
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+**What you'll actually do**
+- Write prompts probing documentation integrity (clinical validity, query opportunities, MS-DRG impact).
+- Review AI output for errors (missed queries, HIPAA/privacy missteps).
+- Write correct answers grounded in real CDI and health information practice.
 
-### What you’ll actually do
+**What we look for**
+- Hands-on experience in clinical documentation integrity or health information management.
+- Familiarity with clinical validation, query practice, and HIPAA/privacy rules.
+- Clear written English.
+- No degree required.
 
-- _pending_
-- …
-- _pending_
+**Common backgrounds:** CDI Specialist · Health Information Manager · HIPAA Compliance Officer
 
-### What we look for
+Assets: `assets/clinical-documentation-specialist/bio.png`
 
-- _pending_
-- …
-- _pending_
+## Track gate (Continue → pre-Start)
 
-### Common backgrounds
+- Role line: Clinical Documentation Specialist
+- Assessment: **Healthcare Operations Projects assessment**
+- Pay/hours: Up to $125+ per hour · Your hours: remote, no minimum
+- What it takes: ~30+ min · reasoning graded · several days · no LLMs · one attempt
+- What happens next: email if accepted · most projects need additional qualifications
 
-- _pending_
-- …
+Assets: `assets/clinical-documentation-specialist/track-intro.png`
 
-## Requirements
+## Notes
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
-## Instructions
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Clinical Documentation Specialist | assessmentId: healthcare-ops | category: Healthcare Ops -->
-
+- **All 6 Healthcare Ops leaves** confirmed on **Healthcare Operations Projects assessment** (30m cue): Ops Manager, Compliance Specialist, Medical Coder, Revenue Cycle Specialist, Managed Care Analyst, Clinical Documentation Specialist.
+- Never Submit. Never click Expire without operator OK.

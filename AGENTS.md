@@ -117,6 +117,10 @@ file explains them.
   lives only in chat — and then say in chat why there is no picture.
 - **Never end your turn on a finished task** while the visit is live — `chat-wait`. A run that isn't
   listening is deaf, and the operator's next message is lost.
+- **Never treat `chat-wait` `timedOut` / `busy` / MCP `-32001` as “stop.”** Use `timeout:45000` and
+  re-call in the **same turn** until they reply or say done/bye (Cursor aborts long MCP tools; a single
+  10‑min wait dies mid-listen). Cursor does **not** auto-wake on ScreenMirror inbox; ending the turn
+  is what drops replies (live miss: operator messaged 3×, all in `chat.json`, agent silent).
 - **Never answer the operator only in your own terminal.** They are in the session chat.
 - **Never `done` right after answering**, or while they're mid-conversation — `done` hangs up.
 - **Never end a visit you did not open.** Several agents may share one MCP server (an editor's chats do), each on

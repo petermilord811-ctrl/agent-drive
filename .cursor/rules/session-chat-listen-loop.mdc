@@ -1,0 +1,14 @@
+---
+description: Keep listening on live ScreenMirror visits — never end the turn deaf to session chat
+alwaysApply: true
+---
+
+# Session chat listen loop (HARD)
+
+While an agent-drive / ScreenMirror visit is live:
+
+1. After any ask or finished work burst, call `chat_wait` with `timeout: 45000` (Cursor MCP often aborts longer tools with -32001).
+2. If the result has `timedOut`, `listening: true`, `busy: chat-wait`, or MCP request timed out, call `chat_wait` again immediately in the **same turn**. Do **not** end the turn.
+3. Cursor does **not** auto-wake when the operator writes in ScreenMirror session chat. Ending the turn = deaf. Delivery to `chat.json` / inbox is not a response.
+4. When `inbox.n > 0` or a `remind` says the operator wrote: `seen` → `typing` → `chat` in **session chat** before any screen act. The editor transcript alone does not count.
+5. Stop the listen loop only after they say done/bye (then `done`) or after `disconnect`.

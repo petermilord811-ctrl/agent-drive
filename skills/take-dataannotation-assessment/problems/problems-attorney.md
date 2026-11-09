@@ -1,67 +1,108 @@
-# Attorney — Legal Assessment assessment
+# Attorney — Legal Assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `legal-expert`
+- **Gaps:** Role-specific Bio only unique; **assessment steps = Law Starter V4.1 shared with `legal-expert`** (same `task_response_id=01a1bb09-…` after Start).
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Law Projects / Law Starter Assessment V4.1
+
+### Role
+
 - **Role:** Attorney
 - **Category:** Legal
 - **Slug:** `attorney`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Legal filter → dbl **Attorney**; verified **Law Projects assessment** before Start)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-law-starter) → see [`problems-legal-expert.md`](./problems-legal-expert.md)
+
+---
 
 ## Bio
 
 **Role:** Attorney  
 **Category:** Legal  
-**Hiring cue:** _pending_
+**Hiring cue:** Legal • 44 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models produce fluent legal analysis that is often subtly wrong — invented citations, misapplied precedent. Grade AI legal reasoning against the standard of a careful practitioner who knows the work has real consequences.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Draft prompts testing models on contracts, statutes, and case analysis.
+- Review AI output for errors and rate the reasoning.
+- Write correct analyses / memos when the model fails.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- JD or equivalent.
+- Strong legal research / writing.
+- Clear written English.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Attorney
+- Associate Attorney
+- Legal Counsel
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
 
-## Instructions
+- `assets/attorney/atty_detail.png`
+- `assets/attorney/atty_bio1.png`
 
-_pending_
+## Bio (assessment intro)
 
-## Professional experience
+**Title:** Attorney  
+**Track line:** Law Projects assessment
 
-_pending or omit_
+### Pay / hours strip
 
-## Questions
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-## Question 1
+### What it takes
 
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+- People who pass usually spend **1 hour 30 minutes or more**. Take the time you need.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
 
-## Question 1a
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
 
-_pending_
+### What happens next
 
-## Question 2
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
 
-_…_
+### Assets
 
-<!-- role: Attorney | assessmentId: legal | category: Legal -->
+- `assets/attorney/atty_bio1.png`
 
+---
+
+## Assessment steps (shared Law Starter)
+
+After **Start assessment**, same Law Starter task as Legal Expert (`task_response_id=01a1bb09-…`, Step 3 of 16 resumed with prior answers).
+
+→ [`problems-legal-expert.md`](./problems-legal-expert.md)
+
+### Assets (entry proof)
+
+- `assets/attorney/atty_start.png`
+- `assets/legal-expert/sidebar-inventory.json`
+
+<!-- role: Attorney | assessmentId: legal | category: Legal | assessmentVersion: Law Starter V4.1 | sharedAssessment: legal/legal-expert -->

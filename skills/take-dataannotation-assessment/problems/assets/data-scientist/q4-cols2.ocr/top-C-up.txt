@@ -1,0 +1,23 @@
+1. Data Cleaning and Preprocessing
+Duplicates: We need to identify and handle duplicate Customer _ ID entnes. If a custo
+appears multiple times, we should aggregate their data.
+Invalid Values:
+TotaJ_Ordets: Should be a non•negative integer. A value of O is acceptable but
+indicate inacuvity depending on the eligibcbty criteria.
+Total_Revenue: Should idealty be non•negative. Negative revenue is problematic
+and needs investigation (e.g.. returns).
+Days_Since_Last_Purchase: Should be a non•negauve integer.
+Inconsistent Entries: Ensure data types are correct (e.g.. numerical for orders. rever
+and days).
+Applying Cleaning to the Dataset:
+Lets examine the provided data
+• Customer_lD COIO: Appears
+0 Row 1: COzO. 11.1540.5.10
+Row 2: COzO. 10, 1450. 12
+we will aggregate these: Total_orders = 11 + 10 = 21. Total_Revenue = 1540.5 +
+1450 = 2990.5. Days_Since_Last_Purchase - we'll take the mirimum to represen
+recent activity. so 10.
+Customer_1D C021: Total orders = O. Total Revenue : 500. This is an interestir
+case. VNe they have O orders. they have revenue. This might be an error or an
+unusual scenario (e.g.. a gift card p(.rchase without a preceding order). For the
+purpose of "active customers by revenue" with a re

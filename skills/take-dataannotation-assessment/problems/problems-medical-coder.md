@@ -1,67 +1,29 @@
-# Medical Coder — Healthcare Operations Assessment assessment
+# Medical Coder — Healthcare Operations Projects assessment
 
-- **Captured:** PENDING-CAPTURE
-- **Role:** Medical Coder
-- **Category:** Healthcare Ops
-- **Slug:** `medical-coder`
-- **Source:** DataAnnotation assessment UI
+### Bank
 
-## Bio
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123
+- **Gaps:** Steps not started — Start not clicked.
+- **Track:** **Healthcare Operations Projects assessment** — **shared with Healthcare Operations Manager**. Cue: **30 minutes or more**. $125+/hr. **34 hired recently**.
+- **Rule:** never Submit while fetching
 
-**Role:** Medical Coder  
-**Category:** Healthcare Ops  
-**Hiring cue:** _pending_
+### Role
 
-### Overview
+- **Role:** Medical Coder · Healthcare Ops · `medical-coder`
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+### Bio
 
-### What you’ll actually do
+**Hiring cue:** Healthcare Ops • 34 hired recently
 
-- _pending_
-- …
-- _pending_
+Overview: Evaluate AI coding vs ICD-10-CM, CPT, NCCI, E&M; miscodes → denials/audits. Do: write coding prompts; review wrong/unspecified codes/modifiers; write correct coding. Look for: hands-on coding (CPC/CCS ideal); ICD-10-CM/CPT/HCPCS fluency; clear English; no degree required. Backgrounds: Medical Coder (CPC/CCS) · Coding Auditor · Medical Billing Specialist.
 
-### What we look for
+**Assets:** `assets/medical-coder/bio.png`
 
-- _pending_
-- …
-- _pending_
+### Bio (assessment intro)
 
-### Common backgrounds
+- **Track:** **Healthcare Operations Projects assessment** (shared)
+- **Cue:** 30 minutes or more
+- **Start:** not clicked
 
-- _pending_
-- …
-
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
-## Instructions
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Medical Coder | assessmentId: healthcare-ops | category: Healthcare Ops -->
-
+**Assets:** `assets/medical-coder/track-intro.png`

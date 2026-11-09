@@ -1,0 +1,21 @@
+1. Data Cleaning & Quality Checks
+Duplicates
+Customer COIO appears twice:
+(11 orders, 1540.5 revenue, 10 days)
+(10 orders, 1450 revenue. 12 days)
+These represent conflicting entries.
+Action: Keep the most recent record the one with Purchase IO
+Invalid I Excludable Records
+C021: Total Orders = O not an active customer.
+C022: Total Revenue = —200 invabd revenue.
+C027: Total Orders = 7.5 fractional orders are not valid.
+These are excluded.
+Activity Requirement
+To be "meaningfulty active: customers should:
+. Have 22 orders
+• Have puchased recently enough we'll use a reasonable cutoff of s120 days
+(COOZ is at the boundary)
+AJI remajning customers meet this criterion.
+2. Eligible Customers
+After cleaning. 24 customers remain ebgible.
+3. Identify Top 20% by Revenue

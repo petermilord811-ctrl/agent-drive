@@ -1,0 +1,2 @@
+Final Answer
+Optimal order: n = 1

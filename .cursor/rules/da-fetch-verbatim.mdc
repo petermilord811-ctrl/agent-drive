@@ -1,0 +1,21 @@
+---
+description: Part A DataAnnotation problem-bank fetch — verbatim OCR, no Source-OCR dumps, full figures, no select-for-OCR
+globs: agent-drive/skills/take-dataannotation-assessment/**,**/problems-*.md
+alwaysApply: false
+---
+
+# DA Part A fetch — never-again (99588 DS 2026-11-08)
+
+Full list: `skills/take-dataannotation-assessment/FETCH-GOTCHAS.md`
+
+## Hard stops
+
+1. **Bank STYLE only** — Prompt / Choices / Write-in / `### Response A`. **Never** a `Source OCR` dump field.
+2. **Verbatim only** — no summarize, OCR-repair brackets, or vision/`image_description` as problem body.
+3. **No select/highlight** for OCR. Host `ocr` stuck on Instructions after scroll → look PNG band-OCR (`ocr-bands.py` / `upscale-ocr.js`).
+4. **Figures complete** — crop only when title + both axes + tick labels are in-frame. Half-hidden charts fail the gate.
+5. **Gates before `captureStatus: full`:**
+   - `node skills/take-dataannotation-assessment/validate-verbatim.js --slug <slug>`
+   - `node skills/take-dataannotation-assessment/validate-figures.js --slug <slug>`
+6. **Never Submit** while fetching. Pass `host` on every agent-drive call when ≥2 visits are open.
+7. **Listen loop** — `chat_wait {timeout:45000}` same-turn until bye (see `session-chat-listen-loop.mdc`).

@@ -1,0 +1,286 @@
+﻿{
+  "ok": true,
+  "engine": "windows",
+  "ms": 775,
+  "find": null,
+  "count": 22,
+  "matches": [
+    {
+      "t": "[QUALIFICATION] Finance",
+      "lx": 167,
+      "ly": 17,
+      "bbox": [
+        115,
+        13,
+        219,
+        21
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "k Goog",
+      "lx": 1163,
+      "ly": 46,
+      "bbox": [
+        1147,
+        41,
+        1179,
+        50
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "get to _",
+      "lx": 360,
+      "ly": 392,
+      "bbox": [
+        317,
+        388,
+        402,
+        396
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Thars intentional Across our projects. subject-matter expertise is important. but so are me broade skills inWved in teacNng",
+      "lx": 727,
+      "ly": 82,
+      "bbox": [
+        470,
+        77,
+        984,
+        87
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "ard evaluating A' models: tohWng nuanced instructions. reasoning carefully. communicating clearly. and exercising good",
+      "lx": 721,
+      "ly": 96,
+      "bbox": [
+        470,
+        91,
+        972,
+        101
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "judgment This starter assessment helps us evaluate those foundational skills betore you nx:we on to assessments that focus",
+      "lx": 727,
+      "ly": 110,
+      "bbox": [
+        469,
+        105,
+        985,
+        115
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "on your omam expense",
+      "lx": 578,
+      "ly": 125,
+      "bbox": [
+        526,
+        120,
+        630,
+        129
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Every assessment js reviewed by a person.",
+      "lx": 547,
+      "ly": 157,
+      "bbox": [
+        451,
+        152,
+        642,
+        162
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "We manually reVew every submitted starter assessment. Your responses are evaluated as a \"'hole by our team. rater than",
+      "lx": 726,
+      "ly": 174,
+      "bbox": [
+        470,
+        169,
+        981,
+        179
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "being accepted or rejected solely based on an automated score.",
+      "lx": 602,
+      "ly": 188,
+      "bbox": [
+        470,
+        183,
+        734,
+        193
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "• We encourage to answer every question thcnohttulb' and give us me best representation ot you reason and",
+      "lx": 703,
+      "ly": 208,
+      "bbox": [
+        456,
+        203,
+        950,
+        213
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "nwncate.",
+      "lx": 508,
+      "ly": 222,
+      "bbox": [
+        488,
+        218,
+        527,
+        225
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "ues on",
+      "lx": 487,
+      "ly": 282,
+      "bbox": [
+        463,
+        278,
+        511,
+        286
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "you have a friend finished reading the Doyle Brun-son by Jackie Alyson and enjoyed it Would The",
+      "lx": 731,
+      "ly": 315,
+      "bbox": [
+        487,
+        310,
+        974,
+        320
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "WaW by Grann be a good recommendation for a 10110'\" up read?",
+      "lx": 601,
+      "ly": 329,
+      "bbox": [
+        452,
+        324,
+        749,
+        334
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "uesuon Ia",
+      "lx": 497,
+      "ly": 434,
+      "bbox": [
+        463,
+        429,
+        531,
+        439
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "In 3-9 full sentences, please describe this may may be a good recommendation,",
+      "lx": 642,
+      "ly": 455,
+      "bbox": [
+        452,
+        450,
+        832,
+        460
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Note: you MUST Mie at least three senterwes. (The more insighttu and well-reasoned explanation you write. the better. since",
+      "lx": 730,
+      "ly": 472,
+      "bbox": [
+        470,
+        467,
+        990,
+        477
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "we prioritize high-wality writing.) (Make sue to use and cite credible sources when researctüu this queston.)",
+      "lx": 697,
+      "ly": 486,
+      "bbox": [
+        469,
+        481,
+        925,
+        491
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Next",
+      "lx": 978,
+      "ly": 593,
+      "bbox": [
+        968,
+        589,
+        987,
+        596
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Sawd to at",
+      "lx": 459,
+      "ly": 629,
+      "bbox": [
+        414,
+        626,
+        504,
+        632
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "E. 2026. UTC",
+      "lx": 566,
+      "ly": 630,
+      "bbox": [
+        522,
+        626,
+        609,
+        633
+      ],
+      "action": "dbl"
+    }
+  ],
+  "pick": {
+    "t": "[QUALIFICATION] Finance",
+    "lx": 167,
+    "ly": 17,
+    "bbox": [
+      115,
+      13,
+      219,
+      21
+    ],
+    "action": "dbl"
+  },
+  "note": "coords are look pixels (lx/ly). For Browse cards use action dbl on pick; body ≈ ly+55."
+}

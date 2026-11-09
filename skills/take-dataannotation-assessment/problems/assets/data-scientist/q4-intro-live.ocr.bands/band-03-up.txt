@@ -1,0 +1,3 @@
+In ttys task. as a worker you would be assigned to select the best response. The cotena for selecting the best response are:
+• The response is Helpful: The response appropriately addresses initial prompt in away that is engaging, interesting, and most useful to the user
+The response s Honest: The response makes sense, any reasonng s accurate, and any conclusions are drawn from materiaty correct claims

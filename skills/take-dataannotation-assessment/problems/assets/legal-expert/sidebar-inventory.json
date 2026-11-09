@@ -1,0 +1,29 @@
+{
+  "slug": "legal-expert",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Law Starter Assessment V4.1",
+  "taskResponseId": "01a1bb09-37a4-7cab-8108-74f8997e0cde",
+  "projectId": "a89d27e9-2b7b-43fb-be59-5a2117127a94",
+  "ui": "left-sidebar",
+  "total": 16,
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Your Legal Experience" },
+    { "step": 3, "label": "Section 1: Assessment Questions" },
+    { "step": 4, "label": "Question 2" },
+    { "step": 5, "label": "Question 3" },
+    { "step": 6, "label": "Question 4" },
+    { "step": 7, "label": "Question 5" },
+    { "step": 8, "label": "Question 6" },
+    { "step": 9, "label": "Question 7" },
+    { "step": 10, "label": "Section 2: Conversation: Challenging an AI Model" },
+    { "step": 11, "label": "Attached Files" },
+    { "step": 12, "label": "Did you get the model to produce..." },
+    { "step": 13, "label": "Share Your Conversation" },
+    { "step": 14, "label": "Section 3: Your Background" },
+    { "step": 15, "label": "Tell us about the most meaningful..." },
+    { "step": 16, "label": "(Optional) Any other comments?" }
+  ],
+  "note": "16 leaves (extra Your Legal Experience vs FE's 15). Section 1 Q1–Q7 mirror Finance/Generalist starter. Section 2/3 are Law Domain. Never Submit."
+}

@@ -1,0 +1,13 @@
+﻿Instructions
+Hello and thank you for your interest!
+Put Your Data Science Knowledge and Experience with AI Models to the Test, Unlock Well-Paid Remote Work.
+Welcome to our Data Science assessment. This assessment tests knowledge of some fundamental concepts in Data Science, and gives you the chance to show your ability to challenge state-of-the-art Al models.
+If you pass the assessment, you'll be eligible to access a family of Data Science projects, starting at a rate of $50+ per hour.
+Some of the questions on this assessment may test areas that are outside your specific area of expertise. A perfect score is not required to advance, but we ask that all applicants do their best in providing thoughtful answers for each question. Please provide your best answer for every item on this assessment, and don't skip any questions. Your careful work on these assessments is appreciated.
+Our Data Science project team is primarily recruiting for those with hands-on experience in a quantitative role or research environment — such as data science, statistics, economics, finance, physics, biology, epidemiology, operations research, or any adjacent field. We encourage you to complete whichever starter assessment best fits your current experience and skillset.
+How long will this take to complete? About 90-120 minutes.
+Plan for this assessment to take about 90-120 minutes. No need to feel rushed though - this task will remain available to you for 120 hours after you enter work mode on this task.
+The questions on this assessment are designed to take much less time than this; the 120 hour time limit is intended to ensure you have ample time to complete the assessment, in case you need to take a break for any reason or experience a temporary loss of network connection.
+If you choose to take an extended break, it is recommended that you keep a local copy of your answers. In the event you lose your network connection, your browser crashes, or your browser tab is closed, it's possible that your partial work on the assessment wont be cached. If this happens, you'll need to refill your answer choices prior to submission.
+Let your abilities shine through. Your answers should be your own.
+When completing this assessment, please do not use outside assistance. All of your responses should be written by you from scratch. No part of how you answer any question in this application should come from an Al assistant. We look forward to seeing your skills based on your own expertise.

@@ -1,0 +1,21 @@
+{
+  "slug": "machine-learning-engineer",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "note": "Start assessment opened Coding Core / Programming Projects UI identical to software-engineer (Step 2 of 11 = Q1 palindromes). Leaves match SE coding bank.",
+  "total": 11,
+  "sharedWith": "software-engineer",
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Question 1: Evaluating Programming Best Practices" },
+    { "step": 3, "label": "Identifying a function's time and space efficiency" },
+    { "step": 4, "label": "Coding Task Problem Solving" },
+    { "step": 5, "label": "Side By Side Response Comparisons - General Replies" },
+    { "step": 6, "label": "Side By Side Response Comparisons - Coding Replies" },
+    { "step": 7, "label": "Coding Exercise: Decoding a Secret Message — Problem" },
+    { "step": 8, "label": "Coding Exercise: Decoding a Secret Message — Verify" },
+    { "step": 9, "label": "Tell us about yourself — Professional Experience" },
+    { "step": 10, "label": "Tell us about yourself — Programming Languages" },
+    { "step": 11, "label": "(Optional) Any other comments?" }
+  ]
+}

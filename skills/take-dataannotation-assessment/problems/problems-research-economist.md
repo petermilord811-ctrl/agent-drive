@@ -1,67 +1,75 @@
-# Research Economist — Economics Assessment assessment
+# Research Economist — Economist Projects assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `economist`
+- **Gaps:** Role-specific Bio unique; **assessment steps = Economist Starter V4.1 shared** (`task_response_id=01a1bb26-…`).
+- **Re-fetch 2026-11-08:** Track **Economist Projects** ✅; siblings Applied/Quantitative Start-confirmed same `task_response_id=01a1bb26-…` / `project_id=0d87aa7c-…`.
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Economist Projects / Economist Starter Assessment V4.1
+
+### Role
+
 - **Role:** Research Economist
 - **Category:** Economics
 - **Slug:** `research-economist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Economics filter → Research Economist; verified **Economist Projects assessment**)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-economist-starter) → see [`problems-economist.md`](./problems-economist.md)
+
+---
 
 ## Bio
 
 **Role:** Research Economist  
 **Category:** Economics  
-**Hiring cue:** _pending_
+**Hiring cue:** Economics • 9 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Judge how models reason about economic questions — check data methods and identification — and write professional-grade analysis. Growing focus on summarizing literature and spotting flawed identification strategies.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Compare two economic analyses and judge the more reliable one.
+- Evaluate model output for analytical soundness and methodology.
+- Identify flawed assumptions, misread results, or gaps in reasoning.
+- Write clear, well-structured explanations.
+- Apply domain knowledge to realistic problems in economic research.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- PhD (completed or in progress) or Master’s in economics preferred; undergrad economics/finance/business considered.
+- Professional experience as a research economist, economic analyst, or similar applied role.
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/research-economist/re_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
-## Instructions
+**Title:** Research Economist  
+**Track line:** **Economist Projects assessment**
 
-_pending_
+### Assets
 
-## Professional experience
+- `assets/research-economist/re_bio1.png`
 
-_pending or omit_
+---
 
-## Questions
+## Assessment steps (shared Economist Starter)
 
-## Question 1
+Same Economist Starter as Economist (`task_response_id=01a1bb26-…`, 16 leaves including Economics Degrees).
 
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+→ [`problems-economist.md`](./problems-economist.md)
 
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Research Economist | assessmentId: economics | category: Economics -->
-
+<!-- role: Research Economist | assessmentId: economics | sharedAssessment: economics/economist -->

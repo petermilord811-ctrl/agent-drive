@@ -1,67 +1,67 @@
-# Litigation Attorney — Legal Assessment assessment
+# Litigation Attorney — Legal Assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `legal-expert`
+- **Gaps:** Role Bio from Legal filter card; shared Law Starter confirmed via Attorney Start (`01a1bb09`).
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Law Projects / Law Starter Assessment V4.1
+
+### Role
+
 - **Role:** Litigation Attorney
 - **Category:** Legal
 - **Slug:** `litigation-attorney`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Legal filter · 31 hired recently)
+
+### Contents
+
+1. [Bio](#bio)
+2. [Assessment steps](#assessment-steps-shared-law-starter) → see [`problems-legal-expert.md`](./problems-legal-expert.md)
+
+---
 
 ## Bio
 
 **Role:** Litigation Attorney  
 **Category:** Legal  
-**Hiring cue:** _pending_
+**Hiring cue:** Legal • 31 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Ask a model to brief a motion and it hands back something that looks like a real filing — until you check the citations and the standard of review. Grade that work the way a litigator would.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Draft prompts for motions, briefs, and litigation analysis.
+- Review AI output for invented citations and misstated standards.
+- Write correct analysis when the model falls short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Litigation / advocacy experience.
+- Clear written English.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Litigation Attorney
+- Trial Counsel
+- Associate Litigator
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+---
 
-## Instructions
+## Assessment steps (shared Law Starter)
 
-_pending_
+→ [`problems-legal-expert.md`](./problems-legal-expert.md)
 
-## Professional experience
-
-_pending or omit_
-
-## Questions
-
-## Question 1
-
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Litigation Attorney | assessmentId: legal | category: Legal -->
-
+<!-- role: Litigation Attorney | assessmentId: legal | category: Legal | assessmentVersion: Law Starter V4.1 | sharedAssessment: legal/legal-expert -->

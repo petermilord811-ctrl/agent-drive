@@ -1,0 +1,32 @@
+{
+  "slug": "physician",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Medical Starter Assessment",
+  "track": "Medical Projects assessment",
+  "task_response_id": "01a1b7f8-6f90-73db-a5d5-af78f2bb4479",
+  "project_id": "2278b968-d80a-4fac-8f44-3cc702fb2edf",
+  "ui": "left-sidebar",
+  "total": 18,
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Your Professional Experience" },
+    { "step": 3, "label": "Section 1: Verifying your Medical credentials" },
+    { "step": 4, "label": "State of Licensure" },
+    { "step": 5, "label": "License Number" },
+    { "step": 6, "label": "Public Licensing Directory Link" },
+    { "step": 7, "label": "Supporting document" },
+    { "step": 8, "label": "Anything else to add (optional)" },
+    { "step": 9, "label": "Section 2: Assessment Questions" },
+    { "step": 10, "label": "Question 2" },
+    { "step": 11, "label": "Question 3" },
+    { "step": 12, "label": "Question 4" },
+    { "step": 13, "label": "Question 5" },
+    { "step": 14, "label": "Question 6" },
+    { "step": 15, "label": "Question 7" },
+    { "step": 16, "label": "Section 3: Your Background" },
+    { "step": 17, "label": "Tell us about the most meaningful..." },
+    { "step": 18, "label": "(Optional) Any other comments?" }
+  ],
+  "note": "18 leaves — credential verification block unique to Medical. Section 2 Q1 = Doyle Brunson / The Wager. Verify Medical Projects before Start. Never Submit."
+}

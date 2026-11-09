@@ -1,0 +1,7 @@
+lich of the responses should be guen the highest score?
+A should receive the highest score
+B should receive the highest score
+C should receive the highest score
+Answers A and B should receive the same high score
+Answers A and C should recerve the same high score
+Answers B and C shou'd receive the same high score

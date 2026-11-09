@@ -1,0 +1,23 @@
+Analysis Results
+Based on the dataset provided and the requirements, here are the key findings after
+data cleaning and eligibdity filtering:
+Number of eligible customers (N_eligible): 22
+After removing duplicates. invalid values (negative revenue. zero orders. and inconsisterM
+order counts). and applying acuvity criteria (mininwm orders 3 and days since last
+puchase s 90).22 customers met the eligibility requirements for the premium loyalty
+program.
+Number of customers in the top 20% segment (k): 4
+The top 2096 of 22 eltg.ble customers corresponds to the top a customers by total
+revenue. using standard rounding conventions (4.4 rounded to 4). we selected the top 4
+highestâ€¢revenue customers.
+Minimum revenue threshold for this segment: $1,560.00
+The revenue threshold is determined by the lowest revenue among the top 4 customers
+(C003 with $1,560.00). Customers in the top segment have total revenue at or above this
+Pooled average order value for this segment: S13S.28
+The pooled average order value aggregates data across all d customers in the segment:
+â€¢ Totalrevenueof segment: S7.305.oo
+â€¢ Total orders of segment: 54
+â€¢ Average $135.28 (rounded tomo
+decimal places)
+These results identify a high-vaJue customer segment for the premium loyalty program,
+focusing on the most profitable and recently engaged customers.

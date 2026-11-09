@@ -9,9 +9,12 @@ run: node kit.js skills setup-dataannotation-profile
 Completes **big step 2** of the [assessment workflow](../dataannotation-assessment-workflow/README.md)
 on `https://app.dataannotation.tech/workers/learn-about-you` (sidebar: Welcome → Availability).
 
+**Skip** if Availability already done / Browse roles is reachable → hand off to pick-assessment.
+
 ## Inputs
 
-- Operator **resume** (local path in Cursor chat or already on the agent machine).
+- Operator **Full name + Email** already confirmed (workflow MUST).
+- Operator **resume** (profile dir or path in Cursor chat).
 - Copy it onto the **connected host** under Documents before the upload dialog, e.g.
   `~/Documents/DA-Resume-<Last>.pdf` (Linux) or `Documents\DA-Resume-<Last>.pdf` (Windows).
   Request `files` / `shell` via `access` if the visit lacks them.

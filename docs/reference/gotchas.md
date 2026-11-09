@@ -33,6 +33,17 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - For a solved board, a **unique solution is the proof you read the givens correctly** — if the solver
   reports 0 or >1 solutions, re-read.
 
+## Session chat / listen loop
+- **Ending the Cursor turn = deaf.** ScreenMirror delivers operator messages to `chat.json` / inbox
+  fine; Cursor does **not** auto-wake on that inbox. Live miss (99588 / Daniel Herman): operator sent
+  “Start fetch” 3× (~3.7 min after a short `chat-wait`); all landed; agent silent until a later editor
+  message. Fix: loop `chat_wait {timeout:45000}` in the same turn until they reply or say bye;
+  `timedOut` / `busy` / MCP `-32001` → listen again, never stop. (A single `timeout:600000` also failed:
+  Cursor killed the MCP call while serve kept listening → `busy:chat-wait`.) Serve returns `listening` +
+  `remind`; MCP heartbeats every 10s on chat-wait; PREFLIGHT must not abandon the listen loop.
+- **`inbox.n > 0` → answer in session chat first** (`seen` / `typing` / `chat`). Editor transcript alone
+  is not a reply the operator sees.
+
 ## Tooling
 - **`python -c` with newlines breaks the pyenv-win batch shim.** Use a script file with `python -I`.
 - `shot` is slow (first ~15s). Each `drive.js` call waits up to 30s; a long `plan` via `fill.js` waits
@@ -191,6 +202,38 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   re-catch diffs). Save **both** bio pages (overview + post-Continue intro; skip only No-LLMs line).
   After Start assessment, loop **all** steps; for answer-dependent UI, press each radio/checkbox and
   save each case; scroll clipped content / attach images; **never Submit** while fetching.
+- **Part A fetch never-again (99588 / DS 2026-11-08):** Source-OCR dumps, select-for-OCR, stuck host
+  OCR, vision-as-verbatim, half-hidden charts → full list + gates in
+  [FETCH-GOTCHAS.md](../../skills/take-dataannotation-assessment/FETCH-GOTCHAS.md)
+  (`validate-verbatim.js` / `validate-figures.js`; rule `.cursor/rules/da-fetch-verbatim.mdc`).
+- **Part B live runbook (99588 / Daniel Herman full night):** Answers were ready; hours burned on
+  unproven focus (Space-scroll), placeholder-mark rubrics, Expires stale looks, PageUp hunting,
+  `xdotool type` → `xsleep…` garbage, and re-verifying the whole form after every field. **Fix:**
+  treat fill as a Fields tape replay; letter-prove before spaces; OCR white-box for empty rubrics;
+  SM `keys` only (never machine type); **one** recheck before Submit ask; budget ≤25–35 min post-share.
+  Canonical sequencing:
+  [WORKFLOW-LIVE.md](../../skills/take-dataannotation-assessment/WORKFLOW-LIVE.md) · field contract
+  [PART-B-FILL.md](../../skills/take-dataannotation-assessment/PART-B-FILL.md) (+ CLICK / PREFLIGHT).
+- **Part B fill never-again (99588):** Spaces without field focus scroll the page; SM `field ""` =
+  Expires; content marks often click x≈80; `aim:false` still snaps (need `snap:false`); never
+  Ctrl+C/V/A on DA task pages; prove focus with one non-space char before `keys`; Tab-from-label when
+  textarea click fails; Failure Yes adds round/desc/screenshot; TIMER after Start; humanize via
+  join-key relay only; **never `xdotool type`**.
+- **Claude for DA assessments (99588 miss):** Never click Continue with Google / Continue as a leftover
+  Chrome Google user. Claude must use the **same email + name as DataAnnotation** (password = DA pw or
+  ask operator; if account exists → operator logs in, agent waits for ready). Wrong session already
+  open → **`https://claude.ai/logout`**, then recreate with DA email (do not name-fill under leftover
+  Google). Onboarding tips / name / role / Skip desktop are normal after correct signup. **Composer:**
+  Enter sends; newlines = `chord {mod:"ShiftLeft", code:"Enter"}` (not `code:"Shift+Enter"`);
+  **Ctrl+V OK on Claude**, never on DA; blank line before `Setup` (two Shift+Enter); prefer Kate→paste
+  for Round 1. Contract:
+  [CLAUDE-SETUP.md](../../skills/take-dataannotation-assessment/CLAUDE-SETUP.md).
+- **Assessment click stack (34123, fixed 2026-11-07):** Mis-clicks were systematic — no sidebar/content
+  split (x≈320 hit left-nav → jumped to Q5), stale Next Y, `role` always returned col 0, Browse cards
+  need **`dbl`**. Use zone-safe `locate-click.py` (`zones|next|radio N|role`) on the *current* look;
+  never invent `lx/ly`; never dense-sweep the left third. Writing: radio → Tab → keys. Contract +
+  regression: `skills/take-dataannotation-assessment/CLICK.md`, `test-locate-click.py`. Omit anti-AI
+  bodies on Instructions + certify. SE + Generalist banks `nearly-full`.
 - **Skill (signup fixes):** [skills/create-dataannotation-account/](../../skills/create-dataannotation-account/README.md)
   (`node kit.js skills dataannotation`). Script enforces one Firefox window, look-based field mids,
   replace-not-append, Firefox-first, captcha look-verify. Cursor rule:

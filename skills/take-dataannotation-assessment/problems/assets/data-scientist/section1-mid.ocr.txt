@@ -1,0 +1,31 @@
+Briefly explain what types of file(s) you attached.
+Did you get the model to produce at least one response with a meaningful failure?
+The man reasons this "Conversation: Challengng an Al Moder exerctse is part of your assessment:
+o We want you to dsplayyour expertise within the Data Sctence domatn. Have you studied or *Oiked in a subdomain of Data Science that many wouldnt undetstand without sigruficant research ot learning? These are areas that the models will tend to also make nystakes.
+'.â€¢otkea u
+a s t)domajn Ot s e tnat many would
+Without stgruncant researcn ot learning? 1
+are areas tnat tne moaelS Will t
+we want you to
+your experttse within tne
+unaet
+O
+Dont just ask for a chart or simple linear regresson or basc analysis. anyone could thtnk Of that prompt and the models can easty answer n.
+o Display your understanding of 'there Al models tend to make mstakes. If you use Al often. come much easier to you. If you dont use Al very often. you can still do VEII here as longas you take your time and focus on what is truly a meaningful falure (instead of
+bokmg tot just any mistake so you can move on).
+If you d'dnt elicit any meaningful failures. you'll want to start over with a new conversation. Generally the way this works is that even if you didn't get a very good failure. you learned somethtng about model behavior along the way â€¢ which helps you more effecuvely target
+â€¢
+v,eaknesses in the next conversatioru
+Generally. we suggest restartng your conversation if you weren't able to elicit a meaningful failure within the first three rounds. but you can elect to extend your conversation beyond three rounds if you feel your conversauon concept will elictt meaningful failures in later rounds.
+â€¢
+â€¢ Generally. we suggest restarting your conversation if you weren't able to elicit a meaningful failure within the first three rounds. but you can elect to extend your conversation beyond three rounds if you feel your conversauon concept will elicit meaningful failures in later rounds.
+No
+Overall Model Performance
+How 'tnuld you scote the overan quality Of model responses in the conversation?
+Did the model mosey help you achieve your goal, ot were there so many errors that the conversauon would be ot misleading for the typical user?
+Amanng
+Good
+Okay
+Poor
+Expires in: 4 days 22 hours 49 mir
+Horrible

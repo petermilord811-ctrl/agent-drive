@@ -1,67 +1,107 @@
-# Venture Capitalist — Finance Assessment assessment
+# Venture Capitalist — Finance Assessment
 
-- **Captured:** PENDING-CAPTURE
+### Bank
+
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 15 · shared with `finance-expert`
+- **Gaps:** Role-specific Bio only unique; **assessment steps = Finance Starter V4.1 shared** (`task_response_id=01a1bae0-…` after Start).
+- **Rule:** never Submit while fetching
+- **Shared assessment:** Finance Projects / Finance Starter Assessment V4.1
+
+### Role
+
 - **Role:** Venture Capitalist
 - **Category:** Finance
 - **Slug:** `venture-capitalist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (search “Venture Capitalist” → Finance 1; verified **Finance Projects assessment** before Start)
+
+### Contents
+
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-finance-starter) → see [`problems-finance-expert.md`](./problems-finance-expert.md)
+
+---
 
 ## Bio
 
 **Role:** Venture Capitalist  
 **Category:** Finance  
-**Hiring cue:** _pending_
+**Hiring cue:** Finance • 21 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models love a founder's story and can't tell a real market from a rounded-up one. Evaluate AI-built startup diligence and market analysis — separating venture-scale bets from the nice small business — and write memos that show how stage bets are really made.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Evaluate AI startup diligence (market, team, product, venture-scale potential).
+- Break down market math (TAM, unit economics, cohort traction).
+- Write investment memos when models fall short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Experience in venture capital, startup operating roles, or early-stage investing.
+- A feel for markets and product.
+- Clear written English.
+- No degree required.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Venture Capital Associate
+- Investment Analyst
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
 
-## Instructions
+- `assets/venture-capitalist/vc_bio0.png`
+- `assets/venture-capitalist/vc_bio1.png`
 
-_pending_
+## Bio (assessment intro)
 
-## Professional experience
+**Title:** Venture Capitalist  
+**Track line:** Finance Projects assessment
 
-_pending or omit_
+### Pay / hours strip
 
-## Questions
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-## Question 1
+### What it takes
 
-_Capture Question 1+ from the live assessment (usually 10+ steps)._
+- People who pass usually spend **1 hour 30 minutes or more**. Take the time you need.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
 
-## Question 1a
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
 
-_pending_
+### What happens next
 
-## Question 2
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
 
-_…_
+### Assets
 
-<!-- role: Venture Capitalist | assessmentId: finance | category: Finance -->
+- `assets/venture-capitalist/vc_bio1.png`
 
+---
+
+## Assessment steps (shared Finance Starter)
+
+After **Start assessment**, same Finance Starter as Finance Expert (`task_response_id=01a1bae0-…`).
+
+→ [`problems-finance-expert.md`](./problems-finance-expert.md)
+
+### Assets (entry proof)
+
+- `assets/venture-capitalist/vc_start.png`
+
+<!-- role: Venture Capitalist | assessmentId: finance | category: Finance | assessmentVersion: Finance Starter V4.1 | sharedAssessment: finance/finance-expert -->

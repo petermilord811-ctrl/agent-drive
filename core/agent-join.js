@@ -90,6 +90,10 @@
 //   FILES    fetch {path,out} . send {file,to,overwrite}  -- a file from / onto the machine, in chunks, said in the room
 //            camera {out,device} . audio {out,seconds}  -- one webcam photo / up to 7 s of what it is PLAYING: the
 //                                     room is asked every time and only a yes allows it (all four need --shell)
+//   RELAY    humanize {text,mode,style,ultra}  rewrite via HTTP POST /api/humanize (x-sm-join-key = SM_JOIN_KEY;
+//                                     omit text = GET ready). Never HUMANIZE_API_KEY / Bearer.
+//            aicheck {text}            AI detect via POST /api/detect (omit text = GET ready)
+//            aiusage                   GET /api/aiusage balance only
 //                   incoming chat is logged to <serve-dir>/chat.json, notes mirrored to notes.json
 //   THE ACTION TREE: with no tool's tree or flat plan in charge, every command lands in a nested tree the
 //   watchers' panel renders -- task > step > sub-step > action group > the live action -- with runs MERGED
@@ -274,6 +278,57 @@ const stripAnsi = (t) => String(t == null ? '' : t)
   .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, '')            // CSI: ESC [ params final
   .replace(/\x1b[@-Z\\-_]/g, '')                        // the two-byte escapes
   .replace(/\r\n/g, '\n').replace(/\r/g, '');
+
+// Relay HTTP APIs (humanize / detect / aiusage): same SM_JOIN_KEY as the WebSocket join, header
+// x-sm-join-key, never a Bearer / HUMANIZE_API_KEY. wss:// → https:// on the same host.
+function relayHttpBase() {
+  return String(RELAY || '').trim().replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:').replace(/\/$/, '');
+}
+function relayApi(pathname, opts) {
+  opts = opts || {};
+  const method = String(opts.method || 'GET').toUpperCase();
+  const body = opts.body != null ? opts.body : null;
+  const timeoutMs = Math.max(1000, Math.min(300000, Number(opts.timeoutMs) || 120000));
+  return new Promise((resolve) => {
+    const base = relayHttpBase();
+    if (!base) return resolve({ ok: false, why: 'no relay URL for HTTP API' });
+    let u;
+    try { u = new URL(String(pathname || '').replace(/^\//, ''), base.endsWith('/') ? base : base + '/'); }
+    catch (e) { return resolve({ ok: false, why: 'bad relay URL: ' + ((e && e.message) || e) }); }
+    const lib = u.protocol === 'http:' ? require('http') : require('https');
+    const data = body != null ? Buffer.from(JSON.stringify(body), 'utf8') : null;
+    const req = lib.request({
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'http:' ? 80 : 443),
+      path: u.pathname + u.search,
+      method,
+      headers: Object.assign({ 'x-sm-join-key': KEY }, data ? {
+        'Content-Type': 'application/json',
+        'Content-Length': data.length,
+      } : {}),
+      timeout: timeoutMs,
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const raw = Buffer.concat(chunks).toString('utf8');
+        let parsed = null;
+        try { parsed = JSON.parse(raw); } catch (_) {}
+        if (res.statusCode >= 200 && res.statusCode < 300 && parsed && typeof parsed === 'object') resolve(parsed);
+        else resolve({
+          ok: false,
+          status: res.statusCode,
+          why: (parsed && (parsed.why || parsed.error || parsed.message)) ||
+            ('relay HTTP ' + res.statusCode + (raw ? ': ' + raw.slice(0, 200) : '')),
+        });
+      });
+    });
+    req.on('error', (e) => resolve({ ok: false, why: String((e && e.message) || e) }));
+    req.on('timeout', () => { try { req.destroy(); } catch (_) {} resolve({ ok: false, why: 'relay HTTP timed out' }); });
+    if (data) req.write(data);
+    req.end();
+  });
+}
 
 // ---- just enough WebSocket -----------------------------------------------------------------------
 // Client frames MUST be masked and server frames never are (RFC 6455); a server that is handed an
@@ -2916,8 +2971,23 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
               if (!lines.length) lines = [{ from: String(got.from || ''), name: String(got.name || ''), text: String(got.text || ''), ts: Number(got.ts) || 0, dm: !!got.to }];
             }
           }
-          if (!lines.length) reply({ ok: false, why: stopped || (ws.dead ? 'the connection dropped while waiting' : 'nobody answered in time'), timedOut: !stopped && !ws.dead, dropped: ws.dead ? true : undefined });
-          else {
+          if (!lines.length) {
+            // timedOut is not "stop" — it is "listen again". Cursor does not auto-wake on session inbox.
+            reply({
+              ok: false,
+              why: stopped || (ws.dead ? 'the connection dropped while waiting' : 'nobody answered in time'),
+              timedOut: !stopped && !ws.dead,
+              dropped: ws.dead ? true : undefined,
+              listening: !stopped && !ws.dead ? true : undefined,
+              remind: !stopped && !ws.dead
+                ? 'VISIT STILL LIVE — call chat_wait again NOW (same turn). Do NOT end your turn. Cursor does not auto-wake on ScreenMirror inbox.'
+                : undefined,
+              hint: !stopped && !ws.dead
+                ? 'chat_wait again immediately — never finish a turn while the visit is live without listening'
+                : undefined,
+              next: !stopped && !ws.dead ? 'chat_wait' : undefined,
+            });
+          } else {
             interrupt = null;   // the driver is attending to chat; let a paused plan resume
             const last = lines[lines.length - 1];
             reply({ ok: true, from: String(last.from || ''), name: String(last.name || ''), text: String(last.text || ''), ts: Number(last.ts) || 0, dm: !!last.dm,
@@ -2980,6 +3050,41 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           const r = await raceStop(ws.waitFor((m) => m.type === 'fs-data' && m.reqId === rid, ms));
           reply(r && !r.error && Number(r.total) ? { ok: true, alive: true }
                                                   : { ok: false, alive: false, why: stopped || 'no reply in time — the session may be stale; reconnect' });
+        } else if (cmd.do === 'humanize') {
+          // Relay POST /api/humanize (x-sm-join-key). Omit text → GET ready. No Bearer / HUMANIZE_API_KEY.
+          const ms = Math.max(1000, Math.min(300000, Number(cmd.timeout) || 120000));
+          if (!(typeof cmd.text === 'string' ? cmd.text.length : cmd.text != null && String(cmd.text).length)) {
+            reply(await relayApi('/api/humanize', { method: 'GET', timeoutMs: Math.min(ms, 30000) }));
+          } else {
+            const mode = String(cmd.mode || 'balanced');
+            const style = String(cmd.style || 'standard');
+            reply(await relayApi('/api/humanize', {
+              method: 'POST',
+              timeoutMs: ms,
+              body: {
+                text: String(cmd.text),
+                mode: /^(quality|balanced|bypass)$/.test(mode) ? mode : 'balanced',
+                style: style || 'standard',
+                ultra: !!cmd.ultra,
+              },
+            }));
+          }
+        } else if (cmd.do === 'aicheck') {
+          const ms = Math.max(1000, Math.min(300000, Number(cmd.timeout) || 120000));
+          if (!(typeof cmd.text === 'string' ? cmd.text.length : cmd.text != null && String(cmd.text).length)) {
+            reply(await relayApi('/api/detect', { method: 'GET', timeoutMs: Math.min(ms, 30000) }));
+          } else {
+            reply(await relayApi('/api/detect', {
+              method: 'POST',
+              timeoutMs: ms,
+              body: { text: String(cmd.text) },
+            }));
+          }
+        } else if (cmd.do === 'aiusage') {
+          reply(await relayApi('/api/aiusage', {
+            method: 'GET',
+            timeoutMs: Math.max(1000, Math.min(30000, Number(cmd.timeout) || 15000)),
+          }));
         } else if (cmd.do === 'reconnect') {           // force a fresh session (for a stale / half-open socket)
           // `ping` can report alive:false while the socket never CLOSED -- a relay that died silently. Drop
           // it here to synthesize the close -> ws.dead -> the serve loop redials and surfaces a fresh Allow.
@@ -4063,6 +4168,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       lastAnswerAt = Date.now();
       if (r && typeof r === 'object') {
         r.inbox = unreadRecs.length ? { n: unreadRecs.length, latest: lastOp, new: unreadRecs.slice(-5).map((m) => ({ name: m.name, text: m.text, dm: m.dm || undefined })) } : { n: 0 };
+        // LIVE MISS: unread sat while the driver finished a turn / kept acting — operator saw delivery but no reply.
+        // Force answer-in-session-chat before the next act (remind is acted on first per AGENTS / MCP instructions).
+        if (unreadRecs.length && cmd.do !== 'chat' && cmd.do !== 'chat-img' && cmd.do !== 'seen' && cmd.do !== 'typing' && cmd.do !== 'chat-wait') {
+          if (!r.remind) r.remind = 'OPERATOR WROTE IN SESSION CHAT — call seen + typing + chat with your reply NOW before any screen act. Do not only answer in the editor transcript.';
+          if (!r.hint) r.hint = 'inbox.latest is waiting — answer there first';
+        }
       }
       // ...and so does every name the verb table corrected, once, so the next command is written right
       if (fixedNotes.length && r && typeof r === 'object') { r.fixed = fixedNotes.slice(); fixedNotes = []; }

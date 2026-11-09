@@ -1,0 +1,4 @@
+Evaluate the foJow€ng prompt ard provide an assessment along with an answer to the posed question
+You are analyzing transaction data for an e-commerce platform to identify high-value customer segments The dataset contains the following information for each customer over a 12•month period:
+Expires in: 4 days 22 hours 42 mir
+. Customer ID

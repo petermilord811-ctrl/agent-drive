@@ -8,6 +8,11 @@ run: node skills/create-dataannotation-account/fast-pre-captcha.js ./work --firs
 
 **Big step 1** of [`dataannotation-assessment-workflow`](../dataannotation-assessment-workflow/README.md).
 
+## MUST before this step
+
+- Operator **Full name** (First + Last) + **Email** present — ask once if missing; never invent.
+- Skip if already signed in as that email → hand off to setup-profile.
+
 Opens (or resumes) `https://app.dataannotation.tech/worker_signup`, fills the create-account form for one
 person, solves reCAPTCHA (**agent by default** — operator 2026-11-07), and submits. Password text is typed
 with `secret:1` (never shown on the panel). Proven end-to-end on **host 34123 / Ubuntu / Firefox**,

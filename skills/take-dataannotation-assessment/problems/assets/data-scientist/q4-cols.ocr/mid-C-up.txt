@@ -1,0 +1,45 @@
+M work.mercor.com/onbl
+afterquery - Google Se
+x
+o
+o
+Ask Google
+44-814e-8c173cS13ee2
+sual scenario (e.g., a gift card purchase without a preceding order). For the
+pose of "active customers by revenue" with a reasonable purchase history, this
+tomer might not be considered.
+itomer_lD C022: Total_Revenue •XX). This is nvabd and be excluded.
+C027: Total_Orders 7.5. This is not a whole number for orders and
+ds to be addressed. We will round this dm•n to 7 for consistency with typical
+counts.
+'ility Criteria
+npt states: "consider only customers who are meaningfuny active - they should
+easonabk purchase hastory and have engaged recently enough to be considered
+program."
+fine reasonable ttyesholds for this:
+limum Total Orders: A customer should have made at least one purchase to be
+sidered active. Levs set a minirnum of Total_Orders i.
+:ent Engagement: A customer shouldnt have a purchase from too long ago.
+s set a maximum threshold for Days_Since_Last_Purchase. A common
+chmark for recent activity n e-commerce might be within 90 days. Lers set
+f 90.
+id Revenue: Weve already addressed negative revenue by excluding C022.
+• of customers in the top 20% segment (k):
+= 22
+of 22 = 0.20 22 = 4.4
+tg standard rounding. k = 4 customers.
+iking:
+omers with identical revenue, we rank Ü•.em based on Total_Orders
+ding) and then Days_Since_Last_Purchase (ascen&ng). In this sorted list, C025
+have identical revenue. C02S has 12 orders and C024 has II orders. So C02S
+gher.
+m revenue threshold for this segment:
+the revenue of the 4th customer in the sorted list. The ath customer is C015
+Revenue = 1755.00. Therefore. the minimum revenue threshold is S1755.oo.
+average order value for this segment:
+4 customers are:
+Total Revenue = 2990.50. Total Orders = 2
+Expires in: 4 days 23 hours 34 minuti
+Total Revenue : 2100.00. Total Orders =
+9:56 AM
+11/8/26

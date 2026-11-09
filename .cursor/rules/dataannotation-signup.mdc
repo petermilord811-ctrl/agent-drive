@@ -49,8 +49,11 @@ Full path = **4 big steps**. Orchestrator:
 3. **Two bio pages:** (1) role overview, (2) after Continue — What it takes / What happens next;
    omit only the **No LLMs** line. Then **Start assessment** to fetch questions.
 4. Loop **all** sidebar steps; for radios/checkboxes that change the UI, select **each** option and
-   save a `### Case: …` block. **Never Submit** while fetching.
-5. **Clicks:** `locate-click.py` / card body — see `CLICK.md` (Continue miss was ~60px low).
+   save a `### Case: …` block. **Never Submit** while fetching (last step may show Submit).
+5. **Clicks (mandatory):** `look` → `locate-click.py` on that PNG (`zones|continue|next|radio N|role`)
+   → click/dbl `{lx,ly}` from JSON. Never invent coords; never reuse prior look; never click content
+   with `lx ≤ sidebar_edge`. Browse cards: `action:dbl`. radio→Tab→type. See `CLICK.md`.
+   Omit Instructions/certify anti-AI bodies. OCR/`clickText` often chrome-only on 34123.
 6. Re-catch: `.capture.md` + `compare-problems.js`. Answer/Submit only when truly taking the test.
 
 ## After every visit

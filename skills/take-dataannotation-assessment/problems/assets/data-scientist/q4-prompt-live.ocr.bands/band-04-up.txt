@@ -1,0 +1,4 @@
+When ranking customers with identical revenue, use a consistent tie-breaking method
+The pooled average should aggregate across al customers in tt•e segment
+Present your results in a clear format with the four metrics Isted above.
+DATASET

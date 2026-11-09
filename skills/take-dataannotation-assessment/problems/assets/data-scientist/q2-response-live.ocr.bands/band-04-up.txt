@@ -1,0 +1,3 @@
+Optimal order: n = 1
+Polynomial coefficients tp.. P>J:
+(2.04818182. 0.994090911

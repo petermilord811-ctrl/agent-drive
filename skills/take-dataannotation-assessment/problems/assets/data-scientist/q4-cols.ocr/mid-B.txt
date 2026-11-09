@@ -1,0 +1,38 @@
+C Payoneer Login
+Expert Data for F-ronti
+x I HumanizeAI Public API x
+1 f47-4deaâ€¢af12-5d5f1 a 1 ba7f-3c
+tter cteanjng. 24 customers reman eogtble.
+3. Identify Top 20% by Revenue
+Op20%of24 customers k = (0.20 x 241 = s
+Revenues (Descending)
+1. coosâ€”zoo
+2. 1890
+3. C015â€”1755
+2.
+4 C003â€”1560
+5. cozoâ€”1540.5
+fo
+6. C024â€”1540.5
+7. C025â€” 1540.5
+8. COE â€”1350
+9. C023â€” 1349.5
+O C019â€”1215
+1 1170
+2. C026â€” 1143.25
+bp 5 customers (with tie-breaking by lovÃ¦st number of orders when revenues match,
+-ten lowest Customer_lD): COOS, C020, COIS, COIO
+tinimum Revenue Threshold
+'he 5th-highest revenue = $1,540.50
+4. Pooled Average Order Value (AOV) for Top Segment
+Opâ€¢segment totals:
+â€¢ Revenue = 2100 1890 â€¢ 1755 1560 1540.5 = 9,845.50
+(d
+Total Orders = 15 14 13 12 11 = 6S orders
+â€¢ AOV= 136.08
+rounded to standard currency $136.08
+Final Results
+N_eligibk: 24 customers
+k (top 2096): S customers
+Minimum revenue threshold: $1,540.50
+â€¢ Pooled AOV (top segment): $136.08
