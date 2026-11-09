@@ -28,7 +28,7 @@
 2. **Verified Expert Domain sibling** (e.g. Economist once verified) — for Expert Domain–only variants (London Fog diabetes/Oregon Mist; Q7 “keep topic general / no domain prompt”).
 3. **Live OCR** — when stems diverge or no verified source exists.
 
-As of 2026-11-09 verified sources: **Software Engineer**, **Generalist**, **Economist**.
+As of 2026-11-09 verified sources: **Software Engineer**, **Generalist**, **Economist**, **Finance Expert**, **Chemist** (unique Chemistry Starter — not Expert Domain Parallel).
 
 ### Stem-match gate (required before copy)
 

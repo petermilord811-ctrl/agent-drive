@@ -17,6 +17,8 @@ const ROOT = path.join(__dirname, 'problems');
 
 const FORBIDDEN = [
   { re: /summary from looks/i, why: 'explicit summary marker' },
+  { re: /Summary from live look/i, why: 'explicit Summary from live look marker (Chemist miss 2026-11-09)' },
+  { re: /Prompt\s*\(summary/i, why: 'Prompt (summary…) heading — bank must be full prose' },
   { re: /full verbatim pending/i, why: 'placeholder admitting non-verbatim body' },
   { re: /OCR\/vision repairs/i, why: 'OCR repair note in bank body' },
   { re: /Bracketed words are/i, why: 'admits bracket inventions' },
@@ -25,6 +27,7 @@ const FORBIDDEN = [
   { re: /\(summary[^)]*\)/i, why: 'parenthetical summary' },
   { re: /Less detail on cleaning than/i, why: 'comparative paraphrase of responses' },
   { re: /summary from looks/i, why: 'summary marker' },
+  { re: /\bbanked from live looks\b/i, why: 'admits look-summary banking instead of verbatim' },
   { re: /\bcleaned up\b/i, why: 'cleanup admission' },
   { re: /\.\.\. \(additional rows may continue/i, why: 'ellided dataset — capture full rows or PNG only' },
   // Live misses 2026-11-08 DS fetch (99588)

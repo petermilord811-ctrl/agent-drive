@@ -1,0 +1,20 @@
+Let’s break this down:
+
+Cyanogen and Isocyanogen Structure
+Cyanogen is a linear molecule with structure N≡C–C≡N, with a center of symmetry at the C–C bond.
+Isocyanogen is also linear, with structure N≡C–N≡C.
+Both molecules contain 4 atoms.
+
+Vibrational Mode Analysis
+For molecules, we calculate the number of vibrational modes using formulas based on their geometry.
+Since both molecules are linear, we use the formula 3N-6 (where N is the number of atoms).
+For both molecules: 3(4)-6 = 6 vibrational modes.
+
+Symmetry Effects
+Cyanogen (D∞h symmetry): Due to its center of symmetry, mutual exclusion applies. Some vibrational modes will be IR inactive.
+Isocyanogen (C∞v symmetry): Lacks a center of symmetry, so its vibrational modes can all be IR active.
+
+Final Conclusion Based on this analysis:
+Both molecules have 6 fundamental vibrational modes.
+Isocyanogen will show all of these modes in its IR spectrum.
+Cyanogen will show fewer peaks due to its higher symmetry. Therefore, the spectra will have a different number of unique peaks, with isocyanogen showing more peaks than cyanogen.

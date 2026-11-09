@@ -1,0 +1,14 @@
+Since both molecules are linear, we use the formula 3N•6 (where N is the number of atoms)
+• Por both = O vibrationd modes
+Symmetry Effects
+• Cyanogen symmetry): Due to its center of symmetry. mutual exclusion applies. Some vibrational be IR inactive.
+Isocyanogen (Cuv symmetry): Lacks a center of symmetry. so its vibrational modes can all be IR active.
+Final Conclusion Based on this analysis:
+Both molecules have 6 fundamental vibrational modes.
+Isocyanogen shot" all of modes in its IR spectrum.
+Cyanogen will show fewer peaks due to its higher symmetry Therefore. the spectra will have a different number of unique peaks, '.'hth isocyanogen showing more peaks thÜi cyanogen.
+Question: Does the A1'S reasoning or final answer contain any inaccuracies?
+O NO. the Ars reasoning and final answer are correct.
+O yes. there are one or more errors in the Ars reasoning or final answer.
+Explanation
+In 2-3+ complete sentences, please provide your reasoning for your above selection.

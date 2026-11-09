@@ -67,7 +67,9 @@ Do **not** wait for the operator to say “parallel.” On every Part A fetch/re
 6. Expert Domain **Q6 London Fog** / **Q7 complex prompt** → parallel from verified **Economist** (not Generalist Fog/Q8).
 7. Conversation Yes-branch follow-ups → parallel structure from verified Economist with domain-string swap; still spot-check one distinctive phrase live.
 
-### 1. Verbatim only — never summarize (HARD — operator 2026-11-08)
+### 1. Verbatim only — never summarize (HARD — operator 2026-11-08; Chemist miss 2026-11-09)
+
+**Also forbidden:** headings/lines like `Summary from live look:`, `Prompt (summary — PNG is source of truth)`, or bullet paraphrases of Response A/B/C. Bank the **full** response prose (or complete OCR text files + PNG). `validate-verbatim.js` fails these markers.
 
 - Copy **exact on-screen text** (prompts, bullets, code, choices, labels, datasets, model responses).
 - **Do not** paraphrase, shorten, “clean up”, OCR-repair, or invent missing words.
@@ -104,7 +106,7 @@ On Bio 2: save **all** bullets **except** any **No LLMs** / anti-AI line (omit t
 **Do not trust “I visited most questions.”** Count the sidebar, then reconcile the bank.
 
 1. At fetch start (and again before marking `full`), OCR/list every **leaf** row in the left nav — **not** PART/section headers. Save `problems/assets/{slug}/sidebar-inventory.json` (`total`, `leaves[{step,label}]`).
-2. Walk leaves **in sidebar order** (Step 1…N). Opening Coding before Q5 = skip.
+2. Walk leaves **in sidebar order** (Step 1…N). Opening Coding before Q5 = skip. **Never skip Section 3: Your Background** to jump Coding/meaningful (ME miss 2026-11-09).
 3. Each leaf must become one `## …` section with `**Step:** Step k of N` in **ascending** order in the MD.
 4. Gate: `node skills/take-dataannotation-assessment/reconcile-steps.js --slug <slug> --sidebar-json problems/assets/<slug>/sidebar-inventory.json`
    - Fails on missing `k`, duplicate `k`, or **outOfOrder** (e.g. SE had Q5 after Coding = “skipped Question 5”).

@@ -125,7 +125,7 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 | Embedded Systems Developer | [`problems-embedded-systems-developer.md`](./problems-embedded-systems-developer.md) | stub | `engineering-electrical` |
 | Hardware Engineer | [`problems-hardware-engineer.md`](./problems-hardware-engineer.md) | stub | `engineering-electrical` |
 | Electronics Engineer | [`problems-electronics-engineer.md`](./problems-electronics-engineer.md) | stub | `engineering-electrical` |
-| Chemist | [`problems-chemist.md`](./problems-chemist.md) | stub | `stem` |
+| Chemist | [`problems-chemist.md`](./problems-chemist.md) | verified | `stem` |
 | Physicist | [`problems-physicist.md`](./problems-physicist.md) | stub | `stem` |
 | Mathematician | [`problems-mathematician.md`](./problems-mathematician.md) | stub | `stem` |
 | Biologist | [`problems-biologist.md`](./problems-biologist.md) | stub | `stem` |
