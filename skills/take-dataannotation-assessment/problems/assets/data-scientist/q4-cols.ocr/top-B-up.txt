@@ -1,0 +1,30 @@
+C Payoneer Login
+Expert Data for F-ronti
+x I HumanizeAI Public API x
+1 f47-4dea•af12-5d5f1 a 1 ba7f-3c
+response B
+1. Data Cleaning & Quality Checks
+1.
+)uplicates
+:ustomer COIO aps2ars twice:
+In
+• (11 orders, 1540.5 revenue, 10 days)
+• (10 ordets, 1450 revenue. 12 days)
+'hese represent conflicting entries.
+Coon: Keep the most recent record the one with Days_Since_Last Purchase IO
+tvalid I Excludable Records
+C021: Total Orders = O not an active customer.
+In
+C022: Total Revenue = —2Ø invabd revenue.
+C027: Total Orders = 7.5 fractional orders are not valid.
+'hese are excluded.
+Requirement
+O be "meaningfulty active: customers should:
+• Have 22 orders
+• Have purchased recently enough we'll use a reasonable cutoff Of s120 days
+(COOC is at the boundary)
+JI remaining customers meet this craerion.
+2. Eligible Customers
+dter cleaning. 24 customers rernajn ebgible.
+a 3. Identify Top by Revenue
+bp 20% of 24 customers k (0.20 x 241 S

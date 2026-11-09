@@ -1,0 +1,2 @@
+Polynomial coefficients gJ:
+0 [2.04818182, 0.994090911

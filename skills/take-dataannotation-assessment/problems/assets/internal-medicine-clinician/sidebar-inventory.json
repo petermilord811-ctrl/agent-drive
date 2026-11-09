@@ -1,0 +1,41 @@
+{
+  "slug": "internal-medicine-clinician",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Internal Medicine Starter Assessment V4.1",
+  "taskResponseId": "01a1bd1a-8021-77c0-979b-6fa6eb6f2717",
+  "projectId": "b41f557f-e309-46f3-9de5-8a2b5dcf206e",
+  "track": "Internal Medicine Projects assessment",
+  "ui": "left-sidebar",
+  "branches": {
+    "credentialPath": {
+      "optionsVerified": [
+        "Board-Certified Internist or Internal Medicine Specialist US"
+      ],
+      "total": 19,
+      "leaves": [
+        { "step": 1, "label": "Instructions" },
+        { "step": 2, "label": "Your Professional Experience" },
+        { "step": 3, "label": "Your Medical Specialization", "choices": ["Critical Care", "Endocrinology", "Geriatrics", "Infectious Disease", "Internal Medicine", "Nephrology", "Oncology/Hematology", "Primary Care", "Rheumatology", "None of the above / other"] },
+        { "step": 4, "label": "Section 1: Verifying your Medical Licensure" },
+        { "step": 5, "label": "State of Licensure" },
+        { "step": 6, "label": "License Number" },
+        { "step": 7, "label": "Public Licensing Directory Link" },
+        { "step": 8, "label": "Supporting document (optional)" },
+        { "step": 9, "label": "Anything else to add (optional)" },
+        { "step": 10, "label": "Section 2: Assessment Questions" },
+        { "step": 11, "label": "Question 2" },
+        { "step": 12, "label": "Question 3" },
+        { "step": 13, "label": "Question 4" },
+        { "step": 14, "label": "Question 5" },
+        { "step": 15, "label": "Question 6" },
+        { "step": 16, "label": "Question 7" },
+        { "step": 17, "label": "Section 3: Your Background" },
+        { "step": 18, "label": "Tell us about the most meaningful Internal Medicine-related course or experience..." },
+        { "step": 19, "label": "(Optional) Any other comments?" }
+      ]
+    }
+  },
+  "backgroundLeafVerbatim": "Tell us about the most meaningful Internal Medicine-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!",
+  "note": "Distinct from Medical 01a1b7f8, Radiology 01a1bcf2, Surgical 01a1bd0d. Domain-specific Background. Never Submit. Shared expected for Internist / Internal Medicine Physician."
+}

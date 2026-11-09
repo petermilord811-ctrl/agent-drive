@@ -1,10 +1,11 @@
-# Chemist — STEM Assessment assessment
+# Chemist — Chemistry Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
+- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk for other in-progress starters). Resume with operator OK to expire, or after those tracks finish.
+- **Track:** **Chemistry Projects assessment** — distinct from Physics Projects / Math Projects / Programming Projects.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -12,12 +13,12 @@
 - **Role:** Chemist
 - **Category:** STEM
 - **Slug:** `chemist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (verbatim Bio; track verified on intro)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. _(Steps pending — Start not clicked)_
 
 ---
 
@@ -25,61 +26,51 @@
 
 **Role:** Chemist  
 **Category:** STEM  
-**Hiring cue:** _pending_
+**Hiring cue:** STEM • 31 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models routinely propose impossible mechanisms, unsafe procedures, and synthesis routes that no bench chemist would attempt. As a Chemist you'll evaluate AI chemical reasoning, catch the errors and safety risks, and write the answers a trained chemist would actually give.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Write prompts that probe chemical reasoning — mechanisms, synthesis routes, analytical interpretation.
+- Review AI output for impossible mechanisms, unsafe procedures, and misread spectra, and rate the reasoning.
+- Write the correct answer when the model falls short, with attention to conditions and safety.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Graduate-level chemistry background or equivalent lab experience.
+- Comfort working across organic, inorganic, or physical chemistry.
+- Clear written English: your explanations are the training signal.
+- No degree required. We care about what you can do, not where you learned it.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Chemist
+- Analytical Chemist
 
-## Requirements
+### Sidebar
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- **Rate:** Up to $125+/hour
+- Location: Remote · Commitment: Flexible hours · Type: Independent contractor · Payouts: Weekly
+- CTA: Continue
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+**Assets:** `assets/chemist/bio.png`
 
 ---
 
-## Step 1 · Instructions
+## Bio (assessment intro)
 
-**Step:** _pending_
-**Type:** info
+- **Title:** Chemist
+- **Subtitle / track:** Chemistry Projects assessment
+- **Pay line:** Up to $125+ per hour · Your hours: remote, no minimum
+- **What it takes — for this assessment:** People who pass usually spend **30 minutes or more**; We read your reasoning, not just your answers; Save and come back (several days); Do your own work (No LLMs unless a task says otherwise); This is your one attempt
+- **What happens next:** Email if accepted; Most projects need some additional qualifications after acceptance
+- **CTA:** Start assessment — **not clicked** (expire risk)
 
-_pending_
+**Assets:** `assets/chemist/track-intro.png`
 
-## Professional experience
+## Experience / questions
 
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Chemist | assessmentId: stem | category: STEM -->
-
+_Not captured — Start blocked pending expire clearance._

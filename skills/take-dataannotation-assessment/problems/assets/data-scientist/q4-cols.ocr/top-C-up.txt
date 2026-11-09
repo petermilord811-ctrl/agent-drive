@@ -1,0 +1,35 @@
+M work.mercor.com/onbl
+afterquery - Google Se
+x
+o
+o
+Ask Google
+44-814e-8c173cS13ee2
+se C
+Cleaning and Preprocessing
+tes: We need to identify and handle duplicate Customer_lD entnes. If a customer
+multiple times, should aggregate their data.
+Values:
+iJ_Otders: Should be a non•negative Kiteger. A value of O is acceptab'e but rmght
+cate inactivity depending on the eligibtbty ctitena.
+iJ_Revenue: Should ideaJty be non•negative. Negative revenue is problemat•c
+needs investigation (e.g., returns).
+Should be a non•negatwe integer.
+stent Entries: Ensure data types are correct (e.g.. numerical for orders. revenue.
+s).
+g Cleaning to the Dataset:
+amine the provided data:
+*tomervlD COIO: Appears tmce.
+Row 1: COzO. 11.1540.5, 10
+Row 2: COIO. 10, 1450, 12
+will aggregate these: Total_Orders = 11 + 10 = 21, Total_Revenue = 1540.5 +
+O = 2990.5, Days_Since_Last_Purchase - we'll take the minimum to represent
+activity, so 10.
+nomer_lD C021: Total_orders = O. Total_Revenue = SOO. This is an interesting
+wende they have O orders. they have revenue. This might be an error or an
+suaJ scenario (e.g.. a gift card purchase without a preceding order). For the
+oose of "active customers by revenue" with a re
+Expires in: 4 days 23 hours 34 minuti
+tomer might not be considered.
+9:56 AM
+11/8/26

@@ -1,0 +1,39 @@
+Expert Data for Frontie x I M work.mercor.com.'onbd
+x 'S HumanizeAI Public API x
+Di Mail - George Cortina x Choose the right Payor x Payoneer Login
+afterquery - Google Se
+x
+o
+Ask Google
+-Y
+@ SctC(ltoBoacm
+' ExpandAJl
+Phirri2e Completed Questions
+C020: Total Revenue = 1890.00. Total Orders =
+C015: Total Revenue = 1755.00. Total Orders = 13
+Total Revenue for the segment = 2990.50 + 2100.00 + 1890.00 + 1755.00 :
+8735.50
+Total Orders for the segment 21 + 15 + 14 + 13 63
+Pooled Average Order Value = 8735.50163 138.6587... Rounding to standard
+conventions: S138.66
+Summary of Results:
+Number of eligible customers (N_eligible): 22
+â€¢
+Number of customers in the top 20% segment (k): 4
+â€¢
+tmimum revenue threshold for this segment: $1755.00
+â€¢
+Pooled average order value for this segment: $138.66
+Which of the responses should be yven the highest score?
+C) A should receive the highest score
+C) B should receive the highest score
+C) C should receive the highest score
+C) Answers A and B should receive the same high score
+C) Answers A and C should receive the same high score
+C) Answers B and C shouki receive the same high score
+Question 4 - Explanation
+In three to five complete sentences. *ase explain your reasoning for your answer to Question 4
+Section 3: Your Data Science Experience
+Expires in: 4 days 23 hours 58 minutes
+9:32 AM a
+1118/26

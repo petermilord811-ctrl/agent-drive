@@ -28,7 +28,7 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 | `finance` | 14 | 14 | 0 | 0 |
 | `accounting` | 7 | 7 | 0 | 0 |
 | `economics` | 4 | 4 | 0 | 0 |
-| `legal` | 8 | 8 | 0 | 0 |
+| `legal` | 8 | 0 | 0 | 8 |
 | `medical` | 19 | 19 | 0 | 0 |
 | `healthcare-ops` | 6 | 6 | 0 | 0 |
 | `engineering-mechanical` | 6 | 6 | 0 | 0 |
@@ -43,8 +43,8 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 
 | Role | File | Status | Family |
 |------|------|--------|--------|
-| Generalist | [`problems-generalist.md`](./problems-generalist.md) | nearly-full | `generalist` |
-| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | nearly-full | `coding` |
+| Generalist | [`problems-generalist.md`](./problems-generalist.md) | verified | `generalist` |
+| Software Engineer | [`problems-software-engineer.md`](./problems-software-engineer.md) | verified | `coding` |
 | Frontend Engineer | [`problems-frontend-engineer.md`](./problems-frontend-engineer.md) | stub | `coding` |
 | DevOps Engineer | [`problems-devops-engineer.md`](./problems-devops-engineer.md) | stub | `coding` |
 | Backend Engineer | [`problems-backend-engineer.md`](./problems-backend-engineer.md) | stub | `coding` |
@@ -55,51 +55,51 @@ sets; still keep a file per role so Bio / pay / hiring cues stay accurate.
 | Penetration Tester | [`problems-penetration-tester.md`](./problems-penetration-tester.md) | stub | `cybersecurity` |
 | Incident Responder | [`problems-incident-responder.md`](./problems-incident-responder.md) | stub | `cybersecurity` |
 | Application Security Engineer | [`problems-application-security-engineer.md`](./problems-application-security-engineer.md) | stub | `cybersecurity` |
-| Finance Expert | [`problems-finance-expert.md`](./problems-finance-expert.md) | stub | `finance` |
-| Quantitative Analyst | [`problems-quantitative-analyst.md`](./problems-quantitative-analyst.md) | stub | `finance` |
-| Portfolio Manager | [`problems-portfolio-manager.md`](./problems-portfolio-manager.md) | stub | `finance` |
-| Investment Banker | [`problems-investment-banker.md`](./problems-investment-banker.md) | stub | `finance` |
-| Private Equity Associate | [`problems-private-equity-associate.md`](./problems-private-equity-associate.md) | stub | `finance` |
-| Credit Analyst | [`problems-credit-analyst.md`](./problems-credit-analyst.md) | stub | `finance` |
-| Wealth Manager | [`problems-wealth-manager.md`](./problems-wealth-manager.md) | stub | `finance` |
-| Equity Research Analyst | [`problems-equity-research-analyst.md`](./problems-equity-research-analyst.md) | stub | `finance` |
-| Actuary | [`problems-actuary.md`](./problems-actuary.md) | stub | `finance` |
-| Venture Capitalist | [`problems-venture-capitalist.md`](./problems-venture-capitalist.md) | stub | `finance` |
-| Insurance Underwriter | [`problems-insurance-underwriter.md`](./problems-insurance-underwriter.md) | stub | `finance` |
-| Trader | [`problems-trader.md`](./problems-trader.md) | stub | `finance` |
-| Treasury Analyst | [`problems-treasury-analyst.md`](./problems-treasury-analyst.md) | stub | `finance` |
-| Management Consultant | [`problems-management-consultant.md`](./problems-management-consultant.md) | stub | `finance` |
-| Tax Accountant | [`problems-tax-accountant.md`](./problems-tax-accountant.md) | stub | `accounting` |
-| Corporate Accountant | [`problems-corporate-accountant.md`](./problems-corporate-accountant.md) | stub | `accounting` |
-| Accountant | [`problems-accountant.md`](./problems-accountant.md) | stub | `accounting` |
-| Auditor | [`problems-auditor.md`](./problems-auditor.md) | stub | `accounting` |
-| Public Accountant | [`problems-public-accountant.md`](./problems-public-accountant.md) | stub | `accounting` |
-| FP&A Analyst | [`problems-fpa-analyst.md`](./problems-fpa-analyst.md) | stub | `accounting` |
-| Financial Reporting Manager | [`problems-financial-reporting-manager.md`](./problems-financial-reporting-manager.md) | stub | `accounting` |
-| Economist | [`problems-economist.md`](./problems-economist.md) | stub | `economics` |
-| Research Economist | [`problems-research-economist.md`](./problems-research-economist.md) | stub | `economics` |
-| Applied Economist | [`problems-applied-economist.md`](./problems-applied-economist.md) | stub | `economics` |
-| Quantitative Economist | [`problems-quantitative-economist.md`](./problems-quantitative-economist.md) | stub | `economics` |
-| Legal Expert | [`problems-legal-expert.md`](./problems-legal-expert.md) | stub | `legal` |
-| Attorney | [`problems-attorney.md`](./problems-attorney.md) | stub | `legal` |
-| Paralegal | [`problems-paralegal.md`](./problems-paralegal.md) | stub | `legal` |
-| Litigation Attorney | [`problems-litigation-attorney.md`](./problems-litigation-attorney.md) | stub | `legal` |
-| Corporate Attorney | [`problems-corporate-attorney.md`](./problems-corporate-attorney.md) | stub | `legal` |
-| Compliance Officer | [`problems-compliance-officer.md`](./problems-compliance-officer.md) | stub | `legal` |
-| Contract Manager | [`problems-contract-manager.md`](./problems-contract-manager.md) | stub | `legal` |
-| IP Attorney | [`problems-ip-attorney.md`](./problems-ip-attorney.md) | stub | `legal` |
-| Health/Medical Expert | [`problems-healthmedical-expert.md`](./problems-healthmedical-expert.md) | stub | `medical` |
-| Radiologist | [`problems-radiologist.md`](./problems-radiologist.md) | stub | `medical` |
-| Sonographer | [`problems-sonographer.md`](./problems-sonographer.md) | stub | `medical` |
-| Imaging Specialist | [`problems-imaging-specialist.md`](./problems-imaging-specialist.md) | stub | `medical` |
-| Physician | [`problems-physician.md`](./problems-physician.md) | stub | `medical` |
-| Nurse | [`problems-nurse.md`](./problems-nurse.md) | stub | `medical` |
-| Surgical Clinician | [`problems-surgical-clinician.md`](./problems-surgical-clinician.md) | stub | `medical` |
-| Surgical Medicine Expert | [`problems-surgical-medicine-expert.md`](./problems-surgical-medicine-expert.md) | stub | `medical` |
-| Surgeon | [`problems-surgeon.md`](./problems-surgeon.md) | stub | `medical` |
-| Internal Medicine Clinician | [`problems-internal-medicine-clinician.md`](./problems-internal-medicine-clinician.md) | stub | `medical` |
-| Internist | [`problems-internist.md`](./problems-internist.md) | stub | `medical` |
-| Internal Medicine Physician | [`problems-internal-medicine-physician.md`](./problems-internal-medicine-physician.md) | stub | `medical` |
+| Finance Expert | [`problems-finance-expert.md`](./problems-finance-expert.md) | nearly-full | `finance` |
+| Quantitative Analyst | [`problems-quantitative-analyst.md`](./problems-quantitative-analyst.md) | nearly-full | `finance` · shared FE Starter |
+| Portfolio Manager | [`problems-portfolio-manager.md`](./problems-portfolio-manager.md) | nearly-full | `finance` · shared FE Starter |
+| Investment Banker | [`problems-investment-banker.md`](./problems-investment-banker.md) | nearly-full | `finance` · shared FE Starter |
+| Private Equity Associate | [`problems-private-equity-associate.md`](./problems-private-equity-associate.md) | nearly-full | `finance` · shared FE Starter |
+| Credit Analyst | [`problems-credit-analyst.md`](./problems-credit-analyst.md) | nearly-full | `finance` · shared FE Starter |
+| Wealth Manager | [`problems-wealth-manager.md`](./problems-wealth-manager.md) | nearly-full | `finance` · shared FE Starter |
+| Equity Research Analyst | [`problems-equity-research-analyst.md`](./problems-equity-research-analyst.md) | nearly-full | `finance` · shared FE Starter |
+| Actuary | [`problems-actuary.md`](./problems-actuary.md) | nearly-full | `finance` · shared FE Starter |
+| Venture Capitalist | [`problems-venture-capitalist.md`](./problems-venture-capitalist.md) | nearly-full | `finance` · shared FE Starter |
+| Insurance Underwriter | [`problems-insurance-underwriter.md`](./problems-insurance-underwriter.md) | nearly-full | `finance` · shared FE Starter |
+| Trader | [`problems-trader.md`](./problems-trader.md) | nearly-full | `finance` · shared FE Starter |
+| Treasury Analyst | [`problems-treasury-analyst.md`](./problems-treasury-analyst.md) | nearly-full | `finance` · shared FE Starter |
+| Management Consultant | [`problems-management-consultant.md`](./problems-management-consultant.md) | nearly-full | `consulting` · Consultant Starter V4.1 (Consulting Projects; browse tag Finance) |
+| Tax Accountant | [`problems-tax-accountant.md`](./problems-tax-accountant.md) | nearly-full | `accounting` · shared Accounting Starter |
+| Corporate Accountant | [`problems-corporate-accountant.md`](./problems-corporate-accountant.md) | nearly-full | `accounting` · Accounting Starter V4.1 |
+| Accountant | [`problems-accountant.md`](./problems-accountant.md) | nearly-full | `accounting` · shared Accounting Starter |
+| Auditor | [`problems-auditor.md`](./problems-auditor.md) | nearly-full | `accounting` · shared Accounting Starter |
+| Public Accountant | [`problems-public-accountant.md`](./problems-public-accountant.md) | nearly-full | `accounting` · shared Accounting Starter |
+| FP&A Analyst | [`problems-fpa-analyst.md`](./problems-fpa-analyst.md) | nearly-full | `accounting` · shared Accounting Starter |
+| Financial Reporting Manager | [`problems-financial-reporting-manager.md`](./problems-financial-reporting-manager.md) | nearly-full | `accounting` · shared Accounting Starter |
+| Economist | [`problems-economist.md`](./problems-economist.md) | nearly-full | `economics` · Economist Starter V4.1 (16 leaves) |
+| Research Economist | [`problems-research-economist.md`](./problems-research-economist.md) | nearly-full | `economics` · shared Economist Starter |
+| Applied Economist | [`problems-applied-economist.md`](./problems-applied-economist.md) | nearly-full | `economics` · shared Economist Starter |
+| Quantitative Economist | [`problems-quantitative-economist.md`](./problems-quantitative-economist.md) | nearly-full | `economics` · shared Economist Starter |
+| Legal Expert | [`problems-legal-expert.md`](./problems-legal-expert.md) | nearly-full | `legal` · Law Starter V4.1 (16 leaves) |
+| Attorney | [`problems-attorney.md`](./problems-attorney.md) | nearly-full | `legal` · shared Law Starter |
+| Paralegal | [`problems-paralegal.md`](./problems-paralegal.md) | nearly-full | `legal` · shared Law Starter |
+| Litigation Attorney | [`problems-litigation-attorney.md`](./problems-litigation-attorney.md) | nearly-full | `legal` · shared Law Starter |
+| Corporate Attorney | [`problems-corporate-attorney.md`](./problems-corporate-attorney.md) | nearly-full | `legal` · shared Law Starter |
+| Compliance Officer | [`problems-compliance-officer.md`](./problems-compliance-officer.md) | nearly-full | `legal` · shared Law Starter |
+| Contract Manager | [`problems-contract-manager.md`](./problems-contract-manager.md) | nearly-full | `legal` · shared Law Starter |
+| IP Attorney | [`problems-ip-attorney.md`](./problems-ip-attorney.md) | nearly-full | `legal` · shared Law Starter |
+| Health/Medical Expert | [`problems-healthmedical-expert.md`](./problems-healthmedical-expert.md) | nearly-full | `medical` · shared Medical Starter |
+| Radiologist | [`problems-radiologist.md`](./problems-radiologist.md) | nearly-full | `radiology` · Radiologists Projects |
+| Sonographer | [`problems-sonographer.md`](./problems-sonographer.md) | bio | `radiology` · Radiologists Projects · shared `01a1bcf2` |
+| Imaging Specialist | [`problems-imaging-specialist.md`](./problems-imaging-specialist.md) | bio | `radiology` · Radiologists Projects · shared `01a1bcf2` |
+| Physician | [`problems-physician.md`](./problems-physician.md) | nearly-full | `medical` · Medical Starter (18 leaves; Medical Projects) |
+| Nurse | [`problems-nurse.md`](./problems-nurse.md) | nearly-full | `medical` · shared Medical Starter |
+| Surgical Clinician | [`problems-surgical-clinician.md`](./problems-surgical-clinician.md) | nearly-full | `surgical-medicine` · Surgical Medicine Projects `01a1bd0d` · 19 leaves |
+| Surgical Medicine Expert | [`problems-surgical-medicine-expert.md`](./problems-surgical-medicine-expert.md) | bio | `surgical-medicine` · shared `01a1bd0d` |
+| Surgeon | [`problems-surgeon.md`](./problems-surgeon.md) | bio | `surgical-medicine` · shared `01a1bd0d` |
+| Internal Medicine Clinician | [`problems-internal-medicine-clinician.md`](./problems-internal-medicine-clinician.md) | nearly-full | `internal-medicine` · Internal Medicine Projects `01a1bd1a` · 19 leaves |
+| Internist | [`problems-internist.md`](./problems-internist.md) | bio | `internal-medicine` · shared `01a1bd1a` |
+| Internal Medicine Physician | [`problems-internal-medicine-physician.md`](./problems-internal-medicine-physician.md) | bio | `internal-medicine` · shared `01a1bd1a` |
 | Dermatologist | [`problems-dermatologist.md`](./problems-dermatologist.md) | stub | `medical` |
 | Gynecologist | [`problems-gynecologist.md`](./problems-gynecologist.md) | stub | `medical` |
 | Obstetrician | [`problems-obstetrician.md`](./problems-obstetrician.md) | stub | `medical` |

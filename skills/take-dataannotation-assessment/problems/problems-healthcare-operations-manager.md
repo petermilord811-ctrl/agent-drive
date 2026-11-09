@@ -1,10 +1,11 @@
-# Healthcare Operations Manager — Healthcare Operations Assessment assessment
+# Healthcare Operations Manager — Healthcare Operations Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123
+- **Gaps:** Steps not started — Start not clicked.
+- **Track:** **Healthcare Operations Projects assessment**. Cue: **30 minutes or more** (shorter than Medical specialty project tracks). Rate: Up to $125+/hr. Popularity: **71 hired recently**.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -12,74 +13,38 @@
 - **Role:** Healthcare Operations Manager
 - **Category:** Healthcare Ops
 - **Slug:** `healthcare-operations-manager`
-- **Source:** DataAnnotation assessment UI
 
-### Contents
+### Bio
 
-1. [Bio](#bio)
-2. _(Steps pending)_
-
----
-
-## Bio
-
-**Role:** Healthcare Operations Manager  
-**Category:** Healthcare Ops  
-**Hiring cue:** _pending_
+**Hiring cue:** Healthcare Ops • 71 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models struggle with the practical side of healthcare: billing codes, insurance workflows, scheduling, and admin details. As a Healthcare Operations Specialist you'll evaluate AI answers about healthcare administration and write guidance an experienced operator would give.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Write prompts for healthcare admin scenarios (billing, coding, insurance, scheduling, compliance).
+- Review AI output for errors in codes or processes; rate reasoning.
+- Write correct answers from day-to-day operational experience.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Hands-on experience in healthcare admin, billing, or practice operations.
+- Familiarity with coding and insurance workflows.
+- Clear written English.
+- No degree required.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Healthcare Operations Manager · Practice Manager · Patient Access Manager
 
-## Requirements
+**Assets:** `assets/healthcare-operations-manager/bio.png`
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+### Bio (assessment intro)
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+- **Track:** **Healthcare Operations Projects assessment**
+- **Cue:** People who pass usually spend **30 minutes or more**
+- **Start:** not clicked
 
----
-
-## Step 1 · Instructions
-
-**Step:** _pending_
-**Type:** info
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Healthcare Operations Manager | assessmentId: healthcare-ops | category: Healthcare Ops -->
-
+**Assets:** `assets/healthcare-operations-manager/track-intro.png`

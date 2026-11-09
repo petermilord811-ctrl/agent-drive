@@ -1,23 +1,26 @@
-# Surgical Medicine Expert — Medical Assessment assessment
+# Surgical Medicine Expert — Surgical Medicine Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** bio
+- **Captured:** 2026-11-08 · host **34123**
+- **Assessment:** Surgical and Perioperative Medical Professional Starter Assessment V4.1 / **Surgical Medicine Projects** assessment
+- **IDs:** shared with Surgical Clinician — `task_response_id=01a1bd0d-3a0e-71b3-90a6-1b656184221d` · `project_id=25745102-dab8-4377-ae60-5b6ce8e1fcc1`
 - **Rule:** never Submit while fetching
+- **Targeting:** Medical filter → **Surgical Medicine Expert** titled card → verify **Surgical Medicine Projects assessment** before Start.
+- **Steps:** shared with `problems-surgical-clinician.md` (Branch A 19 / Branch B 17).
 
 ### Role
 
 - **Role:** Surgical Medicine Expert
 - **Category:** Medical
 - **Slug:** `surgical-medicine-expert`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Medical → Surgical Medicine Expert; verified **Surgical Medicine Projects**)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. Steps → see [problems-surgical-clinician.md](problems-surgical-clinician.md)
 
 ---
 
@@ -25,61 +28,46 @@
 
 **Role:** Surgical Medicine Expert  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 8 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Experienced Surgical Medicine Expert to train AI — complex surgical and perioperative problems, check reasoning, show where models fall short. New area focusing on OR workflow from indications to recovery.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Pose diverse, complex surgical and perioperative problems; evaluate answers.
+- Rate model output for correctness, completeness, and safety against the current standard of care.
+- Flag inaccuracies (missed contraindications to wrong operative steps).
+- Write the correct answer with a clear rationale.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Board certification in surgery with 3+ years post-residency, or current license to practice clinically in surgery (RN, NP, PA, or CRNA).
+- Backgrounds: surgeons of all specialties, anesthesiologists, nurse anesthetists, perioperative/OR nurses, APCs in surgery.
+- English fluency; clear writing that explains why output is wrong.
+- Based in AU / CA / IE / NZ / UK / US.
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/surgical-medicine-expert/sme_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
----
+**Title:** Surgical Medicine Expert  
+**Track line:** **Surgical Medicine Projects assessment** ← verified before Start
 
-## Step 1 · Instructions
+### Pay / hours strip
 
-**Step:** _pending_
-**Type:** info
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-_pending_
+### Assets
 
-## Professional experience
+- `assets/surgical-medicine-expert/sme_bio1.png`
 
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Surgical Medicine Expert | assessmentId: medical | category: Medical -->
-
+<!-- role: Surgical Medicine Expert | assessmentId: surgical-medicine | category: Medical | assessmentVersion: Surgical and Perioperative Medical Professional Starter V4.1 | sharedAssessment: surgical-medicine/surgical-clinician -->

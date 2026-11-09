@@ -1,23 +1,27 @@
-# Nurse — Medical Assessment assessment
+# Nurse — Medical Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 18 · shared with `physician`
+- **Gaps:** Role Bio unique; **assessment steps = Medical Starter shared** (`task_response_id=01a1b7f8-…`).
 - **Rule:** never Submit while fetching
+- **Shared assessment:** Medical Projects / Medical Starter Assessment
+- **Targeting:** Medical filter → **Nurse** titled card (not Physician / not Registered Nurse) → verify **Medical Projects** before Start.
+- **Re-confirm 2026-11-08 (later):** Track still **Medical Projects assessment**; 34 hired recently; distinct Browse leaf from **Registered Nurse** (24 hired, same track).
 
 ### Role
 
 - **Role:** Nurse
 - **Category:** Medical
 - **Slug:** `nurse`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Medical → Nurse; verified **Medical Projects**; Start → same Medical Starter)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-medical-starter) → [`problems-physician.md`](./problems-physician.md)
 
 ---
 
@@ -25,61 +29,54 @@
 
 **Role:** Nurse  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 34 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models sound confident and still get bedside care wrong. Evaluate AI on assessment, medication safety, and clinical protocols — write guidance an experienced nurse would trust.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Write prompts probing nursing judgment (assessment, triage, medication administration, patient education).
+- Review AI output for unsafe steps and rate clinical reasoning.
+- Write correct answers grounded in bedside practice.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Active or recent nursing experience.
+- Comfort reasoning through assessment and safety.
+- Clear written English.
+- No degree required.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Nurse
+- Registered Nurse
+- Nurse Practitioner
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
+
+- `assets/nurse/nu_bio0.png`
+
+## Bio (assessment intro)
+
+**Title:** Nurse  
+**Track line:** **Medical Projects assessment**
+
+### Assets
+
+- `assets/nurse/nu_bio1.png`
+- `assets/nurse/nu_start.png`
+- `assets/nurse/track-intro.png` (2026-11-08 re-confirm)
 
 ---
 
-## Step 1 · Instructions
+## Assessment steps (shared Medical Starter)
 
-**Step:** _pending_
-**Type:** info
+→ [`problems-physician.md`](./problems-physician.md) (`task_response_id=01a1b7f8-…`, 18 leaves)
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Nurse | assessmentId: medical | category: Medical -->
-
+<!-- role: Nurse | assessmentId: medical | sharedAssessment: medical/physician -->

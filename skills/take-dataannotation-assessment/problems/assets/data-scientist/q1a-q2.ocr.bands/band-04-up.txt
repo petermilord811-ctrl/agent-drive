@@ -1,0 +1,4 @@
+Prompt
+I need to find best model for a srnau, noisy dataset. The data represents a physical process 'there the input x is a controlled value and the output y is measured. Your task is to determine the optimal polynomial order n that best descnbes this data Use some kind of
+information critenon to evaluate the relauve quality of each model to ensure that the model is not overfit. Please provide as a final answer: The optimal order n. the vector of polynonual coeff•cients (p_n. .... p_O) for that opumal order. and the sum of squared error for that
+potynonual fit.

@@ -1,0 +1,34 @@
+Customer_ID C022: Total_Revenue •200. This is mvaJ'd and be excluded.
+•
+Customer_ID C027: Total_Orders 7.5. This s not a whole number for orders
+•
+needs to be addressed. We will round this dmvn to 7 for consistency with typical
+order counts.
+2. Eligibility Criteria
+The prompt states: "consider only customers who are meaningfiJtty active - they shoul
+have a reasonable purchase mstory and have engaged recently enough to be
+for a premium program."
+Lets define reasonable thresholds for this:
+Minimum Total Orders: A customer should have made at least one purchase to
+considered active. Levs set a minimum of Total_Orders 21.
+Recent Engagement: A customer shouldnt have a purchase from too long ago.
+•
+Lets set a maximum threshold for Days_Since_Last_Purchase. A common
+benchmark for recent activity n e-commerce might be within 90 days. Lets set
+Days_Since_Last_Purchase s 90.
+Valid Revenue: Weve already addressed negative revenue by excluding C022.
+Number of customers in the top 20% segment (k):
+• N_eligible = 22
+k = of 22 = 0.20 x 22 = 4.4
+Using standard rounding. k = 4 customers.
+Tie-breaking:
+Por customers with identical revenue, we rank Ü•vem based on Total_Orders
+(descending) and then (ascen&ng). In this sorted list, CC
+and C024 have identical revenue. C02S has 12 orders and C024 has 11 orders. So O
+ranks Ngher.
+Minimum revenue threshold for this segment:
+We need the revenue of the 4th customer in the soned list. The 4th customer is C015
+wmTota1 Revenue : 1755.00. Therefore. the minimum revenue threshold is S1755.o
+Pooled average order value for this segment:
+The top 4 customers are:
+COIO: Total Revenue = 2990.50. Total Orders = 2

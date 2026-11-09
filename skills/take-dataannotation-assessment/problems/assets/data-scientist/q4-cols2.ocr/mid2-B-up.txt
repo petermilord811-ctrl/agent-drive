@@ -1,0 +1,28 @@
+Sorted Revenues (Descending)
+1. C005—2100
+2. com—1890
+3. C015—1755
+4. C003—1560
+5. Colo —1540.5
+6. C024—1540.5
+7. C025—1540.5
+8. COE —1350
+9. C023—1349.5
+10. C019—1215
+11. C008—1170
+12. C026—1143.25
+Top 5 customers (with tie-breaking by number of orders when revenues match,
+then lowest Customer_lD): COOS, C020, COIS, COIO
+Minimum Revenue Threshold
+The 5th-highest revenue : $1,540.50
+4. Pooled Average Order Value (AOV) for Top Segment
+Top-segment totals:
+Total Revenue = 2100 + 1890 • 1755 1560 1540.5 = 9,845.50
+Total Orders = 15 14 13 12 + 11 = orders
+• AOV= 8845.5/65= 136.08
+Rounded to standard currency $136.08
+@Final Results
+N_eligibk: 24 customers
+k (top 20%): S customers
+Minimum revenue threshold: $1,540.50
+• Pooled AOV (top segment): $136.08

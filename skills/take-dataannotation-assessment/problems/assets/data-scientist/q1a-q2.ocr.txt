@@ -1,0 +1,18 @@
+First.time Visitor Purchases
+We nouce a pattern 'there consumers purchase 5 ot more items tend to come back and purchase at hogher rates. Thus to encourage buyers to return and buy more Otten, are offering ftrstâ€¢urne buyers a coupon if they buy 5 or more items.
+Question Ia
+In wo or more complete sentences. please explain the primary issue mth the analysis related to the chart.
+uestion 2
+This material will be used to answer the following questions: Questions 2a, and 2b.
+In the context of chatbots and Al models. rubrics are guidelines or criteria that are used to evahjate the response(s) provided by the Al models. These rubrics typically break down evaluation into several key areas. such as accuracy. relevance. tone. and/or efficiency.
+Evaluate the fobovong prompt response. and consider whether response successfully addresses the "rubrics- below (fre "Did the response..." questions 2a and 2b).
+Prompt
+I need to find best model for a srnau, noisy dataset. The data represents a physical process 'there the input x is a controlled value and the output y is measured. Your task is to determine the optimal polynomial order n that best descnbes this data Use some kind of
+information critenon to evaluate the relauve quality of each model to ensure that the model is not overfit. Please provide as a final answer: The optimal order n. the vector of polynonual coeffâ€¢cients (p_n. .... p_O) for that opumal order. and the sum of squared error for that
+potynonual fit.
+potynonual fit.
+Here is the data
+x: (-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.01
+y: [-3.15.-1.95. -1.30, 0.10.0.95.2.20. 2.85.4.30.5.10, 5.90.7.201
+Response
+Expires in: 4 days 22 hours 57 mir

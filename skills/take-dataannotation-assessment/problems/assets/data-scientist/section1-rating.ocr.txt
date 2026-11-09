@@ -1,0 +1,21 @@
+o Displayyour understanding of 'there Al models tend to make mstakes. If you use Al often, this val come much easier to you. If you dont use Al very often, you can still do vell here as longas you take your time and focus on vhat is truly a meaningful failte (instead of
+boking for just any mistake so you can move on).
+â€¢ If you cidnt elicit any meaningful failures, yotrll want to start over with a new conversation. Generally the way this works is that even if you didnt get a very good failure, you learned something about behavior along the way -which helps you more effectively target
+veaknesses in the next conversation.
+Generally, we suggest restarting your conversation if you weren't able to elicit a meaningful failure within the first three rounds, but you can elect to extend your conversation beyond three rounds if you feel your conversation concept will elicit meaningful failures in later rounds.
+â€¢
+Yes
+No
+Overall Model Performance
+Overall Model Performance
+How vnuld you score the overan quality of model responses in the conversation?
+Oid the model mosey help you achieve your goal, or were there so many errors that the conversation would be or misleadirg for t'.e typical user?
+Amazing
+Good
+Okay
+Poor
+Overall Model Performance Rationale
+Explain your overan rating above. (3+ sentences)
+Please write the explanaton as if you are writing a report for someone who cannot review your shared conversation. This means they may not tmderstand if you say â€¢Error X happened in turn so its important to communicate clearly what the error is and how it negatively impacted
+the quaJity of the moders response(s) in the conversaton.
+Expires in: 4 days 22 hours 58 mir

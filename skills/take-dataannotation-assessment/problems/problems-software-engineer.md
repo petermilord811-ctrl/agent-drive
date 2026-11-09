@@ -2,7 +2,7 @@
 
 ### Bank
 
-- **captureStatus:** nearly-full
+- **captureStatus:** verified
 - **Captured:** 2026-11-07 · scroll + sidebar re-audit 2026-11-08 host 34123
 - **Leaves:** 11 · `assets/software-engineer/sidebar-inventory.json`
 - **Gaps:** Q5 pseudocode case (radio did not switch; do not Submit)

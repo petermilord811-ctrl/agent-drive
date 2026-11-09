@@ -1,0 +1,4 @@
+v Your Task
+Have a conversat•on using Haku 5.5 on (with "Effort" set to Low).
+Wed like you to have a conversation that is relevant to the Data Science Domain which is challenging, but also realisuc and natural. In other words, we dont find prompts that test if the model can "end every other sentence mth the letter as useful. They might make that
+mistake, but it's not a meaningful error in the Data Science domain. Thts doesn't have to strictly be in product Data Soence ot a particular area. Use whatever your domain of expertise whether academic or industry. as it relates to Data Science or Anarytics.

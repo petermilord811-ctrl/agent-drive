@@ -1,0 +1,4 @@
+Here are foc us.tng C./.udg.i and recordtng yout conversabon.
+• Create a conversation betvjeen 1-3 "rounds" I user prompts long
+Make sure your first prompt in the conversation is a challenging, realistic, and natural request
+If you get a meaningful failure on the first turn, you are free to stop the conversation there (but dont have to)

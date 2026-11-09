@@ -1,10 +1,11 @@
-# Gynecologist — Medical Assessment assessment
+# Gynecologist — Gynecology Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
+- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
+- **Track:** **Gynecology Projects assessment** — **unique** (≠ Medical Projects; ≠ Dermatology/Cardiology Projects). Cue: **1 hour 30 minutes or more**. Rate: Up to $125+/hr. Popularity: **12 hired recently**.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -12,12 +13,12 @@
 - **Role:** Gynecologist
 - **Category:** Medical
 - **Slug:** `gynecologist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. _(Steps pending — Start not clicked)_
 
 ---
 
@@ -25,61 +26,41 @@
 
 **Role:** Gynecologist  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 12 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+We're looking for an experienced Gynecologist to help train AI models by measuring how well models answer clinical questions in obstetrics and gynecology. New area for the company. Open to board-certified OB/GYNs and to nurses, NPs, and PAs licensed to practice clinically in obstetrics and gynecology.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Review AI responses alongside clinical context.
+- Rate responses on accuracy, completeness, safety, and usefulness.
+- Compare two independent responses and log discrepancies.
+- Write clear, detailed rationales.
+- Pinpoint misses / misstatements / incomplete info (differentials to missed red flags).
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Board-certified OB/GYN with at least 3 years post-residency, or a nurse, NP, or PA licensed to practice in gynecology.
+- Hands-on clinical experience in obstetrics and gynecology.
+- Fluency in English (native or bilingual level).
 
-### Common backgrounds
+### Sidebar
 
-- _pending_
-- …
+- **Rate:** Up to $125+/hour · Remote · Flexible · Independent contractor · Weekly
+- CTA: Continue
 
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+**Assets:** `assets/gynecologist/bio.png`
 
 ---
 
-## Step 1 · Instructions
+## Bio (assessment intro)
 
-**Step:** _pending_
-**Type:** info
+- **Title:** Gynecologist
+- **Subtitle / track:** **Gynecology Projects assessment**
+- **Pay line:** Up to $125+ per hour · Your hours: remote, no minimum
+- **What it takes:** People who pass usually spend **1 hour 30 minutes or more**; reasoning; several days; No LLMs; one attempt
+- **CTA:** Start assessment — **not clicked**
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Gynecologist | assessmentId: medical | category: Medical -->
-
+**Assets:** `assets/gynecologist/track-intro.png`

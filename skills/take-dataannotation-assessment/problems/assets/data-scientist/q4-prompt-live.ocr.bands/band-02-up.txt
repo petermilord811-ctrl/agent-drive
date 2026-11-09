@@ -1,0 +1,4 @@
+1. The number of eligible customers (N_eligible)
+2. The number of customers in the top 20% segment (k)
+3. The mirinujm revenue threshold for ttys segment
+a. The pooled averaqe order value for this seqment

@@ -1,0 +1,3 @@
+Please write the explanaton as if you are writing a report for someone who cannot review your shared conversation. This means they may not tmderstand if you say •Error X happened in turn so its important to communicate clearly what the error is and how it negatively impacted
+the quaJity of the moders response(s) in the conversaton.
+Expires in: 4 days 22 hours 58 mir

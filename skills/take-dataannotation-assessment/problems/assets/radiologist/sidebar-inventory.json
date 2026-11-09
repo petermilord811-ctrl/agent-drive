@@ -1,0 +1,73 @@
+{
+  "slug": "radiologist",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Radiology Starter Assessment V4.1",
+  "taskResponseId": "01a1bcf2-15db-768c-9291-de599e667b2d",
+  "projectId": "a99b0c81-4d05-4d08-b811-3f9ccebf3b91",
+  "track": "Radiologists Projects assessment",
+  "ui": "left-sidebar",
+  "branches": {
+    "boardCertifiedUS": {
+      "option": "I am a Board-Certified Radiologist (MD or DO) certified in the United States",
+      "total": 17,
+      "leaves": [
+        { "step": 1, "label": "Instructions" },
+        { "step": 2, "label": "Your Professional Experience" },
+        { "step": 3, "label": "Section 1: Professional Credential Verification" },
+        { "step": 4, "label": "State of Licensure" },
+        { "step": 5, "label": "License Number" },
+        { "step": 6, "label": "Public Licensing Directory Link + Supporting document" },
+        { "step": 7, "label": "Anything else to add (optional)" },
+        { "step": 8, "label": "Section 2 / Question 1 (Doyle Brunson)" },
+        { "step": 9, "label": "Question 2 (time-travel)" },
+        { "step": 10, "label": "Question 3 (NYT)" },
+        { "step": 11, "label": "Question 4 (sandwich sonnet)" },
+        { "step": 12, "label": "Question 5" },
+        { "step": 13, "label": "Question 6" },
+        { "step": 14, "label": "Question 7" },
+        { "step": 15, "label": "Section 3: Your Background" },
+        { "step": 16, "label": "Tell us about the most meaningful..." },
+        { "step": 17, "label": "(Optional) Any other comments?" }
+      ]
+    },
+    "conversationPath": {
+      "optionsVerified": [
+        "2 Radiologist certified outside United States",
+        "3 US licensed radiologic technologist / imaging professional",
+        "4 non-US licensed radiologic technologist / imaging professional",
+        "5 medical student planning Radiology",
+        "6 enrolled radiologic technology / medical imaging program",
+        "7 pre-med / pre-health / other medical degree program",
+        "8 None of the above / other"
+      ],
+      "total": 16,
+      "leaves": [
+        { "step": 1, "label": "Instructions" },
+        { "step": 2, "label": "Your Professional Experience" },
+        { "step": 3, "label": "Section 1: Assessment Questions" },
+        { "step": 4, "label": "Question 2" },
+        { "step": 5, "label": "Question 3" },
+        { "step": 6, "label": "Question 4" },
+        { "step": 7, "label": "Question 5" },
+        { "step": 8, "label": "Question 6" },
+        { "step": 9, "label": "Question 7" },
+        { "step": 10, "label": "Section 2: Conversation: Challenging Radiography Case (Background + Conversation Goal)" },
+        { "step": 11, "label": "Attached Files" },
+        { "step": 12, "label": "Did you get the model to produce..." },
+        { "step": 13, "label": "Share Your Conversation" },
+        { "step": 14, "label": "Section 3: Your Background" },
+        { "step": 15, "label": "Tell us about the most meaningful..." },
+        { "step": 16, "label": "(Optional) Any other comments?" }
+      ],
+      "conversationLeaf": {
+        "title": "Section 2: Conversation: Challenging Radiography Case",
+        "model": "Haiku 5.5 on Claude.ai (Effort = Low)",
+        "domain": "Radiology Domain",
+        "rounds": "1-3 user prompts",
+        "goal": "elicit meaningful failure (incorrect / misleading / essential reasoning flaws)"
+      }
+    }
+  },
+  "note": "Distinct from Medical Starter 01a1b7f8. Only option 1 (US Board-Certified) → Branch A 17; options 2–8 → Branch B 16. Never Submit. Shared track expected for Sonographer / Imaging Specialist."
+}

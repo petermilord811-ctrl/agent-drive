@@ -1,23 +1,26 @@
-# Surgeon — Medical Assessment assessment
+# Surgeon — Surgical Medicine Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** bio
+- **Captured:** 2026-11-08 · host **34123**
+- **Assessment:** Surgical and Perioperative Medical Professional Starter Assessment V4.1 / **Surgical Medicine Projects** assessment
+- **IDs:** shared with Surgical Clinician — `task_response_id=01a1bd0d-3a0e-71b3-90a6-1b656184221d` · `project_id=25745102-dab8-4377-ae60-5b6ce8e1fcc1`
 - **Rule:** never Submit while fetching
+- **Targeting:** Medical filter → **Surgeon** titled card → verify **Surgical Medicine Projects assessment** before Start.
+- **Steps:** shared with `problems-surgical-clinician.md` (Branch A 19 / Branch B 17).
 
 ### Role
 
 - **Role:** Surgeon
 - **Category:** Medical
 - **Slug:** `surgeon`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Medical → Surgeon; verified **Surgical Medicine Projects**)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. Steps → see [problems-surgical-clinician.md](problems-surgical-clinician.md)
 
 ---
 
@@ -25,61 +28,46 @@
 
 **Role:** Surgeon  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 9 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Help train AI models with surgical and perioperative problems; check AI reasoning against clinical standards.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Pose complex surgical problems to AI models.
+- Rate model output for correctness and safety against the current standard of care.
+- Flag inaccuracies (e.g., missed contraindications).
+- Write correct answers with clear rationales.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Board certification in surgery with 3+ years post-residency, or current license to practice clinically in surgery (RN, NP, PA, or CRNA).
+- Backgrounds: Surgeons, anesthesiologists, nurse anesthetists, perioperative/OR nurses.
+- English fluency; clear writing.
+- Based in AU / CA / IE / NZ / UK / US.
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/surgeon/surgeon_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
----
+**Title:** Surgeon  
+**Track line:** **Surgical Medicine Projects assessment** ← verified before Start
 
-## Step 1 · Instructions
+### Pay / hours strip
 
-**Step:** _pending_
-**Type:** info
+- Up to $125+ per hour
+- Your hours: remote, no minimum
 
-_pending_
+### Assets
 
-## Professional experience
+- `assets/surgeon/surgeon_bio1.png`
 
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Surgeon | assessmentId: medical | category: Medical -->
-
+<!-- role: Surgeon | assessmentId: surgical-medicine | category: Medical | assessmentVersion: Surgical and Perioperative Medical Professional Starter V4.1 | sharedAssessment: surgical-medicine/surgical-clinician -->

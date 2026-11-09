@@ -115,6 +115,10 @@ const V = {
   send:        { f: ['file', 'to', 'overwrite'], need: (c) => !nonEmpty(c.file) ? 'send needs file: the file here to put on the machine' : !nonEmpty(c.to) ? 'send needs to: the path (or folder) on the machine' : '', what: 'put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room' },
   camera:      { f: ['out', 'device', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'camera needs out: the .jpg to save the photo to', what: 'one photo from the machine\'s webcam -- the room is asked first, every time, and only a yes allows it (needs shell)' },
   audio:       { f: ['out', 'seconds', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'audio needs out: the .wav to save the recording to', what: 'up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell)' },
+  // ---- relay HTTP (join key; no host control; same secret as SM_JOIN_KEY / x-sm-join-key)
+  humanize:    { f: ['text', 'mode', 'style', 'ultra'], what: 'rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready' },
+  aicheck:     { f: ['text'], what: 'AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready' },
+  aiusage:     { f: [], what: 'Humanize/detect usage balance via relay GET /api/aiusage (x-sm-join-key)' },
 };
 // inside a `plan`, a step may be a CHOICE or a LOOP instead of a verb
 const CONTROL_KEYS = ['if', 'then', 'else', 'repeat', 'until', 'steps', 'poll', 'fresh', 'quiet', 'intent', 'note'];
@@ -123,7 +127,8 @@ const CONTROL_KEYS = ['if', 'then', 'else', 'repeat', 'until', 'steps', 'poll', 
 const VERB_ALIAS = { sleep: 'pause', delay: 'pause', type: 'keys', write: 'keys', screenshot: 'shot', capture: 'shot',
                      say: 'chat', message: 'chat', doubleclick: 'dbl', 'double-click': 'dbl', dblclick: 'dbl', rightclick: 'right',
                      'right-click': 'right', hotkey: 'chord', combo: 'chord', shortcut: 'chord', navigate: 'open', goto: 'open',
-                     run: 'exec', shell: 'exec', view: 'look', recaptcha: 'captcha', hcaptcha: 'captcha', 'ask-access': 'access', 'request-access': 'access', term: 'terminal', console: 'terminal', 'list-windows': 'windows', activate: 'focus', 'bring-to-front': 'focus', start: 'launch', 'open-app': 'launch', ui: 'controls', accessibility: 'controls' };
+                     run: 'exec', shell: 'exec', view: 'look', recaptcha: 'captcha', hcaptcha: 'captcha', 'ask-access': 'access', 'request-access': 'access', term: 'terminal', console: 'terminal', 'list-windows': 'windows', activate: 'focus', 'bring-to-front': 'focus', start: 'launch', 'open-app': 'launch', ui: 'controls', accessibility: 'controls',
+                     detect: 'aicheck', 'ai-check': 'aicheck', 'ai_check': 'aicheck', 'ai-usage': 'aiusage', 'ai_usage': 'aiusage' };
 const FIELD_ALIAS = {
   keys:      { keys: 'text', value: 'text', string: 'text', chars: 'text', input: 'text', person: 'human', natural: 'human', pace: 'speed' },
   chat:      { message: 'text', msg: 'text', body: 'text' },
@@ -144,6 +149,8 @@ const FIELD_ALIAS = {
   send:      { from: 'file', source: 'file', path: 'to', dest: 'to' },
   camera:    { file: 'out', path: 'out', to: 'out', camera: 'device' },
   audio:     { file: 'out', path: 'out', to: 'out', secs: 'seconds', duration: 'seconds' },
+  humanize:  { strength: 'mode', body: 'text', content: 'text' },
+  aicheck:   { body: 'text', content: 'text', detect: 'text' },
 };
 
 // A key as people write it ("esc", "ctrl", "win", "a", "5", "f4") -> the code the hosts map. Unknown names pass

@@ -145,6 +145,13 @@ const FIELDS = {
 const BY_VERB = {
   clicks: { at: POINTS },
   keys: { text: S('the characters to type') },
+  humanize: {
+    text: S('prose to rewrite (omit for GET ready)'),
+    mode: S('quality | balanced | bypass (default balanced)'),
+    style: S('standard | academic | simple | flowing | informal | formal | expand | shorten'),
+    ultra: B('optional harder rewrite'),
+  },
+  aicheck: { text: S('paragraph to score (omit for GET ready)') },
   clickText: { text: S('the word to find and click') },
   find: { text: S('the word to find') },
   plan: { steps: { type: 'array', items: { type: 'object' }, description: 'commands {"do":"<verb>",...}, run in order and stopped at the first that fails; also {if:<predicate>, then:[...], else:[...]} and {repeat:N, until:<predicate>, steps:[...], poll:ms}' } },
@@ -216,6 +223,9 @@ const EXTRA = {
   exec: 'Needs a grant that may run commands: connect {shell:true}, or access {shell:true}.',
   done: 'Ends the visit, like disconnect.',
   quit: 'Ends the visit, like disconnect.',
+  humanize: 'Relay HTTP /api/humanize with x-sm-join-key (SM_JOIN_KEY). No Bearer / HUMANIZE_API_KEY. Omit text for ready.',
+  aicheck: 'Relay HTTP /api/detect with x-sm-join-key. Omit text for ready.',
+  aiusage: 'Relay HTTP GET /api/aiusage balance only.',
 };
 const sentence = (s) => { s = String(s || '').trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) + (/[.!?]$/.test(s) ? '' : '.') : ''; };
 function verbTool(verb, name) {

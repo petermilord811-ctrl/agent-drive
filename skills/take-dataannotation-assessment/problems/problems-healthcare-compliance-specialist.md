@@ -1,85 +1,43 @@
-# Healthcare Compliance Specialist — Healthcare Operations Assessment assessment
+# Healthcare Compliance Specialist — assessment bank (stub)
 
-### Bank
+> **Fetched:** 2026-11-09 · host 34123 · Browse → Healthcare Ops → Healthcare Compliance Specialist
+> **Status:** stub (bio + track verified; assessment NOT started)
+> **Track:** **Healthcare Operations Projects assessment** (shared with Healthcare Operations Manager, Medical Coder, and likely other Healthcare Ops leaves)
+> **Cue:** People who pass usually spend **30 minutes or more** · Up to $125+/hr · remote, no minimum
+> **Do not Start** without operator OK (Data Science Starter Assessment already in progress).
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
-- **Rule:** never Submit while fetching
+## Role bio (Browse leaf)
 
-### Role
+**Title:** Healthcare Compliance Specialist · tag **Healthcare Ops** · "20 hired recently" · Up to $125+/hour
 
-- **Role:** Healthcare Compliance Specialist
-- **Category:** Healthcare Ops
-- **Slug:** `healthcare-compliance-specialist`
-- **Source:** DataAnnotation assessment UI
+**Overview:** Catch HIPAA violations, unauthorized disclosures, or anti-kickback traps an AI model might miss. Evaluate AI against HIPAA and regulatory standards.
 
-### Contents
+**What you'll actually do**
+- Draft prompts probing HIPAA, privacy, security, and healthcare regulatory compliance.
+- Review AI output for improper disclosures or missed regulatory risks and rate the reasoning.
+- Write correct guidance tied back to governing rules when the model falls short.
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+**What we look for**
+- Hands-on experience in healthcare compliance, privacy, or regulation.
+- Familiarity with HIPAA and healthcare regulatory frameworks.
+- Clear written English.
+- No degree required.
 
----
+**Common backgrounds:** Healthcare Compliance Specialist · HIPAA Compliance Officer · Regulatory Analyst
 
-## Bio
+Assets: `assets/healthcare-compliance-specialist/bio.png`
 
-**Role:** Healthcare Compliance Specialist  
-**Category:** Healthcare Ops  
-**Hiring cue:** _pending_
+## Track gate (Continue → pre-Start)
 
-### Overview
+- Role line: Healthcare Compliance Specialist
+- Assessment: **Healthcare Operations Projects assessment**
+- Pay/hours: Up to $125+ per hour · Your hours: remote, no minimum
+- What it takes: ~30+ min · reasoning graded · several days · no LLMs · one attempt
+- What happens next: email if accepted · most projects need additional qualifications
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Assets: `assets/healthcare-compliance-specialist/track-intro.png`
 
-### What you’ll actually do
+## Notes
 
-- _pending_
-- …
-- _pending_
-
-### What we look for
-
-- _pending_
-- …
-- _pending_
-
-### Common backgrounds
-
-- _pending_
-- …
-
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
----
-
-## Step 1 · Instructions
-
-**Step:** _pending_
-**Type:** info
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Healthcare Compliance Specialist | assessmentId: healthcare-ops | category: Healthcare Ops -->
-
+- Same track as Healthcare Operations Manager / Medical Coder (confirmed leaf-by-leaf).
+- Never Submit. Never click Expire without operator OK.

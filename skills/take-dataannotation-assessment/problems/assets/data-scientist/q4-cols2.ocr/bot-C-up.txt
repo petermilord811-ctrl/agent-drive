@@ -1,0 +1,12 @@
+Total Revenue tor the segment =
+Total Orders for the segment 21 + 15 + 14 + 13 63
+Pooled Average Order Vakie = 8735.50163 138.6587...
+Rounding to standard
+conventions: S138.66
+Summary of Resutts:
+Number of eligible customers (N_eligible): 22
+Number of customers in the top 20% segment (k): 4
+•
+Minimum revenue threshdd for this segment: $1755.00
+Pooled average order value for this segment: $138.66
+•

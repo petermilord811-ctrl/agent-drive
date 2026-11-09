@@ -1,0 +1,17 @@
+{
+  "slug": "data-scientist",
+  "host": "99588",
+  "captured": "2026-11-08",
+  "ui": "no-left-sidebar",
+  "note": "Single scroll page — leaves are document sections in scroll order, not sidebar rows.",
+  "total": 7,
+  "leaves": [
+    { "step": 1, "label": "Instructions (welcome + certify)" },
+    { "step": 2, "label": "Section 1: Conversation: Challenging an AI Model" },
+    { "step": 3, "label": "Section 2 · Question 1 (chart + 1a)" },
+    { "step": 4, "label": "Section 2 · Question 2 (polynomial + 2a/2b)" },
+    { "step": 5, "label": "Section 2 · Question 3 / 3a" },
+    { "step": 6, "label": "Section 2 · Question 4 (A/B/C compare)" },
+    { "step": 7, "label": "Section 3: Your Data Science Experience" }
+  ]
+}

@@ -1,23 +1,25 @@
-# Compliance Officer — Legal Assessment assessment
+# Compliance Officer — Legal Assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `legal-expert`
+- **Gaps:** Role Bio from Legal filter card; shared Law Starter confirmed via Attorney Start (`01a1bb09`).
 - **Rule:** never Submit while fetching
+- **Shared assessment:** Law Projects / Law Starter Assessment V4.1
 
 ### Role
 
 - **Role:** Compliance Officer
 - **Category:** Legal
 - **Slug:** `compliance-officer`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Legal filter · 25 hired recently)
 
 ### Contents
 
 1. [Bio](#bio)
-2. _(Steps pending)_
+2. [Assessment steps](#assessment-steps-shared-law-starter) → see [`problems-legal-expert.md`](./problems-legal-expert.md)
 
 ---
 
@@ -25,61 +27,41 @@
 
 **Role:** Compliance Officer  
 **Category:** Legal  
-**Hiring cue:** _pending_
+**Hiring cue:** Legal • 25 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Ask a model about a regulatory obligation and it answers with confidence — then cites a rule that doesn't apply. Grade that work against what a compliance team would actually file.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Draft prompts for regulatory obligations, policies, and compliance workflows.
+- Review AI output for wrong citations and missed applicability.
+- Write correct treatments when the model falls short.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Compliance / regulatory experience.
+- Clear written English.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Compliance Officer
+- Regulatory Counsel
+- Compliance Analyst
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
 ---
 
-## Step 1 · Instructions
+## Assessment steps (shared Law Starter)
 
-**Step:** _pending_
-**Type:** info
+→ [`problems-legal-expert.md`](./problems-legal-expert.md)
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Compliance Officer | assessmentId: legal | category: Legal -->
-
+<!-- role: Compliance Officer | assessmentId: legal | category: Legal | assessmentVersion: Law Starter V4.1 | sharedAssessment: legal/legal-expert -->

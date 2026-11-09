@@ -1,0 +1,3 @@
+This material will be used to answer the following questions: Questions 2a, and 2b.
+In the context of chatbots and Al models. rubrics are guidelines or criteria that are used to evahjate the response(s) provided by the Al models. These rubrics typically break down evaluation into several key areas. such as accuracy. relevance. tone. and/or efficiency.
+Evaluate the fobovong prompt response. and consider whether response successfully addresses the "rubrics- below (fre "Did the response..." questions 2a and 2b).

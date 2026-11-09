@@ -17,8 +17,18 @@ This file is the contract. **Do not invent `lx/ly`.**
 | **Browse DS miss** | Grid synthesize lx≈1015 no-op; real title **781,408** | `look-ocr.js --find "Data Scientist"` → dbl body ly+55 |
 | **Start CTA miss** | `start` failed on DS Bio2 | Button ~83px wide lower-left — finder now accepts w≥70 |
 | **Radio false hits (SE Q1)** | `radios` returned **13** hits (code dots) for 4 choices | Hollow-ring detector matches monospace/code UI; use choice cluster |
-| **Radio / textarea miss** | Selection or typing failed | Hollow rings need geometry; textareas need **radio → Tab → keys** |
+| **Radio / textarea miss** | Selection or typing failed | Hollow rings need geometry; textareas need **`locate-click.py textarea` → keys** (or radio → Tab → keys) |
+| **Empty Goal mark = Expires (99588)** | `field ""` mark hit **Expires** chip (~1746,1017); typing interrupted / jumped to Section 3 | Never trust blank SM marks for DA textareas — `locate-click.py <look> textarea [i]` on **that** look |
+| **Auto-type scrolls to Section 3 (99588)** | `keys` with spaces while **document** focused scrolls the page; Goal stays empty | **Prove focus first:** after `textarea` click (or label→Tab), type a single letter (no space) → look — letter must appear in the box. Only then `keys` the full answer. Spaces on body scroll = this bug |
+| **Ctrl+C / Ctrl+V on DA task page (99588)** | Clipboard shortcuts while assessment is open | **Forbidden** on any DataAnnotation task page. Fill with `keys` only. Ctrl+L/C only on outside-link tabs during Part A fetch |
+| **Checkbox miss / text-select (Claude onboarding 99588)** | Aimed wrong Y; or `aim:false` still **snapped** onto nearby field/button | 1) `look-ocr.js --find "agree"` (or label) on **current** look → checkbox ≈ `bbox.x0 - 16`, same `ly`. 2) `click {lx,ly,of,snap:false,aim:false}`. Never trust mark clicks for small checks. Prove with look (checked / error gone) before Create |
+| **SM content marks → sidebar (99588)** | Mark “O Yes” / “O Poor” / “1” clicked at **screen x≈80** | Marks lie for content radios/digits — use locate-click `lx > content_x_min` or content→Tab |
+| **Short #f8 above Goal (99588)** | Typed into wrong / unfocused strip; Goal empty | `textarea` prefers **taller** box first; prove focus in Goal |
+| **Wheel direction (99588)** | `scroll n` went opposite of assumed | Prove with look after first nudge; prefer content focus + PageDown |
+| **Long keys timeout (99588)** | MCP “no answer in 35s” while keys still running | `pause` / wait for `answeredLate`; do not re-type |
 | **OCR trust** | `clickText` / `find` aimed at chrome | On 34123/99588 host OCR often only browser chrome |
+
+**Full Part B contract:** [`PART-B-FILL.md`](./PART-B-FILL.md) — read before first live `keys`.
 
 ## Hard rules (every click)
 
@@ -28,6 +38,8 @@ This file is the contract. **Do not invent `lx/ly`.**
 4. **After click: look again.** Same step/URL = miss → re-measure (do not nudge by habit).
 5. **Do not dense-sweep the left third** of an assessment look — that is the sidebar.
 6. Never trust host `clickText`/`find` when `saw` is only tab titles.
+7. Small targets: always **`snap:false` + `aim:false`** (`aim:false` alone still snaps).
+8. Never trust SM blank `field` or content radio marks that resolve to **x≲100**.
 
 ```bash
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> zones
@@ -40,6 +52,8 @@ python -I skills/take-dataannotation-assessment/locate-click.py <look.png> radio
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> radio 2           # index inside choice cluster
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> sidebar 4
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> role "Data Scientist"
+python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea      # empty Goal / explain boxes
+python -I skills/take-dataannotation-assessment/locate-click.py <look.png> textarea 1    # 2nd box on page
 python -I skills/take-dataannotation-assessment/locate-click.py <look.png> scroll-complete
 # When host OCR is blind (Browse cards):
 node skills/take-dataannotation-assessment/look-ocr.js <look.png> --find "Data Scientist"
@@ -60,6 +74,7 @@ Regression: `python -I skills/take-dataannotation-assessment/test-locate-click.p
 | `radios-raw` | Debug only | Unclustered ring hits — do not autofill from this |
 | `sidebar N` | Jump assessment left-nav | **Only** left of sidebar_edge |
 | `role "Title"` | Browse card | Returns **`action: dbl`** on card **body**; refuses ambiguous titles instead of defaulting to col 0 |
+| `textarea` / `textarea N` | Empty Goal / explain boxes | Content white boxes only; **never** SM blank `field` marks (Expires false hit) |
 
 ## Proven geometry (@ look 1280×720)
 
@@ -77,7 +92,7 @@ Same click stack as fetch. After `answer.fill.json` + `answer.pace.json` exist (
 
 1. `pause { ms: thinkMs }` from pace (first field/step 10–30s+, later ~5–15s+).
 2. Radio/checkbox: `locate-click.py <look> radio N` / label — never sidebar.
-3. Text: focus → Ctrl+A → Backspace → `keys { text }` **auto-type** (never `human:0`).
+3. Text: Prefer **content click → Tab into field** when direct `textarea` click fails focus (99588 live: Goal via label→Tab; round via Notes→Tab×2). Prove focus with one non-space letter → look. Then **Backspace** clear (never Ctrl+A) → `keys` in **~80-char chunks** (never `human:0`, never Ctrl+V on DA pages). After each chunk, if viewport jumped → re-measure → append. Never click SM `field ""` near Expires. **SM content marks often click at x≈80 (sidebar)** — do not trust mark clicks for Yes/No/Poor/“1”; use `locate-click` lx>content_x_min or Tab.
 4. Look after each action. Never Submit during fill.
 
 ## Agent recipe (assessment step)
@@ -137,3 +152,10 @@ SE example: 11 leaves. Bank that lists Q5 after Coding fails `outOfOrder` even i
 ## Bank / verbatim
 
 Captures → `problems/problems-{slug}.md` only (103 roles). Verbatim rules in skill README.
+
+```bash
+node skills/take-dataannotation-assessment/validate-verbatim.js --slug <slug>
+# must exit 0 before captureStatus: full
+```
+
+**Never** bank OCR/vision “repairs” in square brackets. Unclear → PNG asset only.

@@ -1,23 +1,25 @@
-# Wealth Manager — Finance Assessment assessment
+# Wealth Manager — Finance Assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 15 · shared with `finance-expert` / `quantitative-analyst`
+- **Gaps:** Role-specific Bio only unique; **assessment steps = Finance Starter V4.1 shared** (`task_response_id=01a1bae0-…` after Start).
 - **Rule:** never Submit while fetching
+- **Shared assessment:** Finance Projects / Finance Starter Assessment V4.1
 
 ### Role
 
 - **Role:** Wealth Manager
 - **Category:** Finance
 - **Slug:** `wealth-manager`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Finance filter → **Wealth Manager** only — skipped nearly-full Finance Expert; verified **Finance Projects assessment** before Start)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-finance-starter) → see [`problems-finance-expert.md`](./problems-finance-expert.md)
 
 ---
 
@@ -25,61 +27,83 @@
 
 **Role:** Wealth Manager  
 **Category:** Finance  
-**Hiring cue:** _pending_
+**Hiring cue:** Finance • 24 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models give financial advice that sounds polished and still miss suitability, tax treatment, or withdrawal constraints. As a Wealth Manager you'll evaluate AI financial planning and write the judgments that teach models what sound personal-finance guidance looks like.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Evaluate AI financial plans (allocation, retirement, goals).
+- Check tax treatment, suitability, estate / withdrawal logic.
+- Write sound advice when the model fails.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Experience in wealth management, financial advising, or planning.
+- Familiarity with investments, tax, retirement, or estate planning.
+- Clear written English.
+- No degree required. We care about what you can do, not where you learned it.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Wealth Manager
+- Financial Advisor
+- Estate Planner
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour
+- Remote
+- Flexible hours
+- Independent contractor
+- Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
+
+- `assets/wealth-manager/wm_bio0.png`
+- `assets/wealth-manager/wm_bio1.png`
+
+## Bio (assessment intro)
+
+**Title:** Wealth Manager  
+**Track line:** Finance Projects assessment
+
+### Pay / hours strip
+
+- Up to $125+ per hour
+- Your hours: remote, no minimum
+
+### What it takes
+
+- People who pass usually spend **1 hour 30 minutes or more**. Take the time you need.
+- We read **your reasoning**, not just your answers.
+- Save your answers and come back. You have **several days** to finish.
+- This is your **one attempt**. You can complete additional assessments if you pass.
+
+<!-- Omitted: No-LLMs / anti-AI bullet (bank rule). -->
+
+### What happens next
+
+- We will **email you** if you are accepted.
+- Most projects need **some additional qualifications**, which you complete after you are accepted.
+
+### Assets
+
+- `assets/wealth-manager/wm_bio1.png`
 
 ---
 
-## Step 1 · Instructions
+## Assessment steps (shared Finance Starter)
 
-**Step:** _pending_
-**Type:** info
+After **Start assessment**, same Finance Starter task as Finance Expert / Quant Analyst (`task_response_id=01a1bae0-…`, Step 1 of 15).
 
-_pending_
+→ [`problems-finance-expert.md`](./problems-finance-expert.md)
 
-## Professional experience
+### Assets (entry proof)
 
-_pending or omit_
+- `assets/wealth-manager/wm_start2.png`
+- `assets/wealth-manager/sidebar-inventory.json`
 
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Wealth Manager | assessmentId: finance | category: Finance -->
-
+<!-- role: Wealth Manager | assessmentId: finance | category: Finance | assessmentVersion: Finance Starter V4.1 | sharedAssessment: finance/finance-expert -->

@@ -1,0 +1,4 @@
+If your first prompt cause a failure, you should contirwe the conversation with up to more user prompts
+o Stay within the topic of your original prompt, but try tuming up the difficulty or ask a challenging follow-up question
+If you're unable to elicit a notable failure within 3 prompts, start a new conversation
+o You might revise your innaJ prompt 'Mth added complexity. or stan 'Mth a totally new concept. either is fine

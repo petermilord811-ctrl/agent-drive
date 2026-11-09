@@ -1,10 +1,11 @@
-# Civil Engineer — Engineering Assessment (Civil) assessment
+# Civil Engineer — Civil Engineering Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123 (Bio + intro track line)
+- **Gaps:** Assessment steps **not started** — Start not clicked (expire risk).
+- **Track:** **Civil Engineering Projects assessment** — **shared** with Civil Design Engineer (same subtitle + 1h cue).
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -12,12 +13,12 @@
 - **Role:** Civil Engineer
 - **Category:** Engineering
 - **Slug:** `civil-engineer`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. _(Steps pending — Start not clicked)_
 
 ---
 
@@ -25,61 +26,53 @@
 
 **Role:** Civil Engineer  
 **Category:** Engineering  
-**Hiring cue:** _pending_
+**Hiring cue:** Engineering • 24 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+We're looking for an experienced Civil Engineer to help train AI models. You'll design challenging, realistic civil engineering tasks, check them with simulation, and show where models fail. This is a new area for our company — your judgment and written rationale become the signal that shapes the next generation of AI.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Design realistic civil engineering tasks from your expertise, including tasks that use custom tool environments.
+- Design and simulate real-world physical objects or systems end-to-end and use simulation to check your work.
+- Test AI models against your task and document where they fail.
+- Write the correct solution and grading rubric.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Bachelor's degree or higher in civil engineering or a closely related field.
+- Comfortable working with simulation tools.
+- Able to write clear solutions and grading rubrics in fluent written English.
+- Applicants must be based in Australia, Canada, Ireland, New Zealand, the United Kingdom, or the United States.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Civil Engineer
+- Civil Engineering Expert
+- Civil Engineering Technologist
 
-## Requirements
+### Sidebar
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- **Rate:** Up to $125+/hour
+- Location: Remote · Commitment: Flexible hours · Type: Independent contractor · Payouts: Weekly
+- CTA: Continue
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+**Assets:** `assets/civil-engineer/bio.png`
 
 ---
 
-## Step 1 · Instructions
+## Bio (assessment intro)
 
-**Step:** _pending_
-**Type:** info
+- **Title:** Civil Engineer
+- **Subtitle / track:** Civil Engineering Projects assessment
+- **Pay line:** Up to $125+ per hour · Your hours: remote, no minimum
+- **What it takes — for this assessment:** People who pass usually spend **1 hour or more**; We read your reasoning, not just your answers; Save and come back (several days); Do your own work (No LLMs unless a task says otherwise); This is your one attempt
+- **What happens next:** Email if accepted; Most projects need some additional qualifications after acceptance
+- **CTA:** Start assessment — **not clicked** (expire risk)
 
-_pending_
+**Assets:** `assets/civil-engineer/track-intro.png`
 
-## Professional experience
+## Experience / questions
 
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Civil Engineer | assessmentId: engineering-civil | category: Engineering -->
-
+_Not captured — Start blocked pending expire clearance._

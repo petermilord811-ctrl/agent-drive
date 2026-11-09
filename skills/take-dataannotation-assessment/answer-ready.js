@@ -75,6 +75,41 @@ if (fs.existsSync(bankPath)) {
     else warnings.push(msg + ' [allowed with nearly-full unless --strict-full]');
   }
 
+  // HARD RULE 1: refuse banks that contain summarized / OCR-repaired problem text
+  // HARD RULE figures: refuse half-hidden / missing embeds (DS 2026-11-08 chart miss)
+  {
+    const { spawnSync } = require('child_process');
+    const gates = [
+      {
+        script: 'validate-verbatim.js',
+        label: 'source text only, no summaries/edits/Source-OCR dumps',
+      },
+      {
+        script: 'validate-figures.js',
+        label: 'embedded figures complete (no half-hidden crops)',
+      },
+    ];
+    for (const g of gates) {
+      const vv = spawnSync(
+        process.execPath,
+        [path.join(__dirname, g.script), '--file', bankPath],
+        { encoding: 'utf8', maxBuffer: 2e6 }
+      );
+      if (vv.status !== 0) {
+        let hits = [];
+        try {
+          hits = (JSON.parse(vv.stdout || '{}').hits || []).map((h) => h.why);
+        } catch (_) {
+          hits = [(vv.stdout || vv.stderr || g.script + ' failed').slice(0, 200)];
+        }
+        const msg =
+          `bank failed ${g.script} (HARD RULE: ${g.label}): ` + hits.slice(0, 5).join('; ');
+        if (strictFull || /^full\b/i.test(captureStatus || '')) errors.push(msg);
+        else warnings.push(msg);
+      }
+    }
+  }
+
   const bio = md.match(/People who pass usually spend[^\n]*|About\s+\*?\*?[\d–\-]+\s*[-–]\s*[\d]+\s*minutes|About\s+\*?\*?[\d\-]+\s*minutes|\d+\s*(?:min|hour)[^\n]*/i);
   if (bio) bioMinutes = bio[0].replace(/\*/g, '').trim();
 

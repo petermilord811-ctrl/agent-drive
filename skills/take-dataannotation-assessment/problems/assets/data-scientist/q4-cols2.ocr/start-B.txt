@@ -1,0 +1,6 @@
+Response B
+1. Data Cleaning & Quality Checks
+Duplicates
+Customer COIO appears twice:
+(11 orders. 1540.5 revenue. 10 days)
+(10 orders. 1450 revenue. 12 days)

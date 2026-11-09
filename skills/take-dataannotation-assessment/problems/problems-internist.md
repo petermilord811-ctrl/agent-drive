@@ -1,23 +1,26 @@
-# Internist — Medical Assessment assessment
+# Internist — Internal Medicine Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** bio
+- **Captured:** 2026-11-08 · host **34123**
+- **Assessment:** Internal Medicine Starter Assessment V4.1 / **Internal Medicine Projects** assessment
+- **IDs:** shared with IMC — `task_response_id=01a1bd1a-8021-77c0-979b-6fa6eb6f2717` · `project_id=b41f557f-e309-46f3-9de5-8a2b5dcf206e`
 - **Rule:** never Submit while fetching
+- **Targeting:** Search Internist → titled card → verify **Internal Medicine Projects assessment** before Start.
+- **Steps:** shared with `problems-internal-medicine-clinician.md` (Branch A 19; Specialization leaf banked on IMC).
 
 ### Role
 
 - **Role:** Internist
 - **Category:** Medical
 - **Slug:** `internist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123
 
 ### Contents
 
 1. [Bio](#bio)
-2. _(Steps pending)_
+2. Steps → see [problems-internal-medicine-clinician.md](problems-internal-medicine-clinician.md)
 
 ---
 
@@ -25,61 +28,39 @@
 
 **Role:** Internist  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 9 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Help train AI by measuring how well models answer clinical questions in internal medicine — clinicians in subspecialties (critical care, endocrinology, oncology, etc.).
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Review AI responses to clinical questions.
+- Rate accuracy, completeness, safety, and usefulness.
+- Compare two independent responses and log discrepancies.
+- Write detailed rationales; pinpoint model errors (missed interactions / contraindications).
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Board certification in internal medicine with 3+ years post-residency, or current license (e.g. RN, NP, or PA).
+- Hands-on clinical experience managing complex adult disease.
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/internist/internist_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
 
----
+**Title:** Internist  
+**Track line:** **Internal Medicine Projects assessment** ← verified before Start
 
-## Step 1 · Instructions
+### Assets
 
-**Step:** _pending_
-**Type:** info
+- `assets/internist/internist_bio1.png`
 
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Internist | assessmentId: medical | category: Medical -->
-
+<!-- role: Internist | assessmentId: internal-medicine | category: Medical | assessmentVersion: Internal Medicine Starter V4.1 | sharedAssessment: internal-medicine/internal-medicine-clinician -->

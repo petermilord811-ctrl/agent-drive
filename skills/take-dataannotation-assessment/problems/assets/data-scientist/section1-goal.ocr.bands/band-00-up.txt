@@ -1,0 +1,4 @@
+Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences.
+This should be •generate a meaningful model failure" oc general concepts like "l want to leam more about data science J statistics I ML topics.- You're describing what the user in the conversation (you) specifically would expect to learn from the model or the task that you wanted
+the model to accomplish.
+If you're not sure where to start, thank along these lines:

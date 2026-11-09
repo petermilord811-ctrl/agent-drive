@@ -1,85 +1,43 @@
-# Managed Care Analyst — Healthcare Operations Assessment assessment
+# Managed Care Analyst — assessment bank (stub)
 
-### Bank
+> **Fetched:** 2026-11-09 · host 34123 · Browse → Healthcare Ops → Managed Care Analyst
+> **Status:** stub (bio + track verified; assessment NOT started)
+> **Track:** **Healthcare Operations Projects assessment** (shared with other Healthcare Ops leaves)
+> **Cue:** People who pass usually spend **30 minutes or more** · Up to $125+/hr · remote, no minimum
+> **Do not Start** without operator OK (Data Science Starter Assessment already in progress).
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
-- **Rule:** never Submit while fetching
+## Role bio (Browse leaf)
 
-### Role
+**Title:** Managed Care Analyst · tag **Healthcare Ops** · "19 hired recently" · Up to $125+/hour
 
-- **Role:** Managed Care Analyst
-- **Category:** Healthcare Ops
-- **Slug:** `managed-care-analyst`
-- **Source:** DataAnnotation assessment UI
+**Overview:** Models explain managed care in tidy theory and miss the mechanics that decide coverage — benefit rules, prior-auth requirements, utilization review. Evaluate AI on payer contracts, utilization reviews, and benefit administration.
 
-### Contents
+**What you'll actually do**
+- Write prompts probing managed care scenarios (benefit determination, prior authorization, utilization review, etc.).
+- Review AI output for incorrect coverage calls or misread contract terms.
+- Write correct answers when the model fails.
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+**What we look for**
+- Hands-on experience in managed care, utilization review, or payer operations.
+- Familiarity with benefit design and payer contracts.
+- Clear written English.
+- No degree required.
 
----
+**Common backgrounds:** Managed Care Analyst · Utilization Review Analyst · Payer Operations Analyst
 
-## Bio
+Assets: `assets/managed-care-analyst/bio.png`
 
-**Role:** Managed Care Analyst  
-**Category:** Healthcare Ops  
-**Hiring cue:** _pending_
+## Track gate (Continue → pre-Start)
 
-### Overview
+- Role line: Managed Care Analyst
+- Assessment: **Healthcare Operations Projects assessment**
+- Pay/hours: Up to $125+ per hour · Your hours: remote, no minimum
+- What it takes: ~30+ min · reasoning graded · several days · no LLMs · one attempt
+- What happens next: email if accepted · most projects need additional qualifications
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Assets: `assets/managed-care-analyst/track-intro.png`
 
-### What you’ll actually do
+## Notes
 
-- _pending_
-- …
-- _pending_
-
-### What we look for
-
-- _pending_
-- …
-- _pending_
-
-### Common backgrounds
-
-- _pending_
-- …
-
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
----
-
-## Step 1 · Instructions
-
-**Step:** _pending_
-**Type:** info
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Managed Care Analyst | assessmentId: healthcare-ops | category: Healthcare Ops -->
-
+- Confirmed shared track across all Healthcare Ops leaves checked so far.
+- Never Submit. Never click Expire without operator OK.

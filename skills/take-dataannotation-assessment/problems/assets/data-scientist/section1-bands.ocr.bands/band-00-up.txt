@@ -1,0 +1,4 @@
+v Background
+AJ Assistant models have been getting better and better. and we need new. challeng.ng prompts to really test how well they perform in various domains. Al Assistants have seen many common questions and academic-style quiz requests before. and we expect them to
+generally S*rfotrn very well when answering these sorts of softball questions.
+Alot of the 'tock do urns to put the models in situations •ethere they are likely to make real, meaningful errors when trying to answec The more we do this, the more we understand and colect data about their shortcomngs. As you might imagine. lobbing softball questions

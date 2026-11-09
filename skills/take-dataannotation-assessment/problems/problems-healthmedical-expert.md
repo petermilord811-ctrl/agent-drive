@@ -1,23 +1,26 @@
-# Health/Medical Expert — Medical Assessment assessment
+# Health/Medical Expert — Medical Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 18 · shared with `physician`
+- **Gaps:** Role Bio unique; **assessment steps = Medical Starter shared** (`task_response_id=01a1b7f8-…` after Start).
 - **Rule:** never Submit while fetching
+- **Shared assessment:** Medical Projects / Medical Starter Assessment
+- **Targeting:** Medical filter → **Health/Medical Expert** titled card → verify **Medical Projects assessment** before Start (not Physician card).
 
 ### Role
 
 - **Role:** Health/Medical Expert
 - **Category:** Medical
 - **Slug:** `healthmedical-expert`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Medical → Health/Medical Expert; verified **Medical Projects**; Start → same Medical Starter as Physician)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-medical-starter) → see [`problems-physician.md`](./problems-physician.md)
 
 ---
 
@@ -25,61 +28,55 @@
 
 **Role:** Health/Medical Expert  
 **Category:** Medical  
-**Hiring cue:** _pending_
+**Hiring cue:** Medical • 48 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Models answer health questions in a confident, authoritative voice and still miss what a professional would trust. Evaluate AI reasoning across clinical and health topics for clinical accuracy.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Write prompts probing clinical reasoning (diagnosis, treatment, patient safety).
+- Review AI output for unsafe advice or missed contraindications.
+- Write correct answers grounded in current clinical practice.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- Clinical / health-professional experience.
+- Comfort reasoning through diagnosis and safety.
+- Clear written English.
+- No degree required.
 
 ### Common backgrounds
 
-- _pending_
-- …
+- Physician
+- Clinician
+- Medical Reviewer
 
-## Requirements
+### Role sidebar (page 1)
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+### Assets
+
+- `assets/healthmedical-expert/hme_bio0.png`
+
+## Bio (assessment intro)
+
+**Title:** Health/Medical Expert  
+**Track line:** **Medical Projects assessment**
+
+### Assets
+
+- `assets/healthmedical-expert/hme_bio1.png`
+- `assets/healthmedical-expert/hme_start.png`
 
 ---
 
-## Step 1 · Instructions
+## Assessment steps (shared Medical Starter)
 
-**Step:** _pending_
-**Type:** info
+After **Start assessment**, same Medical Starter as Physician (`task_response_id=01a1b7f8-…`, 18 leaves incl. credential verification).
 
-_pending_
+→ [`problems-physician.md`](./problems-physician.md)
 
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Health/Medical Expert | assessmentId: medical | category: Medical -->
-
+<!-- role: Health/Medical Expert | assessmentId: medical | sharedAssessment: medical/physician -->

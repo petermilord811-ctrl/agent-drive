@@ -1,23 +1,26 @@
-# Applied Economist — Economics Assessment assessment
+# Applied Economist — Economist Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** nearly-full
+- **Captured:** 2026-11-08 · host **34123**
+- **Leaves:** 16 · shared with `economist`
+- **Gaps:** Role Bio unique; assessment = Economist Starter V4.1 shared with `economist` (same `task_response_id` after Start).
+- **Re-fetch 2026-11-08:** Track **Economist Projects** ✅; confirmed shared `task_response_id=01a1bb26-…` / `project_id=0d87aa7c-…` with Economist.
 - **Rule:** never Submit while fetching
+- **Shared assessment:** Economist Projects / Economist Starter Assessment V4.1
 
 ### Role
 
 - **Role:** Applied Economist
 - **Category:** Economics
 - **Slug:** `applied-economist`
-- **Source:** DataAnnotation assessment UI
+- **Source:** DataAnnotation UI host 34123 (Economics → Applied Economist; verified **Economist Projects**)
 
 ### Contents
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+1. [Bio](#bio) · [Bio (assessment intro)](#bio-assessment-intro)
+2. [Assessment steps](#assessment-steps-shared-economist-starter) → [`problems-economist.md`](./problems-economist.md)
 
 ---
 
@@ -25,61 +28,48 @@
 
 **Role:** Applied Economist  
 **Category:** Economics  
-**Hiring cue:** _pending_
+**Hiring cue:** Economics • 8 hired recently
 
 ### Overview
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
+Train AI to reason like an economist — judge model output on economic questions, spot flawed identification strategies or overstated conclusions.
 
-### What you’ll actually do
+### What you'll actually do
 
-- _pending_
-- …
-- _pending_
+- Compare competing economic analyses.
+- Evaluate model output for analytical soundness.
+- Identify flawed assumptions and gaps in reasoning.
+- Write clear explanations for judgments.
+- Apply domain knowledge to research.
 
 ### What we look for
 
-- _pending_
-- …
-- _pending_
+- PhD or Master’s in economics preferred; undergrad economics/finance/business considered.
+- Professional experience as a research economist or analyst preferred.
 
-### Common backgrounds
+### Role sidebar (page 1)
 
-- _pending_
-- …
+- Up to $125+/hour · Remote · Flexible hours · Independent contractor · Weekly
 
-## Requirements
+### Assets
 
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
+- `assets/applied-economist/ae_bio0.png`
 
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
+## Bio (assessment intro)
+
+**Title:** Applied Economist  
+**Track line:** **Economist Projects assessment**
+
+### Assets
+
+- `assets/applied-economist/ae_bio1.png`
 
 ---
 
-## Step 1 · Instructions
+## Assessment steps (shared Economist Starter)
 
-**Step:** _pending_
-**Type:** info
+After **Start assessment**, same Economist Starter as Economist (`task_response_id=01a1bb26-…`, Step 1 of 15).
 
-_pending_
+→ [`problems-economist.md`](./problems-economist.md)
 
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Applied Economist | assessmentId: economics | category: Economics -->
-
+<!-- role: Applied Economist | assessmentId: economics | sharedAssessment: economics/economist -->

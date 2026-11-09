@@ -1,0 +1,34 @@
+and needs investigation (e.g., returns).
+Days_Since_Last_Purchase: Should be a nonâ€¢negamre integet
+Inconsistent Entries: Ensure data types are correct (e.g.. numerical tot orders. rever
+and days).
+Applying Cleaning to the Dataset:
+Lees examine the provided data:
+Customer_ID COIO: Appears N',Ã¶ce.
+â€¢
+0 Row 1: cmo, 11.1540.5, 10
+0 Row 2: cmo, 10, 1450, 12
+We will aggregate these: Total_Orders = 11 + 10 = 21, Total_Revenue = 1540.5 â€¢
+1450 = 2990.5. Days â€¢ we'll take the mirumum to represen
+recent actmty, so 10.
+Customer_lD C021: Total Orders = O. Total Revenue = This is an interestir
+case. Wtâ€¢de they have O otdets. they have revenue. This might an error or an
+unusual scenario (e.g.. a gift card purchase without a preceding order). For the
+purpose of "active customers by revenue" with a reasonable purchase history, thi
+customer might not be considered.
+Customer_lD C022: Total Revenue = â€¢200. This is invahd and be excluded.
+â€¢
+Customer_lD C027: Total Orders = 7.5. This s not a whole number for orders aj
+needs to be addressed. We will round this down to 7 for consistency with typical
+order counts.
+2. Eligibility Criteria
+The prompt states: "consider only customers who are meaningfuUy active - they shoul
+have a reasonabk purchase hstory and have engaged recently enough to be
+for a premurn program."
+Lets define reasonable thaesholds for this:
+Minimum Total Orders: A customer should have made at least one purchase to
+considered active. Lers set a minimum of Total Orders 2 i.
+Recent Engagement: A customer shouldnt have a purchase from too long ago.
+Lets set a maximum threshold for Days_Since_Last_Purchase. A common
+benchmark for recent activity in e-commerce might be within 90 days. Lets set
+Days_Stnce_Last_Purchase 90.

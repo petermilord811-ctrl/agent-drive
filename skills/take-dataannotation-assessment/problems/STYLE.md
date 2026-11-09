@@ -126,7 +126,17 @@ Pseudocode fences: ` ```text `. Real code: ` ```python ` etc.
 ## 5. Rules
 
 - Verbatim UI only in stem / Prompt / solutions / Choice question / Choices / Write-in.
-- Notes = capture metadata only.
+- **No invented repairs** — never `[guessed word]`, never “summary from looks”, never shortened A/B/C.
+- Unreadable / too long: PNG asset only + leave prose empty until a clean look can be transcribed character-for-character.
+- **No `Source OCR` dump field** — structure OCR into Prompt / Choices / Write-in; keep raw `.ocr.txt` under assets if needed.
+- **No select/highlight for OCR** — look band-OCR / host `ocr {rect}` only; if host OCR sticks after scroll, OCR the look PNG.
+- **Vision ≠ verbatim** — image descriptions are navigation hints only; money/model digits need band-OCR confirmation.
+- **Non-question cards count** — Section headers, “Why does this assessment include general questions?”, “reviewed by a person”, Conversation recap, exclusive-option notes: bank **verbatim**, never one-line paraphrase. See `FETCH-GOTCHAS.md` §0.
+- Gate: `node …/validate-verbatim.js --slug …` **and** `node …/validate-figures.js --slug …` before `captureStatus: full`.
+- Notes = capture metadata only (gaps belong here or in Bank header — not as edited Prompt text).
 - No HTML, no colored layout tables.
 - Omitted No-LLM: `<!-- Omitted: … -->`.
 - Figures: `![alt](assets/…)`.
+  - Crop only when **title + both axes + all tick labels** are in-frame (DS 2026-11-08: half-hidden chart rejected).
+  - Keep a full-viewport `*-live.png` next to the tight figure crop.
+  - Never paraphrase a chart (“bars rise to ~95%”) in place of the PNG.

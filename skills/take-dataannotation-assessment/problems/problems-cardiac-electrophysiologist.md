@@ -1,85 +1,29 @@
-# Cardiac Electrophysiologist — Medical Assessment assessment
+# Cardiac Electrophysiologist — Cardiology Projects assessment
 
 ### Bank
 
-- **captureStatus:** stub
-- **Captured:** PENDING-CAPTURE
-- **Gaps:** Bio / Instructions / Questions not captured
+- **captureStatus:** stub → bio+track only
+- **Captured:** 2026-11-08 · host 34123
+- **Gaps:** Steps not started — Start not clicked.
+- **Track:** **Cardiology Projects assessment** — **shared with Cardiologist + Interventional Cardiologist**. Cue: **1h30+**. $125+/hr. **6 hired recently**.
 - **Rule:** never Submit while fetching
 
 ### Role
 
-- **Role:** Cardiac Electrophysiologist
-- **Category:** Medical
-- **Slug:** `cardiac-electrophysiologist`
-- **Source:** DataAnnotation assessment UI
+- **Role:** Cardiac Electrophysiologist · Medical · `cardiac-electrophysiologist`
 
-### Contents
+### Bio
 
-1. [Bio](#bio)
-2. _(Steps pending)_
+**Hiring cue:** Medical • 6 hired recently
 
----
+Overview: Train AI on cardiology / cardiovascular clinical questions; open to cardiologists and clinicians who practice alongside them. Look for: board-certified cardiologist 3+ years post-fellowship OR nurse/NP/PA/other licensed clinician with clinical cardiology experience; hands-on experience; English fluency; clear writing.
 
-## Bio
+**Assets:** `assets/cardiac-electrophysiologist/bio.png`
 
-**Role:** Cardiac Electrophysiologist  
-**Category:** Medical  
-**Hiring cue:** _pending_
+### Bio (assessment intro)
 
-### Overview
+- **Track:** **Cardiology Projects assessment**
+- **Cue:** 1 hour 30 minutes or more
+- **Start:** not clicked
 
-_Not captured yet. Open this role on Browse roles and fill Bio / Requirements / Instructions / Questions._
-
-### What you’ll actually do
-
-- _pending_
-- …
-- _pending_
-
-### What we look for
-
-- _pending_
-- …
-- _pending_
-
-### Common backgrounds
-
-- _pending_
-- …
-
-## Requirements
-
-- **Pay:** _pending_
-- **Typical completion:** _pending_
-- **Task window:** _pending_
-
-<!-- Always omit "No LLMs" / "answers should be your own" / anti-AI assistant boilerplate. -->
-
----
-
-## Step 1 · Instructions
-
-**Step:** _pending_
-**Type:** info
-
-_pending_
-
-## Professional experience
-
-_pending or omit_
-
-## Steps (pending)
-
-_Capture Step 1+ from the live assessment (usually 10+ steps). Use `## Step k · Title` + `**Step:** Step k of N` + **Type:** / **Scroll:**._
-
-## Question 1a
-
-_pending_
-
-## Question 2
-
-_…_
-
-<!-- role: Cardiac Electrophysiologist | assessmentId: medical | category: Medical -->
-
+**Assets:** `assets/cardiac-electrophysiologist/track-intro.png`

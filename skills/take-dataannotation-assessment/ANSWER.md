@@ -52,8 +52,8 @@ Never write answers into `skills/.../problems/`.
   "milestones": [
     { "t": "0 Preflight", "done": "session.json phase != blocked; slug matches intended role" },
     { "t": "1 Generate answer.md", "done": "answer.md + fill.json validated; humanized" },
-    { "t": "2 Playbook + timer", "done": "answer.playbook.json; status/mission timer running after Start" },
-    { "t": "3 Autofill", "done": "every playbook action applied; required empty = 0" },
+    { "t": "2 Playbook + timer", "done": "answer.playbook.json; TIMER armed via status/mission immediately after Start" },
+    { "t": "3 Autofill", "done": "every leaf timed (status.step + answer.timer.json) + filled; required empty = 0" },
     { "t": "4 Recheck", "done": "sidebar walk matches answer.md" },
     { "t": "5 Operator review", "done": "operator said Submit or fix; Submit only on yes" }
   ]
@@ -82,9 +82,12 @@ Live miss (99588 Daniel Herman): best pick **Data Scientist**, bank **incomplete
 - Fill-ins in natural spoken English, except keyboard-typeable math/science notation.
 - No long dashes, no `:`, no `;`, no thousands-separated numerals in fill-in text.
 - Breaking-AI: stable conclusion + exact fill-in — no long model dumps unless required.
-- Humanize every form fill-in with `humanize-text.py` (balanced). Regenerate if unsuitable.
+- Humanize every form fill-in via relay `/api/humanize` with `x-sm-join-key` = `SM_JOIN_KEY` (`humanize-text.py` or verb `humanize`). Never `HUMANIZE_API_KEY` / Bearer / wisdom324. Scrub banned punctuation after rewrite.
+- Clear textareas with **Backspace only** — never `Ctrl+A` (selects the whole assessment page).
+- Live fill contract: [`PART-B-FILL.md`](./PART-B-FILL.md) — prove focus before `keys`; never Ctrl+C/V on DA; never SM Expires/`field ""` marks; `snap:false` for small targets.
 - Questions independent. Profiles independent. Resume-grounded demographics only.
 - Instructions = `agree` only. Optional may be blank. No invented secrets.
+- If live UI shows fields missing from bank (e.g. failure Yes → round / describe / screenshot), draft + fill + **patch bank + answer.fill** before next take.
 
 ### Write `answer.md`
 
@@ -92,6 +95,7 @@ Use [`answers.template.md`](./answers.template.md): UI `[✅]` mirrors + Fields 
 
 ```bash
 python skills/take-dataannotation-assessment/humanize-text.py --json-in drafts/raw.json --json-out drafts/humanized.json
+# live visit: {"do":"humanize","text":"…","mode":"balanced"} then keys the result
 node skills/take-dataannotation-assessment/parse-answer-fill.js --answer "{profile}/answer.md" --out "{profile}/answer.fill.json"
 node skills/take-dataannotation-assessment/validate-answers.js --slug <slug> --answer "{profile}/answer.md"
 node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --slug <slug> --fetch-min 10 --gen-min 10
@@ -99,7 +103,9 @@ node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile
 
 ---
 
-## 2. Timer + pacing
+## 2. Timer + pacing (HARD MUST)
+
+**Full contract:** [`TIMER.md`](./TIMER.md).
 
 Bio minutes come from the bank (`prepare-answer` / `pace-plan --bank`).
 
@@ -117,7 +123,13 @@ node skills/take-dataannotation-assessment/pace-plan.js \
 | About 60-90 minutes | min=60 max=90 |
 | 1 hour or more | min=60 max=90 |
 
-After **Start assessment**: `status` / mission tree for live elapsed time. Use playbook `pauseMs` before each field (`pause` verb). Typing = ScreenMirror `keys` auto-type (**never `human:0`**).
+### ScreenMirror timer (MUST — operator 2026-11-08)
+
+1. **Immediately after Start assessment** (before any field): arm `status` tree from `playbook.timer.treeTemplate` (optional `mission plan`). Append `{profile}/answer.timer.json` `start_assessment`.
+2. **Every leaf** before fill: `status { step: "Step k · {leaf}" }` so the panel stopwatch records that step; after fill flip tree `done` + append `step_done` to `answer.timer.json`.
+3. Skipping the panel timer / logging only in chat = **workflow fail**.
+
+Use playbook `pauseMs` before each field (`pause` verb). Typing = ScreenMirror `keys` auto-type (**never `human:0`**).
 
 ---
 
@@ -131,14 +143,15 @@ Walk `answer.playbook.json` `actions[]` in order. Prefer sidebar leaf jumps.
 | `radio` | `locate-click.py <look> radios` (choice cluster) → `radio N` matching value → look |
 | `checkbox` | each listed option |
 | `drag` | `stroke` to `value[]` order |
-| `text`/`textarea`/`code` | focus → Ctrl+A → Backspace → `keys` auto-type |
+| `text`/`textarea`/`code` | focus (locate or label→Tab) → **prove** 1 non-space char → Backspace clear (never Ctrl+A) → `keys` chunks (never human:0, never Ctrl+V on DA) |
 | `skip` | leave blank |
 
 Hard:
 
-- [`CLICK.md`](./CLICK.md) — content only; no OCR `clickText` on blind hosts.
+- [`PART-B-FILL.md`](./PART-B-FILL.md) + [`CLICK.md`](./CLICK.md) — content only; no OCR `clickText` on blind hosts.
 - Raw `radios-raw` is debug-only (SE Q1 had 13 code-dot hits).
-- Never Submit during fill.
+- Never trust SM content marks that land x≈80; never click blank `field` near Expires.
+- Never Submit during fill. Share URL = real Claude chat then type with `keys`.
 
 ---
 

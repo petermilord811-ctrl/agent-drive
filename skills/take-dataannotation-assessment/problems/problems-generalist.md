@@ -2,7 +2,7 @@
 
 ### Bank
 
-- **captureStatus:** nearly-full
+- **captureStatus:** verified
 - **Captured:** 2026-11-07 · refreshed 2026-11-08 (Instructions, Q1, Q6) host 34123
 - **Leaves:** 14 · `assets/generalist/sidebar-inventory.json`
 - **Rule:** never Submit while fetching

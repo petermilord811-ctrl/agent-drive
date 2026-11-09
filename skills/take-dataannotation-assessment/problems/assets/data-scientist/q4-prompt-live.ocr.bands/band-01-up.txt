@@ -1,0 +1,4 @@
+Before analyzing, you'll need to clean the data appropriatety. Look for any data quaJity issues like duplicates, invalid values, or inconsistent entries that should be excluded from the analysis.
+For eligibility. consider only customers are meaningfully active • they should have a reasonable purchase history and have engaged recently enough to be considered foc a premium program.
+Once youVe identified ebgible customers. determine the top 20% by revenue and provide:
+1. The number of eligible customers (N eliqible)

@@ -1,0 +1,7 @@
+Response C
+1. Data Cleaning and Preprocessing
+Duplicates: We need to identity and handle duplicate Customer_lD entnes. If a custo
+appears multiple umes. we should aggregate their data.
+Invalid Values:
+• TotaJ_Orders: Should be a non•negative integer. A value of O is acceptaböe but
+indicate inactivity depending on the eligibility criterié

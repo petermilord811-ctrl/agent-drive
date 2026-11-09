@@ -28,27 +28,39 @@ skills/take-dataannotation-assessment/problems/problems-{role-slug}.md
 | Index | `problems/README.md`, `problems/index.json` |
 | Template | [`problems.template.md`](./problems.template.md) |
 | **MD style** | [`problems/STYLE.md`](./problems/STYLE.md) — plain structured Markdown (no HTML) |
+| **Fetch gotchas** | [`FETCH-GOTCHAS.md`](./FETCH-GOTCHAS.md) — DS 2026-11-08 never-again list |
 | Clicks | [`CLICK.md`](./CLICK.md), `locate-click.py`, `test-locate-click.py` |
 | Diff | `compare-problems.js --slug <role-slug>` |
 | Reconcile | `reconcile-steps.js --slug … --sidebar-json …` |
+| Verbatim gate | `validate-verbatim.js --slug …` |
+| Figure gate | `validate-figures.js --slug …` (no half-hidden chart crops) |
 | **Answer (B)** | [`ANSWER.md`](./ANSWER.md), [`answers.template.md`](./answers.template.md) |
-| Humanize | `humanize-text.py` (balanced) |
+| Humanize | relay `/api/humanize` + `SM_JOIN_KEY` (`humanize-text.py` / verb `humanize`) — never `HUMANIZE_API_KEY` |
 | Fill plan | `parse-answer-fill.js` → `{profile}/answer.fill.json` |
 | Pace | `pace-plan.js` → `{profile}/answer.pace.json` |
 | Validate | `validate-answers.js --slug … --answer …` |
 | **Part B gate** | `answer-ready.js --slug … --profile … [--strict-full\|--auto-pick]` |
 | **Part B orchestrator** | `prepare-answer.js --profile … [--slug …] [--strict-full]` → `session.json` + playbook |
+| **Part B timer (MUST)** | [`TIMER.md`](./TIMER.md) — arm `status`/`mission` after Start; log every leaf to `answer.timer.json` |
 | **Preflight** | [`PREFLIGHT.md`](./PREFLIGHT.md) |
 | **Local OCR (Browse)** | `look-ocr.js <look.png> --find "Data Scientist"` — when host OCR is chrome-blind |
 
 ## HARD RULES (operator 2026-11-07)
 
-### 1. Verbatim only — never summarize
+### 1. Verbatim only — never summarize (HARD — operator 2026-11-08)
 
-- Copy **exact on-screen text** (prompts, bullets, code, choices, labels).
-- **Do not** paraphrase, shorten, or “clean up” wording.
-- Summaries make later re-catch diffs false-positive “changed problem”.
-- If a block is too long for one look: **scroll** the content pane and append until complete; attach a cropped `.png` under `problems/assets/{slug}/` when text still can’t be recovered cleanly.
+- Copy **exact on-screen text** (prompts, bullets, code, choices, labels, datasets, model responses).
+- **Do not** paraphrase, shorten, “clean up”, OCR-repair, or invent missing words.
+- **Do not** skip non-question cards (Section 1 “Why general questions?” / “reviewed by a person”, Conversation recap). They are part of the leaf — bank verbatim (`FETCH-GOTCHAS.md` §0).
+- **Forbidden in problem body:** square-bracket guesses (`[and]`, `[you will]`), “summary from looks”, ellided datasets, comparative paraphrases of A/B/C.
+- If OCR is garbled: **do not invent** — keep the PNG under `problems/assets/{slug}/`, leave that block empty / `*(see asset — verbatim pending)*`, and keep `captureStatus` below `full`.
+- If a block is too long for one look: **scroll** the content pane and append until complete; stitch looks in order.
+- Gate: `validate-verbatim.js` **and** `validate-figures.js` must both exit 0 before `full` (also run by `answer-ready.js --strict-full`).
+- Summaries make later re-catch diffs false-positive “changed problem”. Live miss: DS bank 2026-11-08 filled with vision/OCR repairs — rejected.
+- **OCR method:** do **not** select/highlight text for OCR. Use `ocr {rect}` on the live screen, or local `ocr-bands.py` / `upscale-ocr.js` on a look PNG. Host `ocr` may stick on the first Instructions block after scroll — then OCR the **look PNG**, keep the raw dump (`.ocr.txt`), do not rewrite into clean English.
+- Bank OCR results as **structured** Prompt / Choices / Write-in (STYLE.md) — never a `Source OCR` dump field. Dirty OCR → re-look/re-OCR; do not invent clean prose.
+- **Vision / image_description is not source text.** Confirm `$` rates, model names (Haiku 5.5), and datasets with band-OCR before banking.
+- Full never-again list: [`FETCH-GOTCHAS.md`](./FETCH-GOTCHAS.md).
 
 ### 2. Two bio pages (both required)
 
@@ -105,8 +117,9 @@ For **every** assessment step:
 5. Helper: `locate-click.py <look.png> scroll-complete` — refuses `ok` until footer + explanation / list-end cues are in-frame (see [`CLICK.md`](./CLICK.md)).
 
 **Embedded diagrams / example images (not prose):**
-- Never replace a figure with a prose paraphrase (e.g. “black box with letter F”).
+- Never replace a figure with a prose paraphrase (e.g. “black box with letter F”, “bars ~95%”).
 - Crop the on-screen figure → `problems/assets/{slug}/….png` and **embed** it in the MD with `![…](assets/…)`, **or** redraw it character-for-character (same grid). Prefer the PNG embed.
+- **Figure completeness (HARD — DS 2026-11-08):** title + **both axes** + all tick labels must be in-frame before crop. Half-hidden charts fail `validate-figures.js`. Keep a full-viewport `*-live.png` alongside the crop.
 
 **URLs / hyperlinks (OCR is untrusted):**
 - Do **not** trust OCR for long URLs (Google Docs `/pub` links, etc.).
@@ -130,14 +143,14 @@ For **every** assessment step:
 
 ## Part B — Answering (after bank is `full`)
 
-**Full procedure:** [`ANSWER.md`](./ANSWER.md) · **Machine checklist:** [`PREFLIGHT.md`](./PREFLIGHT.md).
+**Full procedure:** [`ANSWER.md`](./ANSWER.md) · **Machine checklist:** [`PREFLIGHT.md`](./PREFLIGHT.md) · **Never-again fill contract:** [`PART-B-FILL.md`](./PART-B-FILL.md) · **Clicks:** [`CLICK.md`](./CLICK.md).
 
 ```bash
 node skills/take-dataannotation-assessment/prepare-answer.js --profile "{profile}" --strict-full
 # read session.phase / nextSteps — do not invent a path around a blocked bank
 ```
 
-Then: generate `answer.md` → humanize → parse/validate → re-run `prepare-answer` (emits playbook) → timed autofill from `answer.playbook.json` → recheck → operator **Submit** yes only.
+Then: generate `answer.md` → humanize (relay join key) → parse/validate → re-run `prepare-answer` (emits playbook) → **read PART-B-FILL** → timed autofill from `answer.playbook.json` (prove focus before every `keys`; never Ctrl+V on DA; never Expires marks) → recheck → operator **Submit** yes only.
 
 ## Evidence / debt (2026-11-07 / 11-08 host 34123)
 
@@ -145,8 +158,11 @@ Then: generate `answer.md` → humanize → parse/validate → re-run `prepare-a
 |------|-----------------|------|
 | Software Engineer | `nearly-full` | Q5 **pseudocode**; Verify URL fixed; languages fixed |
 | Generalist | `nearly-full` | Instructions expanded; Q1 `$246.64`; Q6 verbatim; plain MD structure 2026-11-08 |
-| Data Scientist (+101 others) | incomplete / stub | full verbatim Bio1+Bio2+assessment |
+| Data Scientist | nearly-full | 2026-11-08 structured OCR bank (99588); Q1 chart re-cropped full; Claude setup URL captured; optional Q4 digit re-check vs PNG before `full` |
+| (+101 others) | incomplete / stub | full verbatim Bio1+Bio2+assessment |
 
 - Click stack fixed 2026-11-07: zone-safe `locate-click.py` (sidebar/content split, vertical radio columns, Next footer pick, role refuses col-0 default). See [`CLICK.md`](./CLICK.md).
 - **Scroll bug fixed 2026-11-08:** sticky Next can show while **Explanation** is below the fold (SE Q1/Q2). Gate with `locate-click.py <look> scroll-complete`; focus content + **PageDown** until ok; save `qN.png` + `qN_bottom.png`.
-- **Part B feel-test 99588 / Daniel Herman (2026-11-08):** pick PDF/binary + `ui`/`Chemist⊂biochemistry` fixed; role gray-title+segment fix; `answer-ready.js` gate. DS bank still incomplete — fetch before answer.
+- **Fetch never-again (99588 DS 2026-11-08):** Source-OCR dumps, select-for-OCR, stuck host OCR, vision-as-verbatim, half-hidden charts → gates in `validate-verbatim.js` + `validate-figures.js` + [`FETCH-GOTCHAS.md`](./FETCH-GOTCHAS.md).
+- **Part B feel-test 99588 / Daniel Herman (2026-11-08):** pick PDF/binary + `ui`/`Chemist⊂biochemistry` fixed; role gray-title+segment fix; `answer-ready.js` gate.
+- **Part B live fill never-again (99588 night):** scroll-on-space without focus; Expires false marks; SM marks→sidebar; `aim:false` still snaps; Ctrl+C/V ban on DA; Tab+prove-focus; Failure-Yes extras (round/desc/screenshot); TIMER must; relay humanize only → [`PART-B-FILL.md`](./PART-B-FILL.md).

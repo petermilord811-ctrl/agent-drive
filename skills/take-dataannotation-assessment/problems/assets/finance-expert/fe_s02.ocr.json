@@ -1,0 +1,346 @@
+﻿{
+  "ok": true,
+  "engine": "windows",
+  "ms": 776,
+  "find": null,
+  "count": 27,
+  "matches": [
+    {
+      "t": "[QUALIFICATION] Finance",
+      "lx": 167,
+      "ly": 17,
+      "bbox": [
+        115,
+        13,
+        219,
+        21
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Ibaeo.a32d.7940-9ea9.a52c7 91d75",
+      "lx": 892,
+      "ly": 45,
+      "bbox": [
+        810,
+        41,
+        973,
+        48
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "k Goog",
+      "lx": 1163,
+      "ly": 46,
+      "bbox": [
+        1147,
+        41,
+        1179,
+        50
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "cera",
+      "lx": 52,
+      "ly": 64,
+      "bbox": [
+        41,
+        61,
+        62,
+        67
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Section",
+      "lx": 477,
+      "ly": 142,
+      "bbox": [
+        452,
+        137,
+        501,
+        146
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "ssessment uest n",
+      "lx": 600,
+      "ly": 142,
+      "bbox": [
+        532,
+        137,
+        668,
+        146
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "get to",
+      "lx": 347,
+      "ly": 392,
+      "bbox": [
+        317,
+        388,
+        376,
+        396
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "The following consists 01 7 multi•part questions. \"ease that need to be created by you, any",
+      "lx": 723,
+      "ly": 161,
+      "bbox": [
+        451,
+        156,
+        995,
+        166
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "help Ot the 01 an Al Assistant",
+      "lx": 553,
+      "ly": 175,
+      "bbox": [
+        484,
+        170,
+        622,
+        180
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Why does this assessment include genera/ questions ?",
+      "lx": 573,
+      "ly": 203,
+      "bbox": [
+        451,
+        198,
+        694,
+        208
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "*Ough the Expert Domain first focuses on general reasoning,",
+      "lx": 722,
+      "ly": 221,
+      "bbox": [
+        470,
+        216,
+        973,
+        226
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Skills rather than Expert knowled*",
+      "lx": 687,
+      "ly": 235,
+      "bbox": [
+        597,
+        230,
+        776,
+        240
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "That'S intentional. Our subject-matter eipertise iS invortant, but so are broader Skills irwolved in teacNng",
+      "lx": 727,
+      "ly": 255,
+      "bbox": [
+        470,
+        250,
+        984,
+        260
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "A' nuanced reasoning carefully, communicatng Clearly, and exercising",
+      "lx": 740,
+      "ly": 269,
+      "bbox": [
+        532,
+        264,
+        948,
+        274
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "judgment TWS Starter assessment helps us evaluate those Skills before to",
+      "lx": 677,
+      "ly": 283,
+      "bbox": [
+        469,
+        278,
+        884,
+        288
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Every assessment is reviewed by a person.",
+      "lx": 547,
+      "ly": 330,
+      "bbox": [
+        451,
+        325,
+        642,
+        335
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "We every subnitted Starter Your responses are as a Whole by team. than",
+      "lx": 726,
+      "ly": 347,
+      "bbox": [
+        470,
+        342,
+        981,
+        352
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "being or rejected solely based an automated scote",
+      "lx": 601,
+      "ly": 361,
+      "bbox": [
+        470,
+        356,
+        732,
+        366
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "We you to MSWe•r every tho\"itfulb' and give us best representation Of reason and",
+      "lx": 710,
+      "ly": 381,
+      "bbox": [
+        470,
+        376,
+        950,
+        386
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "eate",
+      "lx": 517,
+      "ly": 395,
+      "bbox": [
+        508,
+        392,
+        525,
+        398
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "uesüon 1:",
+      "lx": 495,
+      "ly": 455,
+      "bbox": [
+        463,
+        450,
+        527,
+        460
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "you have a friend finished reading the Doyle Brunson by Jackie Alyson and enjoyed it, Would The",
+      "lx": 730,
+      "ly": 489,
+      "bbox": [
+        487,
+        484,
+        973,
+        494
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Wager by Grann be a good recommendation for a follow up read?",
+      "lx": 601,
+      "ly": 503,
+      "bbox": [
+        452,
+        498,
+        749,
+        508
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Great m",
+      "lx": 499,
+      "ly": 526,
+      "bbox": [
+        468,
+        522,
+        530,
+        530
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "Bad Reco",
+      "lx": 488,
+      "ly": 550,
+      "bbox": [
+        468,
+        546,
+        508,
+        554
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "ues on a",
+      "lx": 497,
+      "ly": 608,
+      "bbox": [
+        463,
+        604,
+        531,
+        612
+      ],
+      "action": "dbl"
+    },
+    {
+      "t": "In 3-5+ tull sentences, please describe woy this may o' may rot be a gcH)d recommendation.",
+      "lx": 642,
+      "ly": 628,
+      "bbox": [
+        452,
+        623,
+        832,
+        633
+      ],
+      "action": "dbl"
+    }
+  ],
+  "pick": {
+    "t": "[QUALIFICATION] Finance",
+    "lx": 167,
+    "ly": 17,
+    "bbox": [
+      115,
+      13,
+      219,
+      21
+    ],
+    "action": "dbl"
+  },
+  "note": "coords are look pixels (lx/ly). For Browse cards use action dbl on pick; body ≈ ly+55."
+}

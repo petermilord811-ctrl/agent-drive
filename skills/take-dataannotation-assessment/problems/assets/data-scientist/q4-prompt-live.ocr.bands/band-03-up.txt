@@ -1,0 +1,4 @@
+4. The pooled average order value for this segment
+Important considerations:
+Use standard rounding conventions vhen presenting monetary values
+When ranking customers Mth identical revenue, use a consistent tie-breaking method

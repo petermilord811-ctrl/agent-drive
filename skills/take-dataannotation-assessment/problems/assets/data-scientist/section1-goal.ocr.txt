@@ -1,0 +1,20 @@
+Describe what you as the user are trying to achieve in this conversation in 2-3+ sentences.
+This should be â€¢generate a meaningful model failure" oc general concepts like "l want to leam more about data science J statistics I ML topics.- You're describing what the user in the conversation (you) specifically would expect to learn from the model or the task that you wanted
+the model to accomplish.
+If you're not sure where to start, thank along these lines:
+What's a situation at work where you had to pull information from multiple sources to get the nght answer?
+â€¢ When have you seen someone make a mistake because they didnt check everything or missed a key detail?
+What part of your job requires the most professional judgment?
+â€¢ Is there a task where getting one thing wrong early makes everything else wrong too?
+You dont need to answer all of these. Theyre just meant to he%) you land on a strong scenano I conversation goal. You'll notice that these are au fairly focused on vorkplace use of the models. which is on purpse. You dont necessanty have to go this direction, but it's a great way of
+both demonstrating your experuse in your niche of the Data Soence domain and challengng the models so that they make a â€¢meaningful error".
+Attached Files
+Ate you attaching any files in your conversation with the models?
+This isn't something that you have to do (its perfectly possible to challenge Al models without them), bl.n in tealâ€¢wodd use of Al models in workplaces. people do often attach files. For example. a spreadsheet of data ot a document that provides some context that may or may not be
+helpful to the answenng models.
+helpful to the answenng models.
+Yes, I'm attaching file(s) tn my conversation
+No
+Did you get the model to produce at least one response with a meaningful failure?
+The main reasons this "Conversation: Challenging an Al Moder exercise is part of your assessment:
+o We want you to displayyour expertise within the Data science domain. Have you studied or worked in a subdomain of Data science that many wouldnt understand without significant research or learning? These are areas that the models Expires in: 4 days 22 hours 58 mir

@@ -1,0 +1,4 @@
+DATASET:
+Customer_lD, Total_Orders, TotaJ_Revenue, Days_Since_Last_Purchase
+coot. 5, 450, 30
+C002. 8. 920. 15

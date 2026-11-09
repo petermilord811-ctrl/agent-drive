@@ -1,0 +1,39 @@
+Acton: Keep the most recent record the one With Last Pur
+Invalid I Excludable Records
+C021: Total_Orders O not an active customer
+C022: Total_Revenue invaJid revenue.
+C027: Total_Orders 7.5 fractional orders are not valid.
+These are excluded.
+Activity Requirement
+To be "meaningfulty active,• customers should:
+• Have orders
+• Have purchased recently enough we'll use a reasonable cutoff of $120 days
+(C004 is at the boundary)
+AJI remairung customers meet thts cntenon.
+2. Eligible Customers
+After cleaning, 24 customers remain eligible.
+3. Identify Top by Revenue
+Top of 24 customers k = (0.20 x 241 : 5
+Sorted Revenues (Descending)
+coos — 2100
+1.
+2.
+C020 — 1890
+3.
+coxs — 1755
+C003 — 1560
+4.
+5.
+coro — 1540.5
+6.
+C024 — 1540.5
+7.
+C02S — 1540.5
+8.
+cot2 — 1350
+9.
+C023 — 1349.5
+10.
+cow — 121S
+cooa — 1170
+11.

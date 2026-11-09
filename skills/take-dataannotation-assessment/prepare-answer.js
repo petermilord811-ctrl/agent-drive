@@ -132,6 +132,22 @@ if (fs.existsSync(fillPath)) {
     for (const a of pace.actions) paceById[a.id] = a;
   }
 
+  const fillActions = fill.actions || [];
+  const leafSteps = [];
+  const seenLeaf = new Set();
+  for (const a of fillActions) {
+    const key = String(a.step) + '|' + (a.leaf || '');
+    if (a.firstInStep || !seenLeaf.has(key)) {
+      seenLeaf.add(key);
+      leafSteps.push({
+        t: 'Step ' + (a.step != null ? a.step : '?') + ' · ' + (a.leaf || a.id),
+        s: 'todo',
+        step: a.step,
+        leaf: a.leaf,
+      });
+    }
+  }
+
   playbook = {
     version: 1,
     slug,
@@ -146,8 +162,41 @@ if (fs.existsSync(fillPath)) {
       roleMode: 'role "Title" → dbl',
       forbidOcrClickText: true,
     },
-    actions: (fill.actions || []).map((a, idx) => {
+    /** HARD MUST — ScreenMirror panel stopwatch (TIMER.md). */
+    timer: {
+      must: true,
+      armAfter: 'Start assessment',
+      tool: 'status (+ optional mission)',
+      log: path.join(path.resolve(profileDir), 'answer.timer.json'),
+      perLeaf: 'status.step before fill; tree flip done; append log',
+      doc: 'skills/take-dataannotation-assessment/TIMER.md',
+      statusTask: 'DA Part B — ' + slug + ' / ' + path.basename(path.resolve(profileDir)),
+      treeTemplate: [
+        { t: '0 Preflight', s: 'done' },
+        { t: '1 Start assessment', s: 'done' },
+        { t: '2 Fill steps', s: 'doing', k: leafSteps },
+        { t: '3 Recheck', s: 'todo' },
+        { t: '4 Operator review', s: 'todo' },
+      ],
+    },
+    actions: fillActions.map((a, idx) => {
       const p = paceById[a.id] || {};
+      const recipe = recipeFor(a);
+      if (a.firstInStep) {
+        recipe.unshift(
+          'TIMER MUST: status { step: "Step ' +
+            (a.step != null ? a.step : '?') +
+            ' · ' +
+            (a.leaf || a.id) +
+            '", text: "filling ' +
+            a.id +
+            '" }',
+          'append answer.timer.json step_start'
+        );
+        recipe.push(
+          'TIMER: flip tree leaf done; append answer.timer.json step_done'
+        );
+      }
       return {
         seq: idx + 1,
         id: a.id,
@@ -162,7 +211,7 @@ if (fs.existsSync(fillPath)) {
         thinkMs: p.thinkMs != null ? p.thinkMs : a.thinkMs,
         typeMs: p.typeMs,
         pauseMs: p.pauseMs != null ? p.pauseMs : p.thinkMs,
-        recipe: recipeFor(a),
+        recipe,
       };
     }),
   };
@@ -202,8 +251,7 @@ function recipeFor(a) {
       'look',
       'pause thinkMs',
       'focus field (radio→Tab or click textarea cx/cy from scroll-complete)',
-      'chord Ctrl+A',
-      'press Backspace',
+      'press Backspace only to clear (NEVER Ctrl+A — selects page)',
       'keys { text: value }  # auto-type — NEVER human:0',
       'look prove',
     ];
@@ -254,8 +302,13 @@ const session = {
     'Never keys human:0 on DA fields',
     'Always look → locate-click.py on THAT png → act',
     'Never clickText for DA content on OCR-blind hosts',
+    'Verbatim only — validate-verbatim.js + validate-figures.js before captureStatus full (no summarize / no Source-OCR dumps / no half-hidden charts)',
     'Keep chat short to avoid stuck chat-wait',
     'Profiles and questions are independent',
+    'TIMER MUST: after Start assessment arm status/mission tree; status.step + answer.timer.json every leaf (TIMER.md) — never skip',
+    'Clear fields with Backspace only — never Ctrl+A',
+    'Humanize via relay /api/humanize + SM_JOIN_KEY (verb humanize) — never HUMANIZE_API_KEY',
+    'PART-B-FILL.md before first live keys: prove focus (non-space char) before typing; never Ctrl+C/V on DA; never SM field/Expires marks; snap:false for small targets; only operator-named host',
   ],
 };
 
@@ -273,7 +326,7 @@ function nextSteps(phase, ready, slug) {
   if (phase === 'generate-answer-md') {
     return [
       'Write answer.md from bank + resume (answers.template.md + generating_rule.md)',
-      'humanize-text.py balanced on every textarea/code prose',
+      'humanize-text.py / verb humanize (relay join key) on every textarea/code prose',
       'parse-answer-fill.js → answer.fill.json',
       'validate-answers.js must exit 0',
       're-run prepare-answer.js to emit playbook',
@@ -287,9 +340,11 @@ function nextSteps(phase, ready, slug) {
     ];
   }
   return [
+    'Read PART-B-FILL.md + CLICK.md before first live keys',
     'Mission: Part B autofill from answer.playbook.json',
     'Start assessment only when operator confirms real take (or already started)',
-    'status/mission timer on; walk playbook actions with pauseMs',
+    'TIMER MUST immediately after Start: status tree from playbook.timer + answer.timer.json start_assessment',
+    'Each leaf: status.step → pauseMs → focus-prove → keys (no Ctrl+V on DA) → tree done + timer log',
     'Recheck → chat operator to review → Submit only on yes',
   ];
 }

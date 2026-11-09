@@ -813,8 +813,17 @@ def _option_radio_cluster(radio_list, h):
     return best[:6]
 
 
+def _is_input_fill(rgb):
+    """DA empty Goal/explain fill is often #f8f8f8 (248), not pure page white."""
+    r, g, b = rgb[:3]
+    if max(r, g, b) - min(r, g, b) > 12:
+        return False
+    avg = (r + g + b) / 3
+    return 236 <= avg <= 252
+
+
 def find_textareas(path, sidebar_edge=None):
-    """Large empty white boxes in the content pane (Explanation fields)."""
+    """Large empty white / #f8 boxes in the content pane (Explanation / Goal fields)."""
     im, px, (w, h) = load_rgb(path)
     if sidebar_edge is None:
         sidebar_edge = detect_sidebar_edge(px, w, h)
@@ -875,6 +884,49 @@ def find_textareas(path, sidebar_edge=None):
             y = y1 + 4
             continue
         y += 2
+
+    # Pass 2 (99588 Conversation Goal): borderless #f8 fill blocks — no gray top border.
+    # Page white is 255; input fill is ~248. Find tall contiguous input-fill bands.
+    y = y_lo
+    while y < y_hi - 40:
+        fill_xs = [x for x in range(x0 + 8, w - 16) if _is_input_fill(px[x, y])]
+        if len(fill_xs) < span_need:
+            y += 2
+            continue
+        bx0, bx1 = min(fill_xs), max(fill_xs)
+        if bx1 - bx0 < span_need:
+            y += 2
+            continue
+        y0 = y
+        y1 = y
+        while y1 < y_hi:
+            samples = list(range(bx0 + 8, min(bx1 - 8, w - 8), 6))
+            if not samples:
+                break
+            ok = sum(1 for x in samples if _is_input_fill(px[x, y1])) >= len(samples) * 0.55
+            if not ok:
+                break
+            y1 += 1
+        box_h = y1 - y0
+        box_w = bx1 - bx0
+        if box_w >= span_need and 48 <= box_h <= 320:
+            candidates.append(
+                {
+                    "x0": bx0,
+                    "y0": y0,
+                    "x1": bx1,
+                    "y1": y1,
+                    "w": box_w,
+                    "h": box_h,
+                    "cx": (bx0 + bx1) // 2,
+                    "cy": (y0 + y1) // 2,
+                    "kind": "fill248",
+                }
+            )
+            y = y1 + 4
+            continue
+        y += 2
+
     kept = []
     for c in sorted(candidates, key=lambda t: -t["h"] * t["w"]):
         if any(
@@ -883,6 +935,71 @@ def find_textareas(path, sidebar_edge=None):
             continue
         kept.append(c)
     return kept, w, h, sidebar_edge
+
+
+def find_textarea_click(path, index=0):
+    """Empty content textareas (Conversation Goal, explanations).
+
+    HARD (99588 Daniel Herman 2026-11-08): ScreenMirror `marks` for an empty
+    Goal field mapped to the **Expires** chip (~1746,1017), not the box.
+    Never trust blank `field ""` marks for DA textareas — measure here, click
+    lx/ly from this look, then keys. After click: prove focus with one non-space
+    letter → look before full keys (spaces on document scroll the page). If click
+    focus fails, content-label → Tab (see PART-B-FILL.md).
+    """
+    areas, w, h, edge = find_textareas(path)
+    # Prefer real fill boxes: wide + tall enough, above sticky footer/chip band
+    usable = [
+        a
+        for a in areas
+        if a["w"] >= int((w - edge) * 0.35)
+        and a["h"] >= 40
+        and a["cx"] > edge + 20
+        and a["y1"] < int(h * 0.88)
+    ]
+    # Prefer taller boxes first (99588: short #f8 strips above real Goal were index 0)
+    usable.sort(key=lambda a: (-a["h"], a["y0"]))
+    if not usable:
+        return {
+            "ok": False,
+            "mode": "textarea",
+            "why": "no content textarea boxes — scroll problem pane or Expand All",
+            "sidebar_edge": edge,
+            "look": [w, h],
+            "count": 0,
+            "note": "Do not click mark field \"\" near Expires; re-look after scroll",
+        }
+    if index < 0 or index >= len(usable):
+        return {
+            "ok": False,
+            "why": f"textarea index {index} out of range (have {len(usable)})",
+            "sidebar_edge": edge,
+            "textareas": usable,
+            "look": [w, h],
+        }
+    a = usable[index]
+    # Click slightly below top border into the white fill
+    lx = int(a["cx"])
+    ly = int(min(a["y0"] + max(18, a["h"] // 3), a["y1"] - 8))
+    if lx <= edge + 20:
+        return {"ok": False, "why": "refused: textarea in sidebar danger zone", "a": a}
+    return {
+        "ok": True,
+        "mode": "textarea",
+        "i": index,
+        "lx": lx,
+        "ly": ly,
+        "action": "click",
+        "sidebar_edge": edge,
+        "look": [w, h],
+        "count": len(usable),
+        "box": a,
+        "textareas": [
+            {"i": i, "lx": t["cx"], "ly": t["y0"] + max(18, t["h"] // 3), "w": t["w"], "h": t["h"]}
+            for i, t in enumerate(usable)
+        ],
+        "note": "click lx/ly then keys; never human:0; clear with Backspace only",
+    }
 
 
 def scroll_complete(path):
@@ -980,8 +1097,8 @@ def main():
     if len(sys.argv) < 3:
         print(
             "usage: locate-click.py <look.png> "
-            "zones|continue|next|back|start|radios|radio|sidebar|role|blue-buttons|"
-            "scroll-complete [title|index]",
+            "zones|continue|next|back|start|radios|radio|sidebar|role|textarea|"
+            "blue-buttons|scroll-complete [title|index]",
             file=sys.stderr,
         )
         sys.exit(2)
@@ -1009,6 +1126,9 @@ def main():
     elif mode == "role":
         title = " ".join(sys.argv[3:]) or ""
         print(json.dumps(find_role_card(path, title), indent=2))
+    elif mode in ("textarea", "textareas", "field"):
+        idx = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+        print(json.dumps(find_textarea_click(path, index=idx), indent=2))
     elif mode in ("scroll-complete", "scroll_complete", "scrolled"):
         print(json.dumps(scroll_complete(path), indent=2))
     elif mode in ("blue-buttons", "blue"):

@@ -1,0 +1,2 @@
+Have a conversation using Haiku 5.5 on Claude ai (with •Effort" set to Low).
+wed like you to have a conversation that is relevant to the Data Science Domain which is challenging. but also realistic and natural. In other words. we dont find prompts that test if the model can "end every other sentence wqh the letter as useful. They might make that

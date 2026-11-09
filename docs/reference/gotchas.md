@@ -202,6 +202,16 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   re-catch diffs). Save **both** bio pages (overview + post-Continue intro; skip only No-LLMs line).
   After Start assessment, loop **all** steps; for answer-dependent UI, press each radio/checkbox and
   save each case; scroll clipped content / attach images; **never Submit** while fetching.
+- **Part A fetch never-again (99588 / DS 2026-11-08):** Source-OCR dumps, select-for-OCR, stuck host
+  OCR, vision-as-verbatim, half-hidden charts → full list + gates in
+  [FETCH-GOTCHAS.md](../../skills/take-dataannotation-assessment/FETCH-GOTCHAS.md)
+  (`validate-verbatim.js` / `validate-figures.js`; rule `.cursor/rules/da-fetch-verbatim.mdc`).
+- **Part B fill never-again (99588 / Daniel Herman 2026-11-08 night):** Spaces without field focus
+  scroll the page; SM `field ""` = Expires; content marks often click x≈80; `aim:false` still snaps
+  (need `snap:false`); never Ctrl+C/V/A on DA task pages; prove focus with one non-space char before
+  `keys`; Tab-from-label when textarea click fails; Failure Yes adds round/desc/screenshot; TIMER
+  after Start; humanize via join-key relay only. Canonical:
+  [PART-B-FILL.md](../../skills/take-dataannotation-assessment/PART-B-FILL.md) (+ CLICK / PREFLIGHT).
 - **Assessment click stack (34123, fixed 2026-11-07):** Mis-clicks were systematic — no sidebar/content
   split (x≈320 hit left-nav → jumped to Q5), stale Next Y, `role` always returned col 0, Browse cards
   need **`dbl`**. Use zone-safe `locate-click.py` (`zones|next|radio N|role`) on the *current* look;

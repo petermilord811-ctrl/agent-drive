@@ -1,0 +1,23 @@
+---
+description: Part B DataAnnotation live fill — prove focus, no Expires marks, snap:false, no Ctrl+V on DA, operator host only
+globs: agent-drive/skills/take-dataannotation-assessment/**,**/10-*/**,**/answer.playbook.json,**/answer.fill.json
+alwaysApply: false
+---
+
+# DA Part B fill — never-again (99588 Daniel Herman 2026-11-08)
+
+Full contract: `skills/take-dataannotation-assessment/PART-B-FILL.md`  
+Also: `CLICK.md` · `PREFLIGHT.md` · `TIMER.md`
+
+## Hard stops (before every `keys`)
+
+1. **Operator-named host only** — pass `host` on every serve call.
+2. **Read PART-B-FILL.md** in-session before first live Part B `keys`.
+3. **Prove focus** — one non-space letter/digit → look shows it in the target box — then type. Spaces on document = scroll bug.
+4. **Never** SM blank `field ""` (Expires) or content marks that click x≈80 — use `locate-click.py textarea` / content lx / label→Tab.
+5. **Never** Ctrl+C / Ctrl+V / Ctrl+A on DA task pages — Backspace clear; `keys` only. No `human:0`.
+6. **Small targets:** `snap:false` + `aim:false` (aim:false alone still snaps). Checkboxes: OCR label → lx ≈ bbox.x0−16.
+7. **TIMER** immediately after Start (`da-partb-timer.mdc` / TIMER.md).
+8. **Never Submit** without operator yes after recheck.
+9. Humanize = relay join-key / verb `humanize` only — never `HUMANIZE_API_KEY`.
+10. Failure **Yes** may add round / describe / screenshot — fill them; share URL needs real Claude then type with keys.

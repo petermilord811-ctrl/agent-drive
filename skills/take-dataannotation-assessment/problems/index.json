@@ -1,934 +1,1036 @@
 {
   "version": 3,
-  "updated": "2026-11-07",
+  "updated": "2026-11-08",
   "expectedRoles": 103,
   "total": 103,
   "banks": [
     {
       "slug": "generalist",
       "file": "problems-generalist.md",
-      "status": "nearly-full",
+      "status": "verified",
       "role": "Generalist",
       "assessmentId": "generalist",
       "assessment": "Generalist Assessment",
-      "category": "General"
+      "category": "General",
+      "note": "Operator-verified 2026-11-08 — only verified banks with software-engineer until other majors re-fetched"
     },
     {
       "slug": "software-engineer",
       "file": "problems-software-engineer.md",
-      "status": "nearly-full",
+      "status": "verified",
       "role": "Software Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
-      "category": "Coding"
+      "category": "Coding",
+      "note": "Operator-verified 2026-11-08 — only verified banks with generalist until other majors re-fetched"
     },
     {
       "slug": "frontend-engineer",
       "file": "problems-frontend-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Frontend Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
-      "category": "Coding"
+      "category": "Coding",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "devops-engineer",
       "file": "problems-devops-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "DevOps Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
-      "category": "Coding"
+      "category": "Coding",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "backend-engineer",
       "file": "problems-backend-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Backend Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
-      "category": "Coding"
+      "category": "Coding",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "full-stack-engineer",
       "file": "problems-full-stack-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Full Stack Engineer",
       "assessmentId": "coding",
       "assessment": "Coding Assessment",
-      "category": "Coding"
+      "category": "Coding",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "data-scientist",
       "file": "problems-data-scientist.md",
-      "status": "incomplete",
+      "status": "nearly-full",
       "role": "Data Scientist",
       "assessmentId": "data-ml",
       "assessment": "Data & ML Assessment",
-      "category": "Data & ML"
+      "category": "Data & ML",
+      "note": "Data Science Starter v2.4; 7 leaves; 99588 capture + 34123 resume 2026-11-08"
     },
     {
       "slug": "machine-learning-engineer",
       "file": "problems-machine-learning-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Machine Learning Engineer",
       "assessmentId": "data-ml",
       "assessment": "Data & ML Assessment",
-      "category": "Data & ML"
+      "category": "Data & ML",
+      "note": "Bio unique; assessment steps shared with software-engineer Coding Core (34123 2026-11-08)"
     },
     {
       "slug": "cybersecurity-expert",
       "file": "problems-cybersecurity-expert.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Cybersecurity Expert",
       "assessmentId": "cybersecurity",
       "assessment": "Cybersecurity Assessment",
-      "category": "Cybersecurity"
+      "category": "Cybersecurity",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "penetration-tester",
       "file": "problems-penetration-tester.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Penetration Tester",
       "assessmentId": "cybersecurity",
       "assessment": "Cybersecurity Assessment",
-      "category": "Cybersecurity"
+      "category": "Cybersecurity",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "incident-responder",
       "file": "problems-incident-responder.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Incident Responder",
       "assessmentId": "cybersecurity",
       "assessment": "Cybersecurity Assessment",
-      "category": "Cybersecurity"
+      "category": "Cybersecurity",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "application-security-engineer",
       "file": "problems-application-security-engineer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Application Security Engineer",
       "assessmentId": "cybersecurity",
       "assessment": "Cybersecurity Assessment",
-      "category": "Cybersecurity"
+      "category": "Cybersecurity",
+      "note": "Bio unique; Programming Projects shared with SE 01a1b860/7d25aa0d (34123 2026-11-08)"
     },
     {
       "slug": "finance-expert",
       "file": "problems-finance-expert.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Finance Expert",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Finance Starter V4.1; 15 leaves; 34123 2026-11-08; never Submit"
     },
     {
       "slug": "quantitative-analyst",
       "file": "problems-quantitative-analyst.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Quantitative Analyst",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "portfolio-manager",
       "file": "problems-portfolio-manager.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Portfolio Manager",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "investment-banker",
       "file": "problems-investment-banker.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Investment Banker",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "private-equity-associate",
       "file": "problems-private-equity-associate.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Private Equity Associate",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "credit-analyst",
       "file": "problems-credit-analyst.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Credit Analyst",
       "assessmentId": "finance",
       "assessment": "Finance Assessment",
-      "category": "Finance"
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "wealth-manager",
       "file": "problems-wealth-manager.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Wealth Manager",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "equity-research-analyst",
       "file": "problems-equity-research-analyst.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Equity Research Analyst",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "actuary",
       "file": "problems-actuary.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Actuary",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "venture-capitalist",
       "file": "problems-venture-capitalist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Venture Capitalist",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "insurance-underwriter",
       "file": "problems-insurance-underwriter.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Insurance Underwriter",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "trader",
       "file": "problems-trader.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Trader",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123)"
     },
     {
       "slug": "treasury-analyst",
       "file": "problems-treasury-analyst.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Treasury Analyst",
       "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessment": "Finance Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Bio unique; assessment steps shared with finance-expert Finance Starter V4.1 (same task_response_id 01a1bae0 on 34123). Search fuzzy — open titled Treasury Analyst card; verify Finance Projects."
     },
     {
       "slug": "management-consultant",
       "file": "problems-management-consultant.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Management Consultant",
-      "assessmentId": "finance",
-      "assessment": "Finance Assessment",
-      "category": "Finance"
+      "assessmentId": "consulting",
+      "assessment": "Consultant Starter Assessment V4.1",
+      "category": "Finance",
+      "note": "Browse tag Finance but track = Consulting Projects (not Finance Starter). task_response_id=01a1bb1c on 34123; 15 leaves; Haiku 5.5 Consulting Domain"
     },
     {
       "slug": "tax-accountant",
       "file": "problems-tax-accountant.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Tax Accountant",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "corporate-accountant",
       "file": "problems-corporate-accountant.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Corporate Accountant",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Accounting Starter V4.1; 2 leaves; 34123 2026-11-08; never Submit"
     },
     {
       "slug": "accountant",
       "file": "problems-accountant.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Accountant",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "auditor",
       "file": "problems-auditor.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Auditor",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "public-accountant",
       "file": "problems-public-accountant.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Public Accountant",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "fpa-analyst",
       "file": "problems-fpa-analyst.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "FP&A Analyst",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "financial-reporting-manager",
       "file": "problems-financial-reporting-manager.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Financial Reporting Manager",
       "assessmentId": "accounting",
       "assessment": "Accounting Assessment",
-      "category": "Accounting"
+      "category": "Accounting",
+      "note": "Bio unique; assessment steps shared with corporate-accountant Accounting Starter V4.1 (34123 2026-11-08)"
     },
     {
       "slug": "economist",
       "file": "problems-economist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Economist",
       "assessmentId": "economics",
-      "assessment": "Economics Assessment",
-      "category": "Economics"
+      "assessment": "Economist Starter Assessment V4.1",
+      "category": "Economics",
+      "note": "16 leaves; Economist Projects; task_response_id=01a1bb26 on 34123; Haiku 5.5 Economics Domain; Economics Degrees leaf"
     },
     {
       "slug": "research-economist",
       "file": "problems-research-economist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Research Economist",
       "assessmentId": "economics",
-      "assessment": "Economics Assessment",
-      "category": "Economics"
+      "assessment": "Economist Starter Assessment V4.1",
+      "category": "Economics",
+      "note": "Bio unique; track Economist Projects verified; steps shared with economist (01a1bb26)"
     },
     {
       "slug": "applied-economist",
       "file": "problems-applied-economist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Applied Economist",
       "assessmentId": "economics",
-      "assessment": "Economics Assessment",
-      "category": "Economics"
+      "assessment": "Economist Starter Assessment V4.1",
+      "category": "Economics",
+      "note": "Bio unique; track Economist Projects verified; steps shared with economist (01a1bb26)"
     },
     {
       "slug": "quantitative-economist",
       "file": "problems-quantitative-economist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Quantitative Economist",
       "assessmentId": "economics",
-      "assessment": "Economics Assessment",
-      "category": "Economics"
+      "assessment": "Economist Starter Assessment V4.1",
+      "category": "Economics",
+      "note": "Bio unique; track Economist Projects verified; steps shared with economist (01a1bb26)"
     },
     {
       "slug": "legal-expert",
       "file": "problems-legal-expert.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Legal Expert",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
+      "assessment": "Law Starter Assessment V4.1",
       "category": "Legal"
     },
     {
       "slug": "attorney",
       "file": "problems-attorney.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Attorney",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "paralegal",
       "file": "problems-paralegal.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Paralegal",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "litigation-attorney",
       "file": "problems-litigation-attorney.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Litigation Attorney",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "corporate-attorney",
       "file": "problems-corporate-attorney.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Corporate Attorney",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "compliance-officer",
       "file": "problems-compliance-officer.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Compliance Officer",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "contract-manager",
       "file": "problems-contract-manager.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Contract Manager",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "ip-attorney",
       "file": "problems-ip-attorney.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "IP Attorney",
       "assessmentId": "legal",
-      "assessment": "Legal Assessment",
-      "category": "Legal"
+      "assessment": "Law Starter Assessment V4.1",
+      "category": "Legal",
+      "note": "Bio unique; assessment steps shared with legal-expert Law Starter V4.1 (same task_response_id 01a1bb09 on 34123)"
     },
     {
       "slug": "healthmedical-expert",
       "file": "problems-healthmedical-expert.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Health/Medical Expert",
       "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessment": "Medical Starter Assessment",
+      "category": "Medical",
+      "note": "Bio unique; Medical Projects verified; steps shared with physician Medical Starter (01a1b7f8 on 34123)"
     },
     {
       "slug": "radiologist",
       "file": "problems-radiologist.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Radiologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "radiologists-projects",
+      "assessment": "Radiologists Projects assessment",
+      "category": "Medical",
+      "note": "Radiologists Projects 01a1bcf2; Branch A US Board-Certified=17 credential leaves; Branch B=16 Conversation Challenging Radiography Case"
     },
     {
       "slug": "sonographer",
       "file": "problems-sonographer.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Sonographer",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "radiologists-projects",
+      "assessment": "Radiologists Projects assessment",
+      "category": "Medical",
+      "note": "Radiologists Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared radiologist 01a1bcf2 / a99b0c81; Start not clicked"
     },
     {
       "slug": "imaging-specialist",
       "file": "problems-imaging-specialist.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Imaging Specialist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "radiologists-projects",
+      "assessment": "Radiologists Projects assessment",
+      "category": "Medical",
+      "note": "Radiologists Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared radiologist 01a1bcf2 / a99b0c81; Start not clicked"
     },
     {
       "slug": "physician",
       "file": "problems-physician.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Physician",
       "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessment": "Medical Starter Assessment",
+      "category": "Medical",
+      "note": "18 leaves; Medical Projects; task_response_id=01a1b7f8 on 34123; credential verification Section 1; Q1 Doyle Brunson"
     },
     {
       "slug": "nurse",
       "file": "problems-nurse.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Nurse",
       "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessment": "Medical Starter Assessment",
+      "category": "Medical",
+      "note": "Bio unique; Medical Projects verified; steps shared with physician Medical Starter (01a1b7f8 on 34123); distinct Browse leaf from Registered Nurse"
     },
     {
       "slug": "surgical-clinician",
       "file": "problems-surgical-clinician.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Surgical Clinician",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "surgical-medicine-projects",
+      "assessment": "Surgical Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Surgical Medicine Projects 01a1bd0d / 25745102; Branch A US licensed=19 (specialization+credentials+Qs+domain Background); never Submit"
     },
     {
       "slug": "surgical-medicine-expert",
       "file": "problems-surgical-medicine-expert.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Surgical Medicine Expert",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "surgical-medicine-projects",
+      "assessment": "Surgical Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Surgical Medicine Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared surgical-clinician 01a1bd0d; Start not clicked"
     },
     {
       "slug": "surgeon",
       "file": "problems-surgeon.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Surgeon",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "surgical-medicine-projects",
+      "assessment": "Surgical Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Surgical Medicine Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared surgical-clinician 01a1bd0d; Start not clicked"
     },
     {
       "slug": "internal-medicine-clinician",
       "file": "problems-internal-medicine-clinician.md",
-      "status": "stub",
+      "status": "nearly-full",
       "role": "Internal Medicine Clinician",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "internal-medicine-projects",
+      "assessment": "Internal Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Internal Medicine Projects 01a1bd1a / b41f557f; Branch A Board-Certified=19; domain Background IM-related; never Submit"
     },
     {
       "slug": "internist",
       "file": "problems-internist.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Internist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "internal-medicine-projects",
+      "assessment": "Internal Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Internal Medicine Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared IMC 01a1bd1a; Start not clicked"
     },
     {
       "slug": "internal-medicine-physician",
       "file": "problems-internal-medicine-physician.md",
-      "status": "stub",
+      "status": "bio",
       "role": "Internal Medicine Physician",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
-      "category": "Medical"
+      "assessmentId": "internal-medicine-projects",
+      "assessment": "Internal Medicine Projects assessment",
+      "category": "Medical",
+      "note": "Internal Medicine Projects reconfirm 34123 2026-11-09; 1h30 cue; $125+/hr; bio unique; steps shared IMC 01a1bd1a; Start not clicked"
     },
     {
       "slug": "dermatologist",
       "file": "problems-dermatologist.md",
       "status": "stub",
+      "note": "Bio+Dermatology Projects assessment 34123 UNIQUE≠Medical Projects; Start not clicked; 1h cue; $125+/hr; 10 hired recently",
       "role": "Dermatologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "dermatology-projects",
+      "assessment": "Dermatology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "gynecologist",
       "file": "problems-gynecologist.md",
       "status": "stub",
+      "note": "Bio+Gynecology Projects assessment 34123 UNIQUE≠Medical/Derm/Cardio; Start not clicked; 1h30; $125+/hr; 12 hired recently",
       "role": "Gynecologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "gynecology-projects",
+      "assessment": "Gynecology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "obstetrician",
       "file": "problems-obstetrician.md",
       "status": "stub",
+      "note": "Bio+Gynecology Projects SHARED w/ Gynecologist 34123; Start not clicked; 1h30; $125+/hr; 9 hired recently",
       "role": "Obstetrician",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "gynecology-projects",
+      "assessment": "Gynecology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "cardiologist",
       "file": "problems-cardiologist.md",
       "status": "stub",
+      "note": "Bio+Cardiology Projects 34123 UNIQUE≠Medical/Dermatology; SHARED w/ Interventional+Cardiac EP; Start not clicked; 1h30; $125+/hr; 19 hired recently",
       "role": "Cardiologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "cardiology-projects",
+      "assessment": "Cardiology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "interventional-cardiologist",
       "file": "problems-interventional-cardiologist.md",
       "status": "stub",
+      "note": "Bio+Cardiology Projects SHARED w/ Cardiologist 34123; Start not clicked; 1h30; $125+/hr; 8 hired recently",
       "role": "Interventional Cardiologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "cardiology-projects",
+      "assessment": "Cardiology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "cardiac-electrophysiologist",
       "file": "problems-cardiac-electrophysiologist.md",
       "status": "stub",
+      "note": "Bio+Cardiology Projects SHARED w/ Cardiologist+Interventional 34123; Start not clicked; 1h30; $125+/hr; 6 hired recently",
       "role": "Cardiac Electrophysiologist",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "cardiology-projects",
+      "assessment": "Cardiology Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "registered-nurse",
       "file": "problems-registered-nurse.md",
       "status": "stub",
+      "note": "Bio+Medical Projects SHARED w/ Physician+Nurse 34123; Start not clicked; 1h30; $125+/hr; 24 hired; distinct Browse leaf from Nurse",
       "role": "Registered Nurse",
-      "assessmentId": "medical",
-      "assessment": "Medical Assessment",
+      "assessmentId": "medical-projects",
+      "assessment": "Medical Projects assessment",
       "category": "Medical"
     },
     {
       "slug": "healthcare-operations-manager",
       "file": "problems-healthcare-operations-manager.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects assessment 34123; Start not clicked; 30m cue; $125+/hr; 71 hired recently",
       "role": "Healthcare Operations Manager",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "healthcare-compliance-specialist",
       "file": "problems-healthcare-compliance-specialist.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects SHARED all 6 Healthcare Ops leaves 34123; Start not clicked; 30m cue; $125+/hr; 20 hired",
       "role": "Healthcare Compliance Specialist",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "medical-coder",
       "file": "problems-medical-coder.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects SHARED w/ Healthcare Ops Manager 34123; Start not clicked; 30m cue; $125+/hr; 34 hired",
       "role": "Medical Coder",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "revenue-cycle-specialist",
       "file": "problems-revenue-cycle-specialist.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects SHARED all 6 Healthcare Ops leaves 34123; Start not clicked; 30m cue; $125+/hr; 22 hired",
       "role": "Revenue Cycle Specialist",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "managed-care-analyst",
       "file": "problems-managed-care-analyst.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects SHARED all 6 Healthcare Ops leaves 34123; Start not clicked; 30m cue; $125+/hr; 19 hired",
       "role": "Managed Care Analyst",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "clinical-documentation-specialist",
       "file": "problems-clinical-documentation-specialist.md",
       "status": "stub",
+      "note": "Bio+Healthcare Operations Projects SHARED all 6 Healthcare Ops leaves 34123; Start not clicked; 30m cue; $125+/hr; 18 hired",
       "role": "Clinical Documentation Specialist",
-      "assessmentId": "healthcare-ops",
-      "assessment": "Healthcare Operations Assessment",
+      "assessmentId": "healthcare-operations-projects",
+      "assessment": "Healthcare Operations Projects assessment",
       "category": "Healthcare Ops"
     },
     {
       "slug": "mechanical-engineer",
       "file": "problems-mechanical-engineer.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects track 34123; Start not clicked (expire risk)",
       "role": "Mechanical Engineer",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "mechanical-design-engineer",
       "file": "problems-mechanical-design-engineer.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects (shared w/ Mechanical Engineer) 34123; Start not clicked",
       "role": "Mechanical Design Engineer",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "validation-engineer",
       "file": "problems-validation-engineer.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects (shared w/ Mech Eng family) 34123; Start not clicked",
       "role": "Validation Engineer",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "automation-technician",
       "file": "problems-automation-technician.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects (shared w/ Mech Eng family) 34123; Start not clicked",
       "role": "Automation Technician",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "mechanical-designer",
       "file": "problems-mechanical-designer.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects (shared w/ Mech Eng/Design/Validation) 34123; Start not clicked",
       "role": "Mechanical Designer",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "senior-mechanical-design-engineer",
       "file": "problems-senior-mechanical-design-engineer.md",
       "status": "stub",
+      "note": "Bio+Mechanical Engineering Projects (shared) 34123; Start not clicked",
       "role": "Senior Mechanical Design Engineer",
-      "assessmentId": "engineering-mechanical",
-      "assessment": "Engineering Assessment (Mechanical)",
+      "assessmentId": "mechanical-engineering-projects",
+      "assessment": "Mechanical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "civil-engineer",
       "file": "problems-civil-engineer.md",
       "status": "stub",
+      "note": "Bio+Civil Engineering Projects track 34123; Start not clicked; shared w/ Civil Design Engineer",
       "role": "Civil Engineer",
-      "assessmentId": "engineering-civil",
-      "assessment": "Engineering Assessment (Civil)",
+      "assessmentId": "civil-engineering-projects",
+      "assessment": "Civil Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "civil-design-engineer",
       "file": "problems-civil-design-engineer.md",
       "status": "stub",
+      "note": "Bio+Civil Engineering Projects (shared w/ Civil Engineer) 34123; Start not clicked",
       "role": "Civil Design Engineer",
-      "assessmentId": "engineering-civil",
-      "assessment": "Engineering Assessment (Civil)",
+      "assessmentId": "civil-engineering-projects",
+      "assessment": "Civil Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "electrical-engineer",
       "file": "problems-electrical-engineer.md",
       "status": "stub",
+      "note": "Bio+Electrical Engineering Projects track 34123; Start not clicked; shared w/ Hardware/Electronics/Embedded",
       "role": "Electrical Engineer",
-      "assessmentId": "engineering-electrical",
-      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "assessmentId": "electrical-engineering-projects",
+      "assessment": "Electrical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "embedded-systems-developer",
       "file": "problems-embedded-systems-developer.md",
       "status": "stub",
+      "note": "Bio+Electrical Engineering Projects (shared w/ Electrical/Hardware) 34123; Start not clicked",
       "role": "Embedded Systems Developer",
-      "assessmentId": "engineering-electrical",
-      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "assessmentId": "electrical-engineering-projects",
+      "assessment": "Electrical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "hardware-engineer",
       "file": "problems-hardware-engineer.md",
       "status": "stub",
+      "note": "Bio+Electrical Engineering Projects (shared w/ Electrical Engineer) 34123; Start not clicked",
       "role": "Hardware Engineer",
-      "assessmentId": "engineering-electrical",
-      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "assessmentId": "electrical-engineering-projects",
+      "assessment": "Electrical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "electronics-engineer",
       "file": "problems-electronics-engineer.md",
       "status": "stub",
+      "note": "Bio+Electrical Engineering Projects (shared w/ Electrical/Hardware/Embedded) 34123; Start not clicked",
       "role": "Electronics Engineer",
-      "assessmentId": "engineering-electrical",
-      "assessment": "Engineering Assessment (Electrical/Hardware)",
+      "assessmentId": "electrical-engineering-projects",
+      "assessment": "Electrical Engineering Projects assessment",
       "category": "Engineering"
     },
     {
       "slug": "chemist",
       "file": "problems-chemist.md",
       "status": "stub",
+      "note": "Bio+Chemistry Projects track 34123; Start not clicked (expire risk) — steps pending",
       "role": "Chemist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "chemistry-projects",
+      "assessment": "Chemistry Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "physicist",
       "file": "problems-physicist.md",
       "status": "stub",
+      "note": "Bio+Physics Projects track 34123; Start blocked by expire modal — steps pending",
       "role": "Physicist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "physics-projects",
+      "assessment": "Physics Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "mathematician",
       "file": "problems-mathematician.md",
       "status": "stub",
+      "note": "Bio+Math Projects track 34123; Start not clicked (expire risk) — steps pending",
       "role": "Mathematician",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "math-projects",
+      "assessment": "Math Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "biologist",
       "file": "problems-biologist.md",
       "status": "stub",
+      "note": "Bio+Biology Projects track 34123; Start not clicked (expire risk) — steps pending",
       "role": "Biologist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "biology-projects",
+      "assessment": "Biology Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "experimental-biologist",
       "file": "problems-experimental-biologist.md",
       "status": "stub",
+      "note": "Bio+Life Sciences Projects track 34123; Start not clicked; shared w/ Drug Discovery + Comp Bio",
       "role": "Experimental Biologist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "life-sciences-projects",
+      "assessment": "Life Sciences Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "drug-discovery-scientist",
       "file": "problems-drug-discovery-scientist.md",
       "status": "stub",
+      "note": "Bio+Life Sciences Projects (shared w/ Exp Bio) 34123; Start not clicked",
       "role": "Drug Discovery Scientist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "life-sciences-projects",
+      "assessment": "Life Sciences Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "computational-biologist",
       "file": "problems-computational-biologist.md",
       "status": "stub",
+      "note": "Bio+Life Sciences Projects (shared w/ Exp Bio + Drug Discovery) 34123; Start not clicked",
       "role": "Computational Biologist",
-      "assessmentId": "stem",
-      "assessment": "STEM Assessment",
+      "assessmentId": "life-sciences-projects",
+      "assessment": "Life Sciences Projects assessment",
       "category": "STEM"
     },
     {
       "slug": "chinese-specialist",
       "file": "problems-chinese-specialist.md",
       "status": "stub",
+      "note": "Bio+Chinese Bilingual assessment 34123; Start not clicked; 30m cue; $40/hr",
       "role": "Chinese Specialist",
-      "assessmentId": "languages",
-      "assessment": "Language Assessment",
+      "assessmentId": "chinese-bilingual",
+      "assessment": "Chinese Bilingual assessment",
       "category": "Languages"
     },
     {
       "slug": "thai-specialist",
       "file": "problems-thai-specialist.md",
       "status": "stub",
+      "note": "Bio+Thai Bilingual assessment 34123; Start not clicked; 30m cue; $40/hr",
       "role": "Thai Specialist",
-      "assessmentId": "languages",
-      "assessment": "Language Assessment",
+      "assessmentId": "thai-bilingual",
+      "assessment": "Thai Bilingual assessment",
       "category": "Languages"
     },
     {
       "slug": "russian-specialist",
       "file": "problems-russian-specialist.md",
       "status": "stub",
+      "note": "Bio+Russian Bilingual assessment 34123; Start not clicked; 30m cue; $40/hr",
       "role": "Russian Specialist",
-      "assessmentId": "languages",
-      "assessment": "Language Assessment",
+      "assessmentId": "russian-bilingual",
+      "assessment": "Russian Bilingual assessment",
       "category": "Languages"
     },
     {
       "slug": "polish-specialist",
       "file": "problems-polish-specialist.md",
       "status": "stub",
+      "note": "Bio+Polish Bilingual assessment 34123; Start not clicked; 30m cue; $40/hr",
       "role": "Polish Specialist",
-      "assessmentId": "languages",
-      "assessment": "Language Assessment",
+      "assessmentId": "polish-bilingual",
+      "assessment": "Polish Bilingual assessment",
       "category": "Languages"
     },
     {
       "slug": "hebrew-specialist",
       "file": "problems-hebrew-specialist.md",
       "status": "stub",
+      "note": "Bio+Hebrew Bilingual assessment 34123; Start not clicked; 30m cue; $40/hr",
       "role": "Hebrew Specialist",
-      "assessmentId": "languages",
-      "assessment": "Language Assessment",
+      "assessmentId": "hebrew-bilingual",
+      "assessment": "Hebrew Bilingual assessment",
       "category": "Languages"
     },
     {
       "slug": "designer",
       "file": "problems-designer.md",
       "status": "stub",
+      "note": "Bio+Visual Designers assessment 34123; Start not clicked; $125+/hr; no 30m bullet on intro",
       "role": "Designer",
-      "assessmentId": "design",
-      "assessment": "Design Assessment",
+      "assessmentId": "visual-designers",
+      "assessment": "Visual Designers assessment",
       "category": "Design"
     },
     {
       "slug": "cybersecurity-projects",
       "file": "problems-cybersecurity-projects.md",
       "status": "stub",
+      "note": "Bio+Cybersecurity Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr; Other≠Cyber majors",
       "role": "Cybersecurity Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "cybersecurity-projects",
+      "assessment": "Cybersecurity Projects assessment",
       "category": "Other"
     },
     {
       "slug": "robotics-projects",
       "file": "problems-robotics-projects.md",
       "status": "stub",
+      "note": "Bio+Robotics Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr; unique vs Cyber Projects",
       "role": "Robotics Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "robotics-projects",
+      "assessment": "Robotics Projects assessment",
       "category": "Other"
     },
     {
       "slug": "nuclear-engineering-projects",
       "file": "problems-nuclear-engineering-projects.md",
       "status": "stub",
+      "note": "Bio+Nuclear Engineering Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr",
       "role": "Nuclear Engineering Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "nuclear-engineering-projects",
+      "assessment": "Nuclear Engineering Projects assessment",
       "category": "Other"
     },
     {
       "slug": "chemical-engineering-projects",
       "file": "problems-chemical-engineering-projects.md",
       "status": "stub",
+      "note": "Bio+Chemical Engineering Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr",
       "role": "Chemical Engineering Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "chemical-engineering-projects",
+      "assessment": "Chemical Engineering Projects assessment",
       "category": "Other"
     },
     {
       "slug": "process-engineering-projects",
       "file": "problems-process-engineering-projects.md",
       "status": "stub",
+      "note": "Bio+Process Engineering Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr",
       "role": "Process Engineering Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "process-engineering-projects",
+      "assessment": "Process Engineering Projects assessment",
       "category": "Other"
     },
     {
       "slug": "architectural-engineering-projects",
       "file": "problems-architectural-engineering-projects.md",
       "status": "stub",
+      "note": "Bio+Architectural Engineering Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr",
       "role": "Architectural Engineering Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "architectural-engineering-projects",
+      "assessment": "Architectural Engineering Projects assessment",
       "category": "Other"
     },
     {
       "slug": "ophthalmology-projects",
       "file": "problems-ophthalmology-projects.md",
       "status": "stub",
+      "note": "Bio+Ophthalmology Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr",
       "role": "Ophthalmology Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "ophthalmology-projects",
+      "assessment": "Ophthalmology Projects assessment",
       "category": "Other"
     },
     {
       "slug": "machine-learning-engineering-projects",
       "file": "problems-machine-learning-engineering-projects.md",
       "status": "stub",
+      "note": "Bio+Machine Learning Engineering Projects assessment 34123; Start not clicked; 1h30 cue; $125/hr; unique vs MLE Coding Core",
       "role": "Machine Learning Engineering Projects",
-      "assessmentId": "project-based",
-      "assessment": "Project-Based Specialist Assessments",
+      "assessmentId": "machine-learning-engineering-projects",
+      "assessment": "Machine Learning Engineering Projects assessment",
       "category": "Other"
     }
   ],
@@ -942,8 +1044,8 @@
     },
     "coding": {
       "captured": 0,
-      "nearlyFull": 1,
-      "stub": 4,
+      "nearlyFull": 5,
+      "stub": 0,
       "n": 5,
       "incomplete": 0
     },
@@ -955,13 +1057,21 @@
     },
     "cybersecurity": {
       "captured": 0,
-      "stub": 4,
+      "nearlyFull": 4,
+      "stub": 0,
       "n": 4
     },
     "finance": {
-      "captured": 0,
-      "stub": 14,
-      "n": 14
+      "captured": 13,
+      "stub": 0,
+      "n": 13,
+      "nearly-full": 13
+    },
+    "consulting": {
+      "captured": 1,
+      "stub": 0,
+      "n": 1,
+      "nearly-full": 1
     },
     "accounting": {
       "captured": 0,
@@ -969,19 +1079,28 @@
       "n": 7
     },
     "economics": {
-      "captured": 0,
-      "stub": 4,
-      "n": 4
+      "captured": 4,
+      "stub": 0,
+      "n": 4,
+      "nearly-full": 4
     },
     "legal": {
-      "captured": 0,
-      "stub": 8,
-      "n": 8
+      "captured": 8,
+      "stub": 0,
+      "n": 8,
+      "nearly-full": 8
     },
     "medical": {
-      "captured": 0,
-      "stub": 19,
-      "n": 19
+      "captured": 3,
+      "stub": 13,
+      "n": 16,
+      "nearly-full": 3
+    },
+    "radiology": {
+      "captured": 1,
+      "stub": 2,
+      "n": 3,
+      "nearly-full": 1
     },
     "healthcare-ops": {
       "captured": 0,

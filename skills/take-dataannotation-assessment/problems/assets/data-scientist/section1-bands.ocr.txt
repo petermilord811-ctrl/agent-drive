@@ -1,0 +1,31 @@
+v Background
+AJ Assistant models have been getting better and better. and we need new. challeng.ng prompts to really test how well they perform in various domains. Al Assistants have seen many common questions and academic-style quiz requests before. and we expect them to
+generally S*rfotrn very well when answering these sorts of softball questions.
+Alot of the 'tock do urns to put the models in situations â€¢ethere they are likely to make real, meaningful errors when trying to answec The more we do this, the more we understand and colect data about their shortcomngs. As you might imagine. lobbing softball questions
+Alot of the 'tock do urns to put the models in situations â€¢ethere they are likely to make real, meaningful errors when trying to answec The more we do this. the more we understand and colect data about their shortcomngs. As you might imagine. lobbing softball questions
+doesn't realty help us. which is why the core of your assessment is to have a challenging conversation with an Al model to display your domain expertise.
+You shouldnt start out by asking random trivia that's interesting to you to see what the models do. You should be trying to come up mth most diffrcult and realistic prompts you can think of â€¢ something you expect it to struggle mth. but would realty want anAl model to help
+you with. YouT quickly learn what the models have no problems with and what they're bad at Its totally appropriate for you to rely on your oa.tjn domain expertise wtâ€¢en creating a question â€¢ we want to see your domatn knwdedge at work. Really do your best to shmv off what
+you knea and stump a model in the process!
+v Your Task
+Have a conversatâ€¢on using Haku 5.5 on (with "Effort" set to Low).
+Wed like you to have a conversation that is relevant to the Data Science Domain which is challenging, but also realisuc and natural. In other words, we dont find prompts that test if the model can "end every other sentence mth the letter as useful. They might make that
+mistake, but it's not a meaningful error in the Data Science domain. Thts doesn't have to strictly be in product Data Soence ot a particular area. Use whatever your domain of expertise whether academic or industry. as it relates to Data Science or Anarytics.
+mtstaxe, Dutrrsnota mearungtu error tn ta aomajn. Ints aoesn't
+Od ct Data seence ot a particular area. use wn
+mat xperuse wnetnet acaaetntc or tnaustry. as
+to Data science ot
+In addiuon to cteaung a chalenging rutial prompt. your goal is to get the Al Assistant to re$md in ways that are â€¢meaningful failures" (that is, they're completely incorrect ot misleading) or contain some kind of essential flaw in their reasonng or explanations. If the Claude
+Haiku 5.5 model provides a generalbJ accurate response to your prompt (that is. its conclusions and logic are correct on the "hole. even if there are minor errors). yodll need to create a new conversation with a mote challenging variation of your prompt, ot test out a new idea
+entirely.
+Here are foc uscng C/.udg.i and recording yout conversabon.
+Here are foc us.tng C./.udg.i and recordtng yout conversabon.
+â€¢ Create a conversation betvjeen 1-3 "rounds" I user prompts long
+Make sure your first prompt in the conversation is a challenging, realistic, and natural request
+If you get a meaningful failure on the first turn, you are free to stop the conversation there (but dont have to)
+If your first prompt cause a failure, you should contirwe the conversation with up to more user prompts
+o Stay within the topic of your original prompt, but try tuming up the difficulty or ask a challenging follow-up question
+If you're unable to elicit a notable failure within 3 prompts, start a new conversation
+o You might revise your innaJ prompt 'Mth added complexity. or stan 'Mth a totally new concept. either is fine
+Expires in: 4 days 22 hours 59 mir
+Conversation Goal

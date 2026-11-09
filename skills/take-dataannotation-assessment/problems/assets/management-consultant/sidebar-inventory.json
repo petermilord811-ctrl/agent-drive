@@ -1,0 +1,29 @@
+{
+  "slug": "management-consultant",
+  "host": "34123",
+  "captured": "2026-11-08",
+  "assessment": "Consultant Starter Assessment V4.1",
+  "track": "Consulting Projects assessment",
+  "task_response_id": "01a1bb1c-e844-7144-9012-56b1450ed11a",
+  "project_id": "5ebd38f8-d2a3-4f43-9ea7-91bb80b6ef27",
+  "ui": "left-sidebar",
+  "total": 15,
+  "leaves": [
+    { "step": 1, "label": "Instructions" },
+    { "step": 2, "label": "Section 1: Assessment Questions" },
+    { "step": 3, "label": "Question 2" },
+    { "step": 4, "label": "Question 3" },
+    { "step": 5, "label": "Question 4" },
+    { "step": 6, "label": "Question 5" },
+    { "step": 7, "label": "Question 6" },
+    { "step": 8, "label": "Question 7" },
+    { "step": 9, "label": "Section 2: Conversation: Challenging an AI Model" },
+    { "step": 10, "label": "Attached Files" },
+    { "step": 11, "label": "Did you get the model to produce..." },
+    { "step": 12, "label": "Share Your Conversation" },
+    { "step": 13, "label": "Academic and Professional Experience" },
+    { "step": 14, "label": "Tell us about the most meaningful..." },
+    { "step": 15, "label": "(Optional) Any other comments?" }
+  ],
+  "note": "15 leaves like Finance Starter skeleton; Section 2/14 Consulting Domain (Haiku 5.5). Browse tag Finance but track = Consulting Projects — verify before Start. Never Submit."
+}

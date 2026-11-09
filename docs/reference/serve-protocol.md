@@ -133,6 +133,9 @@ it explain each verb.
 | `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
 | `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
 | `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
+| `humanize` | `text` `mode` `style` `ultra` | rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready | `strength`→`mode`, `body`→`text`, `content`→`text` |
+| `aicheck` | `text` | AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready | `detect`, `ai-check`, `ai_check`, `body`→`text`, `content`→`text`, `detect`→`text` |
+| `aiusage` | — | Humanize/detect usage balance via relay GET /api/aiusage (x-sm-join-key) | `ai-usage`, `ai_usage` |
 
 Every command may also carry: `intent` `quiet` `expect` `show` `secret` `note` `fresh` `timeout` `why` `cid`.
 <!-- verbs:end -->

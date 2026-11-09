@@ -1,0 +1,4 @@
+Overall Model Performance
+How vnuld you score the overan quality of model responses in the conversation?
+Oid the model mosey help you achieve your goal, or were there so many errors that the conversation would be or misleadirg for t'.e typical user?
+Amazing

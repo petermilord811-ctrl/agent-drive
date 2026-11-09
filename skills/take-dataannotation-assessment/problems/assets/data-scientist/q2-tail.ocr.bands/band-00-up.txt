@@ -1,0 +1,2 @@
+Both criteria agree unambiguously: order I wins. The higher-order polynomials barety reduce SSE while the penahy terms climb sharply — a textbook sign that t',e additional terms are fitting noise, not signal.
+Final Answer

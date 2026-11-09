@@ -1,0 +1,34 @@
+Total Revenue
+Days_Since_Last_Purchase
+The marketing team wants to launch a premium loyalty program and needs you to identi9 the top 20% of active customers by revenue.
+Before analyzing, you'll need to clean the data appropriatety. Look for any data quaJity issues like duplicates, invalid values, or inconsistent entries that should be excluded from the analysis.
+For eligibility. consider only customers are meaningfully active â€¢ they should have a reasonable purchase history and have engaged recently enough to be considered foc a premium program.
+Once youVe identified ebgible customers. determine the top 20% by revenue and provide:
+1. The number of eligible customers (N eliqible)
+1. The number of eligible customers (N_eligible)
+2. The number of customers in the top 20% segment (k)
+3. The mirinujm revenue threshold for ttys segment
+a. The pooled averaqe order value for this seqment
+4. The pooled average order value for this segment
+Important considerations:
+Use standard rounding conventions vhen presenting monetary values
+When ranking customers Mth identical revenue, use a consistent tie-breaking method
+When ranking customers with identical revenue, use a consistent tie-breaking method
+The pooled average should aggregate across al customers in ttâ€¢e segment
+Present your results in a clear format with the four metrics Isted above.
+DATASET
+DATASET:
+Customer_lD, Total_Orders, TotaJ_Revenue, Days_Since_Last_Purchase
+coot. 5, 450, 30
+C002. 8. 920. 15
+C002. 8. 920. 15
+C003, 12, 1560, 4S
+coca. 3, 180, 120
+coos. 15. 2100. 20
+coco, 7, 805, 25
+coon a, 280, 60
+cooe. 9.1170.35
+coos, 2, 95, no
+COIO. 11.1540.5.10
+Expires in: 4 days 22 hours 42 mir
+COIO. 10.1450.12
