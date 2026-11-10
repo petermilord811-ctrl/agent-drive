@@ -117,7 +117,7 @@ const V = {
   audio:       { f: ['out', 'seconds', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'audio needs out: the .wav to save the recording to', what: 'up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell)' },
   // ---- the picture-quality check (core/quality.js): the diagnostics trace on the agent's own socket while the screen is
   // put through named stresses, each phase judged on its own seconds, the causes named; compare: an earlier run's file
-  quality:     { f: ['phases', 'secs', 'out', 'compare', 'x', 'y', 'lx', 'ly'], need: (c) => (c.phases == null || Array.isArray(c.phases) || typeof c.phases === 'string') ? '' : 'phases is a list: ["idle","text","scroll","drag","video","cuts","rest","pointer"] (or {name,secs} each) -- leave it out for every phase this visit may run', what: 'the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse' },
+  quality:     { f: ['phases', 'secs', 'out', 'compare', 'stream', 'x', 'y', 'lx', 'ly'], need: (c) => (c.phases == null || Array.isArray(c.phases) || typeof c.phases === 'string') ? '' : 'phases is a list: ["idle","text","scroll","drag","video","cuts","rest","pointer"] (or {name,secs} each) -- leave it out for every phase this visit may run', what: 'the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse' },
   // ---- relay HTTP (join key; no host control; same secret as SM_JOIN_KEY / x-sm-join-key)
   humanize:    { f: ['text', 'mode', 'style', 'ultra'], what: 'rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready' },
   aicheck:     { f: ['text'], what: 'AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready' },
@@ -155,7 +155,7 @@ const FIELD_ALIAS = {
   audio:     { file: 'out', path: 'out', to: 'out', secs: 'seconds', duration: 'seconds' },
   humanize:  { strength: 'mode', body: 'text', content: 'text' },
   aicheck:   { body: 'text', content: 'text', detect: 'text' },
-  quality:   { phase: 'phases', stresses: 'phases', tests: 'phases', seconds: 'secs', file: 'out', before: 'compare', baseline: 'compare', against: 'compare' },
+  quality:   { phase: 'phases', stresses: 'phases', tests: 'phases', seconds: 'secs', file: 'out', before: 'compare', baseline: 'compare', against: 'compare', dump: 'stream', h264: 'stream', bitstream: 'stream' },
 };
 
 // A key as people write it ("esc", "ctrl", "win", "a", "5", "f4") -> the code the hosts map. Unknown names pass

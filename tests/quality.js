@@ -417,6 +417,24 @@ const ids = (an) => an.causes.map((c) => c.id);
   const sliceRun = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qp: 33, qpsrc: 'slice' }) }]));
   ok(!sliceRun.causes.some((c) => c.id === 'qp-unmeasured') && sliceRun.phases[0].picture === 'soft' && sliceRun.notes.some((n) => /read from the slice headers/.test(n)),
      'a quantiser read from the slice headers is measured, and the run says how (' + sliceRun.phases[0].line + ')');
+  // ...UNLESS IT NEVER MOVES. Host 1.57.0 on Quick Sync published QP 26 in every second of a run, a still frame and
+  // full-screen video alike (2026-11-10): the check called every phase sharp and lost the motion starved by a Speed cap
+  const flatH = (o) => Object.assign({}, speed, { qp: 26, qpsrc: 'slice' }, o || {});
+  const flatRun = Q.analyze(run([{ name: 'text', secs: 6, h: flatH({ fr: 1, by: 900 }) }, { name: 'scroll', secs: 6, h: flatH() },
+                                 { name: 'video', secs: 6, h: flatH({ by: 300000 }) }, { name: 'rest', secs: 6, h: flatH({ fr: 1, by: 700 }) }]));
+  const fu = flatRun.causes.find((c) => c.id === 'qp-unmeasured');
+  ok(flatRun.flatQp === 26 && flatRun.phases.every((p) => p.picture == null || p.picture === 'not measured') && !flatRun.phases.some((p) => p.picture === 'sharp') &&
+     !!fu && /its slice headers carry QP 26 in every second whatever the picture does/.test(fu.evidence[0]) && /quality \{stream:1\}/.test(fu.fix),
+     'a slice QP fixed at 26 while the frames vary a hundredfold is no measurement: every phase "not measured", and the cause says why (' + (fu && fu.evidence[0]) + ')');
+  ok(flatRun.causes.some((c) => c.id === 'rate-capped' && c.phases.includes('scroll')),
+     '...which brings back the cause it hid: the Speed cap starving the motion');
+  const movesRun = Q.analyze(run([{ name: 'text', secs: 6, h: flatH({ fr: 1, by: 2000, qp: 24 }) }, { name: 'scroll', secs: 6, h: flatH({ qp: 36 }) },
+                                  { name: 'video', secs: 6, h: flatH({ by: 300000, qp: 40 }) }, { name: 'rest', secs: 6, h: flatH({ fr: 1, by: 1500, qp: 30 }) }]));
+  ok(movesRun.flatQp == null && !movesRun.causes.some((c) => c.id === 'qp-unmeasured') && movesRun.phases[0].picture === 'sharp',
+     '...while a slice QP that moves is read as one (the control)');
+  const flat571 = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qpsrc: 'flat' }) }])).causes.find((c) => c.id === 'qp-unmeasured');
+  ok(!!flat571 && /its slice headers were read and their QP never moved: no measure/.test(flat571.evidence[0]),
+     'a host 1.57.1\'s own reason for no QP ("flat") is said in the cause');
   // THE STREAM IS CAPPED AT ITS OWN FRAME RATE: 27 of a card's 52 at 30 fps is the cap, not a drop
   ok(!withCard(520, { fr: 27 }).causes.some((c) => c.id === 'carried'), 'a 30 fps stream carrying 27 of a card\'s 52 frames a second is not a drop');
   const capDrop = withCard(520, { fr: 16, swhy: 'encode', enc95: 45 }).causes.find((c) => c.id === 'carried');
@@ -507,6 +525,12 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(/if \(cardStatsAt && !ws\.dead && quality\.CARD_STATS_NAME\.test\(leaf\(cardStatsAt\)\)\) \{ try \{ await runExec\('del \/q "' \+ cardStatsAt/.test(serve),
      '...and a stopped check deletes a counts file it never read');
   ok(/w0\.off\(onText\); w0\.off\(onBin\);/.test(serve) && /ws\.send\(\{ type: 'trace', on: 0 \}\)/.test(serve), 'the taps come off and the trace is disarmed in the finally');
+  // stream:1 saves the raw H.264 -- what the encoder really wrote -- beside the run, named after it, closed in the finally
+  ok(/if \(dumpFd !== null && b && b\.length > quality\.HEADER && b\.readUInt32LE\(0\) === quality\.MAGIC && \(\(b\.readUInt32LE\(4\) >>> 8\) & 0xff\) === 0\) \{\s*try \{ fs\.writeSync\(dumpFd, b, quality\.HEADER, b\.length - quality\.HEADER\); \}/.test(serve) &&
+     /w0\.off\(onText\); w0\.off\(onBin\);\s*\n\s*if \(dumpFd !== null\) \{ try \{ fs\.closeSync\(dumpFd\); \} catch \(_\) \{\} \}/.test(serve) &&
+     /const to = file\.replace\(\/\\\.ndjson\$\/i, ''\) \+ '\.h264';/.test(serve) && /file, stream: stream \|\| undefined, verdict/.test(serve),
+     'stream:1 saves each H.264 frame\'s payload (header off, H.264 only) beside the run, named after it, closed in the finally');
+  ok(verbs.V.quality.f.includes('stream') && verbs.vet({ do: 'quality', dump: 1 }).cmd.stream === 1, '...and the verb table takes stream (dump is renamed to it)');
   ok(verbs.V.quality && verbs.ACTING.has('quality'), 'quality is in the verb table and counts as acting (a pause or a hold stops it)');
   const v = verbs.vet({ do: 'quality-check', stresses: ['idle'], baseline: 'a.ndjson' });
   ok(v.ok && v.cmd.do === 'quality' && Array.isArray(v.cmd.phases) && v.cmd.compare === 'a.ndjson', 'the slips are renamed: quality-check, stresses, baseline');

@@ -366,6 +366,14 @@ function capOf(h, ctx) {
   const c = ctx && ctx.inferredCap;
   return c && at(c.top) ? c : null;
 }
+// The one value a host 1.57.0 slice-header QP sat at, when it never moved while the frames' sizes varied severalfold
+// (at least 20 seconds read from the slices, every one the same QP, the bytes a frame across seconds 8x apart) -- or null.
+function flatSliceQp(H) {
+  const sl = H.filter((r) => r.qpsrc === 'slice' && r.qp > 0);
+  if (sl.length < 20 || new Set(sl.map((r) => r.qp)).size !== 1) return null;
+  const per = H.filter((r) => r.fr > 0 && r.by > 0).map((r) => r.by / r.fr);
+  return per.length >= 10 && Math.max(...per) >= 8 * Math.min(...per) ? sl[0].qp : null;
+}
 // A HOST BEFORE 1.57.0 does not report the cap, so it is recognised only where it cannot be anything else: the run's
 // highest offered rate is EXACTLY, to the bit, the top a preset gives on the ceiling the host derives for the screen
 // (capture width x height x fps x 0.08, within 1.5-40 Mb/s, when no bitrate is configured). Any configured bitrate,
@@ -706,10 +714,17 @@ function causesOf(stats, ctx) {
     const secs = un.reduce((a, s) => a + s.n.host, 0);
     if (un.length && secs >= 3) {
       const named = un.find((s) => s.host.encName), hk = un[0].host.hwEnc;
+      // ...and WHY, when the host tried the slice headers (qpsrc, host 1.57.1) -- or a 1.57.0 run shows it (flatQp)
+      const src = (un.find((s) => s.host.qpSrc === 'flat' || s.host.qpSrc === 'unread') || {}).host;
+      const why = ctx && ctx.flatQp != null ? 'its slice headers carry QP ' + ctx.flatQp + ' in every second whatever the picture does (published by host 1.57.0 as a reading): no measure'
+                : src && src.qpSrc === 'flat' ? 'its slice headers were read and their QP never moved: no measure'
+                : src && src.qpSrc === 'unread' ? 'its slice headers were read and too many did not parse' : '';
       add('qp-unmeasured', 'warn', 'codec', un[0].name,
           'How sharp the picture is was not measured: the host reports no quantiser' + (named ? ' from "' + named.host.encName + '"' : ''),
-          'qp 0 (not measured) in ' + secs + ' host seconds · ' + (hk === 1 ? 'hardware encoder' : hk === 0 ? 'software encoder' : 'encoder kind not reported'),
-          'The encoder gives the host no quantiser reading, so the picture\'s sharpness is unknown: those phases read "not measured", and the rate causes are judged by the data per frame instead. The host needs to read the quantiser back from the encoder, or estimate it.');
+          'qp 0 (not measured) in ' + secs + ' host seconds · ' + (hk === 1 ? 'hardware encoder' : hk === 0 ? 'software encoder' : 'encoder kind not reported') + (why ? ' · ' + why : ''),
+          'The encoder gives the host no quantiser reading, so the picture\'s sharpness is unknown: those phases read "not measured", and the rate causes are judged by the data per frame instead. ' +
+            (why ? 'The slice headers do not carry it on this encoder either: only the macroblocks do, or a stream the host cannot read -- quality {stream:1} saves what it really wrote.'
+                 : 'The host needs to read the quantiser back from the encoder, or estimate it.'));
       for (const s of un.slice(1)) out.get('qp-unmeasured').phases.includes(s.name) || out.get('qp-unmeasured').phases.push(s.name);
     }
   }
@@ -723,7 +738,13 @@ function analyze(recs, opts) {
   opts = opts || {};
   recs = Array.isArray(recs) ? recs : parseNdjson(recs);
   const meta = recs.find((r) => r.c === 'meta') || {};
-  const H = recs.filter((r) => r.c === 'h' && !r.ev), R = recs.filter((r) => r.c === 'r' && !r.ev), A = recs.filter((r) => r.c === 'a' && !r.ev);
+  const H0 = recs.filter((r) => r.c === 'h' && !r.ev), R = recs.filter((r) => r.c === 'r' && !r.ev), A = recs.filter((r) => r.c === 'a' && !r.ev);
+  // A SLICE QP THAT NEVER MOVES IS NO MEASUREMENT. ScreenMirror host 1.57.0 published the slice-header QP for an encoder
+  // that sets no attribute, and on Intel's Quick Sync it read 26 in every second of a run -- a still frame and full-screen
+  // video alike (2026-11-10) -- so this check called every phase sharp and lost the starved, capped motion. Host 1.57.1
+  // publishes one only once it has moved (qpsrc "flat" when it never does); a 1.57.0 run is read as if it had not.
+  const flatQp = flatSliceQp(H0);
+  const H = flatQp == null ? H0 : H0.map((r) => (r.qpsrc === 'slice' ? Object.assign({}, r, { qp: 0, qpsrc: 'flat' }) : r));
   const P = phasesOf(recs);
   const stats = P.map((p) => phaseStats(p, H, R, A));
   // What the test card itself drew a second, scene by scene (its own counts, read back after it closed)
@@ -737,7 +758,7 @@ function analyze(recs, opts) {
   for (const s of stats) s.line = phaseLine(s);
   // a host before 1.57.0 does not report a watcher's picture-quality cap: recognised only where it is exact (inferCap)
   const inferredCap = inferCap(H, meta);
-  const causes = causesOf(stats, Object.assign({}, opts, { inferredCap }));
+  const causes = causesOf(stats, Object.assign({}, opts, { inferredCap, flatQp }));
   const notes = [];
   // ...and a quantiser read from the slice headers (qpsrc "slice", host 1.57.0) is the same measure as the encoder's own:
   // on Microsoft's software MFT the two agree sample for sample (ScreenMirror tests/host_slice_qp.js)
@@ -779,7 +800,7 @@ function analyze(recs, opts) {
   // Which version of the check recorded it: the meta line says (`qv`), and a run from before the stamp is read by what
   // it did -- a card started by a click (its `card` event says `clicked`) is version 2; anything older is 1.
   const qv = Number(meta.qv) || (recs.some((r) => r.ev === 'card' && Object.prototype.hasOwnProperty.call(r, 'clicked')) ? 2 : 1);
-  return { ok: true, meta, qv, phases: stats, causes, verdict, notes, inferredCap,
+  return { ok: true, meta, qv, phases: stats, causes, verdict, notes, inferredCap, flatQp,
            coverage: { host: H.length, relay: R.length, agent: A.length, frames, refused } };
 }
 function phaseLine(s) {
