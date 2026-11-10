@@ -271,6 +271,12 @@ function phaseStats(p, H, R, A) {
       hwWhy: lastStr(h, 'hwwhy'), hwHr: lastStr(h, 'hwhr'), encName: lastStr(h, 'encn') || null, capMode: lastStr(h, 'capm') || null,
       // the keyframe REQUESTS the host spent (kreq): a viewer joining or resyncing, a relay backlog drop
       kreq: sum(h, 'kreq'), kreqSeen: h.some((r) => typeof r.kreq === 'number'),
+      // A WATCHER'S PICTURE-QUALITY CAP (host 1.57.0: top, qcap). A console's View > Picture quality caps the rate at
+      // floor + cap x (ceiling - floor) -- Normal 600, Speed 350 -- for EVERYONE watching (the last console to send it
+      // sets it). Null on a host before them: then analyze() may still recognise one exactly (see inferCap).
+      qcap: med(h, 'qcap'), top: med(h, 'top', (v) => v > 0), rateMax: maxOf(h, 'rate'),
+      // ...and whose quantiser qp is (host 1.57.0): "mft" the encoder's own, "slice" read from the slice headers
+      qpSrc: lastStr(h, 'qpsrc'),
       drop: sum(h, 'drop'), stall: sum(h, 'stall'), rsk: sum(h, 'rsk'), rc: sum(h, 'rc'), gop: med(h, 'gop', (v) => v > 0),
       rate: med(h, 'rate', (v) => v > 0), link: med(h, 'link', (v) => v > 0), gp: med(h, 'gp', (v) => v > 0),
       refine: sum(h, 'refine'), rebuild: sum(h, 'rebuild'), ished: sum(h, 'ished'), wsmv: sum(h, 'wsmv'), uinj: sum(h, 'uinj'),
@@ -343,6 +349,44 @@ function pictureOf(st) {
 //            the product's own behaviour, i.e. the ones a code change improves
 //   input    the pointer and keyboard path
 const SEV = { high: 0, warn: 1, info: 2 };
+// THE PICTURE-QUALITY CAP a watcher's mode puts on the rate. The viewer's presets (tools/viewer.html Q_PRESETS and
+// qEffective): Best and Auto send 1, Normal 0.6, Speed 0.35, and Auto 0.5 on a 3g-class link or 0.15 on a metered or
+// 2g one. The host takes it in milli and caps the rate at its absolute floor (16 kb/s) + cap x (ceiling - floor).
+const CAP_FLOOR_BPS = 16000;
+const CAP_MODES = { 600: 'Normal', 500: 'Auto (a 3g-class link)', 350: 'Speed', 150: 'Auto (a metered or 2g link)' };
+const capTop = (ceiling, milli) => CAP_FLOOR_BPS + Math.floor((ceiling - CAP_FLOOR_BPS) * milli / 1000);
+// A phase's cap, when its rate sits at the cap's top: the host's own report (qcap, top), or else the run's inferred one.
+function capOf(h, ctx) {
+  const at = (top) => top > 0 && h.rate != null && h.rate >= 0.98 * top;
+  if (h.qcap != null) {
+    if (!(h.qcap < 1000) || !at(h.top)) return null;
+    const mode = CAP_MODES[Math.round(h.qcap)] || null;
+    return { milli: Math.round(h.qcap), top: h.top, mode: mode || 'a setting of ' + Math.round(h.qcap / 10) + '%', label: mode || Math.round(h.qcap / 10) + '% cap', inferred: false };
+  }
+  const c = ctx && ctx.inferredCap;
+  return c && at(c.top) ? c : null;
+}
+// A HOST BEFORE 1.57.0 does not report the cap, so it is recognised only where it cannot be anything else: the run's
+// highest offered rate is EXACTLY, to the bit, the top a preset gives on the ceiling the host derives for the screen
+// (capture width x height x fps x 0.08, within 1.5-40 Mb/s, when no bitrate is configured). Any configured bitrate,
+// another capture size or a rate that never reached its top matches nothing, and nothing is claimed.
+function inferCap(H, meta) {
+  const m = /^(\d+)x(\d+)$/.exec(String((meta && meta.screen) || ''));
+  const rates = H.map((r) => r.rate).filter((v) => typeof v === 'number' && v > 0);
+  if (!m || !rates.length || H.some((r) => typeof r.qcap === 'number')) return null;
+  const max = Math.max(...rates);
+  const fpsSeen = H.map((r) => r.fps).filter((v) => typeof v === 'number' && v > 0);
+  for (const fps of new Set([fpsSeen.length ? Math.max(...fpsSeen) : 30, 30, 60])) {
+    const ceiling = Math.floor(Math.min(40e6, Math.max(1.5e6, Number(m[1]) * Number(m[2]) * fps * 0.08)));
+    for (const [milli, mode] of Object.entries(CAP_MODES)) {
+      const top = capTop(ceiling, Number(milli));
+      if (max === top) return { milli: Number(milli), top, mode, label: mode, inferred: true,
+                                how: kbps(top) + ' is ' + mode + '\'s top on the ' + kbps(ceiling) + ' ceiling of a ' + m[1] + '×' + m[2] + ' screen at ' + fps + ' fps' };
+    }
+  }
+  return null;
+}
+
 // WHY THE HOST ENCODES IN SOFTWARE, when it says (hwwhy): each reason has its own fix. Before the host named it they
 // were all one "hw 0", and five live runs on a machine with a GPU could not tell them apart (2026-11-10).
 const HW_WHY = {
@@ -418,23 +462,41 @@ function causesOf(stats, ctx) {
         // out, and a voting watcher at >= 0.5 -- the host is slowing the shared stream for that watcher); and neither,
         // the rate held with nobody congested (the ABR not rising: the product's own behaviour)
         const forViewer = !full && rl && rl.voterP >= 0.5 && rl.pout > 0;
-        const id = full ? 'rate-link' : forViewer ? 'rate-viewer' : 'rate-held';
-        const kb = fmt(h.kbPerFrame) + ' kb a frame';
-        const evidence = (starved ? kb + ' at ' + fmt(h.w) + '×' + fmt(h.h) + ' (' + fmt(h.bppf, 3) + ' bits a pixel) at ' + fmt(h.fr) + ' fps, the quantiser not reported'
-                                  : 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ')') +
-                         ' · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%' +
-                         // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 of 1.5" read as nonsense
-                         (rl ? ' · watchers\' pressure to the host ' + fmt(rl.pout, 2) + (rl.voterP >= 0.5 ? ' (' + rl.voter + ' reported ' + fmt(rl.voterP, 2) + ')' : '') : '');
-        add(id, starved ? (h.bppf < 0.03 ? 'high' : 'warn') : h.qp >= 38 ? 'high' : 'warn', full ? 'link' : forViewer ? 'viewer' : 'codec', P,
-            starved ? (forViewer ? 'Motion is starved: the rate is held down for a watcher\'s congested link (' + kb + ')'
-                                 : 'Motion is starved: ' + kb + ' at ' + fmt(h.fr) + ' fps' + (full ? ' on a full uplink' : ' on a rate held at ' + kbps(h.rate)))
-                    : forViewer ? 'Motion is coarse: the rate is held down for a watcher\'s congested link (QP ' + fmt(h.qp) + ')'
-                    : 'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
-            evidence,
-            full ? 'The uplink is full while it moves: the rate cannot rise until less is sent (keyframes first).'
-                 : forViewer ? 'A watcher reported congestion and the stream is shared, so the host slowed for them: that watcher\'s downlink (or decoder) is the limit. Look at their connection, or let a slow watcher watch at low priority -- the host was not the cause.'
-                 : starved ? 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the offered rate stays at ' + kbps(h.rate) + ': spread over ' + fmt(h.fr) + ' frames a second, each moving frame gets ' + kb + ', too little for a moving screen to be sharp. The ABR is not raising the rate for motion -- a codec/ABR change, not the network. (The quantiser is not reported, so this is judged by the data per frame.)'
-                 : 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
+        // FOUR: ...or the rate sits at the top a watcher's picture-quality mode allows -- a setting, and the ABR doing as
+        // it was told. Three runs on Quick Sync (2026-11-10) were read as "the ABR is not raising the rate" while a
+        // console was on Speed: the rate stopped at exactly Speed's top, 1,752,224 b/s on a 4,976,640 ceiling.
+        const cap = capOf(h, ctx);
+        if (!full && cap) {
+          const kb = fmt(h.kbPerFrame) + ' kb a frame';
+          add('rate-capped', starved ? (h.bppf < 0.03 ? 'high' : 'warn') : h.qp >= 38 ? 'high' : 'warn', 'setting', P,
+              'The rate is held at a watcher\'s picture-quality cap: ' + cap.label + ' (' + kbps(cap.top) + ')',
+              (starved ? kb + ' at ' + fmt(h.w) + '×' + fmt(h.h) + ' (' + fmt(h.bppf, 3) + ' bits a pixel), the quantiser not reported'
+                       : 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ')') +
+                ' · offered ' + kbps(h.rate) + ', the top ' + cap.label + ' allows ' + (cap.inferred ? '(exactly: ' + cap.how + ')' : '(qcap ' + cap.milli + ', top ' + kbps(cap.top) + ')') +
+                ' · uplink busy ' + fmt(h.wire) + '%',
+              'A setting, not the link and not the ABR: a console watching has View ▾ → Picture quality on ' + cap.mode +
+                ', which caps the rate at ' + Math.round(cap.milli / 10) + '% of the ceiling. Set it to Best (or Auto on a wired or Wi-Fi link) on that console. ' +
+                'The setting is host-wide -- the last console to choose one sets it for everyone watching, this check included.' +
+                (cap.inferred ? ' (This host does not report the cap; a host from 1.57.0 does, as qcap and top.)' : ''));
+        } else {
+          const id = full ? 'rate-link' : forViewer ? 'rate-viewer' : 'rate-held';
+          const kb = fmt(h.kbPerFrame) + ' kb a frame';
+          const evidence = (starved ? kb + ' at ' + fmt(h.w) + '×' + fmt(h.h) + ' (' + fmt(h.bppf, 3) + ' bits a pixel) at ' + fmt(h.fr) + ' fps, the quantiser not reported'
+                                    : 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ')') +
+                           ' · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%' +
+                           // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 of 1.5" read as nonsense
+                           (rl ? ' · watchers\' pressure to the host ' + fmt(rl.pout, 2) + (rl.voterP >= 0.5 ? ' (' + rl.voter + ' reported ' + fmt(rl.voterP, 2) + ')' : '') : '');
+          add(id, starved ? (h.bppf < 0.03 ? 'high' : 'warn') : h.qp >= 38 ? 'high' : 'warn', full ? 'link' : forViewer ? 'viewer' : 'codec', P,
+              starved ? (forViewer ? 'Motion is starved: the rate is held down for a watcher\'s congested link (' + kb + ')'
+                                   : 'Motion is starved: ' + kb + ' at ' + fmt(h.fr) + ' fps' + (full ? ' on a full uplink' : ' on a rate held at ' + kbps(h.rate)))
+                      : forViewer ? 'Motion is coarse: the rate is held down for a watcher\'s congested link (QP ' + fmt(h.qp) + ')'
+                      : 'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
+              evidence,
+              full ? 'The uplink is full while it moves: the rate cannot rise until less is sent (keyframes first).'
+                   : forViewer ? 'A watcher reported congestion and the stream is shared, so the host slowed for them: that watcher\'s downlink (or decoder) is the limit. Look at their connection, or let a slow watcher watch at low priority -- the host was not the cause.'
+                   : starved ? 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the offered rate stays at ' + kbps(h.rate) + ': spread over ' + fmt(h.fr) + ' frames a second, each moving frame gets ' + kb + ', too little for a moving screen to be sharp. The ABR is not raising the rate for motion -- a codec/ABR change, not the network. (The quantiser is not reported, so this is judged by the data per frame.)'
+                   : 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
+        }
       }
       if (s.still && h.qp != null && h.qp > 28 && h.qpSeen >= 3) {
         // RECOVERING SLOWLY is not STUCK. Read on a real machine as "refinement ran 2x and QP stayed 42 -- the encoder may
@@ -673,8 +735,14 @@ function analyze(recs, opts) {
     }
   }
   for (const s of stats) s.line = phaseLine(s);
-  const causes = causesOf(stats, opts);
+  // a host before 1.57.0 does not report a watcher's picture-quality cap: recognised only where it is exact (inferCap)
+  const inferredCap = inferCap(H, meta);
+  const causes = causesOf(stats, Object.assign({}, opts, { inferredCap }));
   const notes = [];
+  // ...and a quantiser read from the slice headers (qpsrc "slice", host 1.57.0) is the same measure as the encoder's own:
+  // on Microsoft's software MFT the two agree sample for sample (ScreenMirror tests/host_slice_qp.js)
+  if (stats.some((s) => s.host && s.host.qpSrc === 'slice'))
+    notes.push('The quantiser was read from the slice headers (the encoder reports none of its own): on Microsoft\'s software encoder the two readings agree frame for frame, so it compares fairly with a software run.');
   const frames = A.reduce((n, r) => n + (r.fr || 0), 0);
   const refused = recs.some((r) => r.ev === 'trace-refused');
   // COVERAGE FIRST: a verdict over evidence that never arrived is the one wrong answer worth refusing outright.
@@ -711,7 +779,7 @@ function analyze(recs, opts) {
   // Which version of the check recorded it: the meta line says (`qv`), and a run from before the stamp is read by what
   // it did -- a card started by a click (its `card` event says `clicked`) is version 2; anything older is 1.
   const qv = Number(meta.qv) || (recs.some((r) => r.ev === 'card' && Object.prototype.hasOwnProperty.call(r, 'clicked')) ? 2 : 1);
-  return { ok: true, meta, qv, phases: stats, causes, verdict, notes,
+  return { ok: true, meta, qv, phases: stats, causes, verdict, notes, inferredCap,
            coverage: { host: H.length, relay: R.length, agent: A.length, frames, refused } };
 }
 function phaseLine(s) {
@@ -822,6 +890,16 @@ function compare(before, after) {
     rows.push({ phase: p1.name, counted, pictureBefore: pictureWord(p0), pictureAfter: pictureWord(p1), moves, arrival: bothArrived, size });
   }
   if (rows.some((r) => r.size)) notes.push('The encode size changed between the runs (a watcher\'s window, or read mode): the quantiser at a different size is a different picture, so it is shown and not counted.');
+  // A DIFFERENT PICTURE-QUALITY CAP IS A DIFFERENT SETTING, not the machine. Runs 6 and 7 on Quick Sync (2026-11-10)
+  // changed the encoder AND a console's mode (Normal -> Speed: the top 2.99 -> 1.75 Mb/s), and were read as the encoder alone.
+  const capRun = (X) => {
+    const v = X.phases.map((p) => p.host && p.host.qcap).filter((x) => x != null);
+    return v.length ? Math.round(pct(v, 0.5)) : X.inferredCap ? X.inferredCap.milli : null;
+  };
+  const capName = (m) => (m >= 1000 ? 'none' : (CAP_MODES[m] ? CAP_MODES[m] + ', ' : '') + Math.round(m / 10) + '%');
+  const c0 = capRun(A0), c1 = capRun(A1);
+  if (c0 != null && c1 != null && c0 !== c1)
+    notes.push('A watcher\'s picture-quality cap was not the same in the two runs (' + capName(c0) + ' → ' + capName(c1) + '): a console\'s setting changed, so part of any difference in the rate, the data a frame and the quantiser is that setting, not the machine.');
   // A RUN WITH NO QUANTISER CANNOT SAY THE PICTURE GOT SHARPER: Quick Sync against the software encoder (2026-11-10)
   // read "coarse -> sharp" in five phases off a number that was never measured, and listed the rate and recovery causes
   // as gone. Its sharpness is not compared; the causes only a quantiser shows are "not measurable", not gone.
