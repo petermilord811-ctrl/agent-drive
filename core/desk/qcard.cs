@@ -52,6 +52,8 @@ public class QCardPainter
         px = new int[lw * lh];
         blocky = new Bitmap(Math.Max(16, W / 4), Math.Max(12, Hc / 4), PixelFormat.Format32bppRgb);
         grain = MakeGrain(256);
+        // before the card shows, not when the video scene starts: made then, the scene would open on a second's stall
+        MakeVideoFrames();
     }
 
     string Sentence(int n)
@@ -192,16 +194,40 @@ public class QCardPainter
         blocky.UnlockBits(d);
     }
 
+    // THE VIDEO SCENE'S FRAMES ARE MADE ONCE. Drawn live -- a colour field scaled up and grain composited over the whole
+    // screen, every frame -- the scene ran at 3.4 frames a second on a 4-thread Celeron (measured, 2026-11-10): the card,
+    // not the stream, was the limit, and the phase measured nothing about the encoder. Made at the start and cycled at
+    // 30 a second, each is a plain copy to the screen, and only the shapes moving over it are drawn live.
+    const int VF = 12;
+    Bitmap[] vframes;
+    void MakeVideoFrames()
+    {
+        vframes = new Bitmap[VF];
+        Rectangle area = new Rectangle(0, 0, W, Hc);
+        for (int i = 0; i < VF; i++)
+        {
+            Bitmap b = new Bitmap(W, Hc, PixelFormat.Format32bppRgb);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                Plasma(i * 0.21);
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.InterpolationMode = InterpolationMode.Bilinear;
+                g.DrawImage(lo, area);
+                using (TextureBrush tb = new TextureBrush(grain))
+                {
+                    tb.TranslateTransform(rnd.Next(256), rnd.Next(256));
+                    g.FillRectangle(tb, area);
+                }
+            }
+            vframes[i] = b;
+        }
+    }
+
     void PaintVideo(Graphics g, Rectangle area, double u)
     {
-        Plasma(u);
-        g.InterpolationMode = InterpolationMode.Bilinear;
-        g.DrawImage(lo, area);
-        using (TextureBrush tb = new TextureBrush(grain))
-        {
-            tb.TranslateTransform(rnd.Next(256), rnd.Next(256));
-            g.FillRectangle(tb, area);
-        }
+        if (vframes == null) MakeVideoFrames();
+        Bitmap f = vframes[((int)(u * 30)) % VF];
+        g.DrawImage(f, area, area, GraphicsUnit.Pixel);
         for (int i = 0; i < 3; i++)
         {
             int r = Hc / (6 + i * 2);

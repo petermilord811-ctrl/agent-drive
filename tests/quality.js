@@ -268,6 +268,17 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(!dropped.notes.some((n) => /drew only/.test(n)), '...and is not explained away as a slow card (the control)');
   const unread = Q.analyze(run([{ name: 'video', secs: 10 }]));
   ok(unread.notes.some((n) => /counts were not read back/.test(n)), 'a run with card scenes but no counts says the frame rate cannot be told from the card\'s');
+  // THE MARGINS ARE AN UNCHANGED MACHINE'S: three live runs moved a moving phase's QP by up to 4 and a recovering still
+  // phase's by up to 5 -- each must read "same", while a real change (QP 39 -> 30) still reads better
+  const qpRun = (scrollQp, restQp) => Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: scrollQp } }, { name: 'rest', secs: 6, h: { qp: restQp, fr: 1 } }]));
+  ok(Q.compare(qpRun(27, 46), qpRun(31, 51)).overall === 'same', 'QP 27 → 31 moving and 46 → 51 still: the noise of an unchanged machine, "same"');
+  ok(Q.compare(qpRun(39, 46), qpRun(30, 46)).overall === 'better', '...while QP 39 → 30 while moving is better (the control)');
+  ok(Q.compare(qpRun(30, 40), qpRun(30, 47)).overall === 'worse', '...and a still phase 7 worse is worse (the still margin is 6, not unlimited)');
+  {
+    const cs = Q.cardSource();
+    ok(/MakeVideoFrames\(\);\s*\n\s*\}/.test(cs) && /Bitmap f = vframes\[\(\(int\)\(u \* 30\)\) % VF\];/.test(cs),
+       'the video scene\'s frames are made before the card shows, and cycled at 30 a second (live, it drew 3.4 fps on a Celeron)');
+  }
   // the keyframe-share cause itself waits for motion
   const stillKf = Q.analyze(run([{ name: 'rest', secs: 8, h: { fr: 1, by: 60000, kb: 0 }, hs: [{}, {}, { kf: 1, kb: 58000, refine: 1 }, {}, { kf: 1, kb: 58000, refine: 1 }] }]));
   ok(!stillKf.causes.some((c) => c.id === 'keyframes'), 'a still phase made of refinement keyframes is not a keyframe problem');

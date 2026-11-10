@@ -623,11 +623,15 @@ function phaseLine(s) {
 const CMP = [
   // [key, label, where, better, margin, unit, floor] -- a relative (×) margin also needs the absolute floor: 6 -> 55 ms
   // behind live is "nine times worse" and nothing anybody could see
-  ['qp', 'quantiser', 'host', 'lower', 2, ''],
+  // THE MARGINS ARE WHAT AN UNCHANGED MACHINE DOES. Three runs of the same suite on one machine, nothing changed between
+  // them (2026-11-09/10): a moving phase's median QP moved by up to 4 (drag 27 -> 31); a still phase recovering after the
+  // load by up to 5 (rest 46 -> 51 -- where its few refinement steps fall); a keyframe share by 0.14 (video 0.19 -> 0.05
+  // -- where the ~3 s keyframes fall in a 9 s window). A real change (a hardware encoder) moves these far more.
+  ['qp', 'quantiser', 'host', 'lower', 4, ''],                  // still phases: QP_STILL_MARGIN
   ['scale', 'size', 'host', 'higher', 50, '‰'],
   ['fr', 'frames/s', 'host', 'higher', 0.15, '×', 1],
   ['wire', 'uplink busy', 'host', 'lower', 10, '%'],
-  ['keyShare', 'keyframe share', 'host', 'lower', 0.1, ''],
+  ['keyShare', 'keyframe share', 'host', 'lower', 0.15, ''],
   ['exc95', 'behind live p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
   ['gap95', 'frame gap p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
   ['rtt95', 'pointer p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
@@ -636,6 +640,8 @@ const CMP = [
 // listed but not counted: two runs of them were shown different things. The test card's scenes and the pointer are
 // the same every run, and only they decide better or worse.
 const UNCONTROLLED = new Set(['idle', 'watch', 'wheel']);
+// a still phase's QP is where its refinement steps happen to land (see CMP): it needs the wider margin
+const QP_STILL_MARGIN = 6;
 function compare(before, after) {
   const A0 = before && before.phases ? before : analyze(before), A1 = after && after.phases ? after : analyze(after);
   const rows = [], notes = [];
@@ -663,7 +669,8 @@ function compare(before, after) {
       if (b0 == null || b1 == null) continue;
       const rel = unit === '×';
       const d = b1 - b0;
-      const big = rel ? Math.abs(d) > Math.max(margin * Math.max(Math.abs(b0), 1), floor || 0) : Math.abs(d) > margin;
+      const m = k === 'qp' && (p0.still || p1.still) ? QP_STILL_MARGIN : margin;
+      const big = rel ? Math.abs(d) > Math.max(m * Math.max(Math.abs(b0), 1), floor || 0) : Math.abs(d) > m;
       if (!big) continue;
       const good = dir === 'lower' ? d < 0 : d > 0;
       if (counted && where === 'arrive') { if (good) dBetter++; else dWorse++; }
