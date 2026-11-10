@@ -133,7 +133,7 @@ it explain each verb.
 | `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
 | `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
 | `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
-| `quality` | `phases` `secs` `out` `compare` `x` `y` `lx` `ly` | the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse | `quality-check`, `picture-test`, `quality-test`, `diagnose`, `phase`→`phases`, `stresses`→`phases`, `tests`→`phases`, `seconds`→`secs`, `file`→`out`, `before`→`compare`, `baseline`→`compare`, `against`→`compare` |
+| `quality` | `phases` `secs` `out` `compare` `stream` `x` `y` `lx` `ly` | the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse | `quality-check`, `picture-test`, `quality-test`, `diagnose`, `phase`→`phases`, `stresses`→`phases`, `tests`→`phases`, `seconds`→`secs`, `file`→`out`, `before`→`compare`, `baseline`→`compare`, `against`→`compare`, `dump`→`stream`, `h264`→`stream`, `bitstream`→`stream` |
 | `humanize` | `text` `mode` `style` `ultra` | rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready | `strength`→`mode`, `body`→`text`, `content`→`text` |
 | `aicheck` | `text` | AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready | `detect`, `ai-check`, `ai_check`, `body`→`text`, `content`→`text`, `detect`→`text` |
 | `aiusage` | — | Humanize/detect usage balance via relay GET /api/aiusage (x-sm-join-key) | `ai-usage`, `ai_usage` |
@@ -342,7 +342,14 @@ judges **each phase on its own seconds** — so "fine at rest, falls apart under
 {"do":"quality","phases":["idle","scroll","video"]}       just these (a list, or "idle,scroll,video")
 {"do":"quality","phases":[{"name":"watch","secs":30}]}    record while a PERSON reproduces the problem
 {"do":"quality","compare":"work/quality-10000-2026-11-09-12-00-00.ndjson"}   run again and say better or worse
+{"do":"quality","stream":1}                              ...and save the raw H.264 beside the run (<run>.h264)
 ```
+
+`stream:1` keeps what the encoder really wrote -- every H.264 picture as it reached the agent, in order, Annex-B --
+as `<run>.h264` beside the run file (`stream` in the answer). It settles what the host's own figures cannot: on Intel's
+Quick Sync the slice-header QP sat at 26 through a whole run (ScreenMirror host 1.57.0 published it; 1.57.1 calls it
+`flat`), and `ffmpeg -i <run>.h264 -c copy -bsf:v trace_headers -f null -` prints every header in the file. About
+2 MB a minute at Speed's rate; nothing is kept unless asked.
 
 | phase | needs | what the screen does |
 |-------|-------|----------------------|

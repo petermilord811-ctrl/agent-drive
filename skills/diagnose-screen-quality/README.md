@@ -87,6 +87,19 @@ it says, phase by phase, whether the picture got better.
   cause says so, and the rate causes judge by the data each moving frame got instead (`Motion is starved: N kb a
   frame`, under 0.05 bits a pixel). A comparison against a run that had a quantiser counts the data per frame in its
   place. Don't report "sharp" or "better" off a run where the quantiser was not measured.
+- **A QP read from the slice headers can be no QP at all.** ScreenMirror host 1.57.0 read the quantiser from the slice
+  headers for an encoder that reports none, and on Intel's Quick Sync it came out 26 in every second of a run -- a still
+  frame and full-screen video alike -- so every phase read "sharp" and the starved motion vanished from the causes. The
+  check now sets a fixed slice QP aside (`flatQp`: one value while the frames vary severalfold) and reads "not measured";
+  host 1.57.1 does not publish one (`qpsrc` `flat`). To see what the encoder really writes, run with `stream:1` and read
+  the saved `.h264` with `ffmpeg ... -bsf:v trace_headers`.
+- **A picture-quality mode outlives the visit.** A console remembers its View ▾ → Picture quality and sends it again on
+  every machine it selects, and the last console to send one sets it for everyone. A run that names `rate-capped`
+  (Speed: the rate stops at 35% of the ceiling) will keep naming it until THAT console changes -- read `qcap` before
+  comparing two runs, and ask which console is on Speed (the relay rows list who watched).
+- **When the test card draws fewer frames, the machine was busier.** The card is a program of its own: its counts
+  ("the card drew N") fall when something else takes the CPU, and then the stream's frame rate and encode times fall
+  with them. Compare the card's own rate between two runs before blaming the encoder; rerun when it moved.
 - **The MCP server learns a new verb only when it restarts** (`/mcp` → reconnect). Until then the kit's own client
   runs it: `node core/agent-join.js --host <n> --task "…" --control --shell --serve work/<visit>`, commands through
   `<visit>/cmd.json`, answers in `done.json`.
@@ -142,3 +155,13 @@ All five runs, re-read with the final check, name the same causes:
   the starved motion, and compares the two runs as mixed.
 - run 7 also showed the "carried" cause blaming a 30 fps stream for not carrying all 52 frames a second the card drew.
   It now counts against what the stream may send.
+
+**Runs 8–10: the rate that would not climb was a setting** (2026-11-10):
+- runs 7–9 stopped the offered rate at exactly 1,752,224 b/s, and the check read it as the ABR not rising. It was a
+  console on **Speed**: the host caps the rate at its 16 kb/s floor + 0.35 × (4,976,640 − floor), to the bit. Run 6's
+  2,992,384 was Normal's top, so runs 6 → 7 changed the encoder AND the setting. The check now names `rate-capped`
+  (from the host's `qcap`/`top`, or inferred where exact) and says when two runs' caps differ.
+- run 10, on host 1.57.0: `qcap` 350 in every second (the console was still on Speed), and the slice-header QP 26 in
+  every second, which the check first read as "sharp" everywhere. Set aside as `flatQp`, the run names the cap again.
+  The test card also drew ~15% fewer frames than in run 9 (scroll 52 → 43), and encode times rose with it: the
+  machine was busier that run.

@@ -2325,7 +2325,23 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                  started: new Date().toISOString(), screen: SW + 'x' + SH, control: grantControl ? 1 : 0, shell: grantShell ? 1 : 0,
                  phases: pl.phases.map((p) => p.name + ':' + p.secs).join(','), qv: quality.QV });
       const w0 = ws;
-      const onText = (m) => rec.text(m, Date.now()), onBin = (b) => rec.binary(b, Date.now());
+      // stream:1 -- THE RAW H.264 as it arrived, beside the run (Annex-B, every picture in order, each frame's header off):
+      // what the encoder really wrote, for what the host's own figures cannot settle -- its slice-header QP sat at 26 on
+      // Quick Sync through a whole run (2026-11-10), and only the bitstream itself says whether that is the encoder.
+      // `ffmpeg -i <it>.h264 -c copy -bsf:v trace_headers -f null -` reads every header in it.
+      let dumpFd = null, dumpPath = '';
+      if (cmd.stream) {
+        dumpPath = path.join(dir, 'quality-stream-' + Date.now() + '.h264');
+        try { dumpFd = fs.openSync(dumpPath, 'w'); } catch (e) { dumpFd = null; say('[!] the stream could not be saved: ' + e.message); }
+      }
+      const onText = (m) => rec.text(m, Date.now());
+      const onBin = (b) => {
+        rec.binary(b, Date.now());
+        // H.264 only (codec 0): tile1 and audio ride the same header and are not this file's
+        if (dumpFd !== null && b && b.length > quality.HEADER && b.readUInt32LE(0) === quality.MAGIC && ((b.readUInt32LE(4) >>> 8) & 0xff) === 0) {
+          try { fs.writeSync(dumpFd, b, quality.HEADER, b.length - quality.HEADER); } catch (_) {}
+        }
+      };
       w0.on(onText); w0.onBinary(onBin);
       // THE STREAM, for as long as the check runs: this client pauses its copy the rest of the time (setPaused) -- and
       // HELD awake, so the pictures the check takes (waiting for its card) cannot arm the re-pause (streamHeld)
@@ -2379,6 +2395,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (!traceRefusedAt) { try { ws.send({ type: 'trace', on: 0 }); } catch (_) {} }
         traceAskAt = 0;
         w0.off(onText); w0.off(onBin);
+        if (dumpFd !== null) { try { fs.closeSync(dumpFd); } catch (_) {} }
         streamHeld = Math.max(0, streamHeld - 1);
         pauseSoon();   // the stream pauses again once the pictures stop
         // a check that was STOPPED takes its card with it; one that finished leaves it to close itself a moment later
@@ -2391,6 +2408,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       let file = '';
       try { file = saveLocal(cmd.out ? String(cmd.out) : path.join(dir, 'quality-' + HOST + '-' + stamp + '.ndjson'), Buffer.from(quality.ndjson(recs), 'utf8')); }
       catch (e) { file = ''; say('[!] the quality run could not be written: ' + e.message); }
+      // ...and the stream it saved, named after the run
+      let stream = '';
+      if (dumpFd !== null) {   // closed in the finally, with the taps
+        stream = dumpPath;
+        if (file) { const to = file.replace(/\.ndjson$/i, '') + '.h264'; try { fs.renameSync(dumpPath, to); stream = to; } catch (_) {} }
+      }
       const an = quality.analyze(recs);
       const cmp = before ? quality.compare(quality.analyze(before), an) : null;
       if (cardWhy) an.notes.unshift('The test card did not come up (' + cardWhy + '), so its scenes were not run.');
@@ -2399,7 +2422,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       if (!cmd.quiet) roomNote(text.length > 1900 ? text.slice(0, 1880) + '…' : text);
       say1('Picture-quality check done');
       const worst = an.causes.filter((c) => c.sev !== 'info');
-      return { ok: !stoppedWhy, why: stoppedWhy || undefined, file, verdict: an.verdict,
+      return { ok: !stoppedWhy, why: stoppedWhy || undefined, file, stream: stream || undefined, verdict: an.verdict,
                phases: an.phases.map((s) => s.line),
                causes: an.causes.slice(0, 10).map((c) => ({ id: c.id, sev: c.sev, area: c.area, title: c.title, phases: c.phases, evidence: c.evidence.slice(0, 3), fix: c.fix })),
                notes: an.notes.length ? an.notes : undefined, coverage: an.coverage,
