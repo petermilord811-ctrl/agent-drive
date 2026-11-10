@@ -2,10 +2,11 @@
 
 ### Bank
 
-- **captureStatus:** nearly-full
+- **captureStatus:** verified
 - **Captured:** 2026-11-08 host **99588** · verified on **34123**
+- **Verified:** 2026-11-10 · operator (Q4 digit spot-check matched; Section 3 / meaningful live; no blocking gaps)
 - **Leaves:** 7 · `assets/data-scientist/leaf-inventory.json`
-- **Gaps:** optional digit spot-check on Q4 PNGs only (validators clean for Part B without --strict-full)
+- **Gaps:** none
 - **Rule:** never Submit while fetching
 
 ### Role
