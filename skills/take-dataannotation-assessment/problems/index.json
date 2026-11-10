@@ -67,12 +67,12 @@
     {
       "slug": "data-scientist",
       "file": "problems-data-scientist.md",
-      "status": "nearly-full",
+      "status": "verified",
       "role": "Data Scientist",
       "assessmentId": "data-ml",
       "assessment": "Data & ML Assessment",
       "category": "Data & ML",
-      "note": "Data Science Starter v2.4; 7 leaves; 99588 capture + 34123 resume 2026-11-08"
+      "note": "Data Science Starter v2.4; operator-verified 2026-11-10 host 34123; 7 leaves; 99588 capture + 34123"
     },
     {
       "slug": "machine-learning-engineer",
