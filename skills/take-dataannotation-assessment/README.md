@@ -166,6 +166,7 @@ For **every** assessment step:
 1. Open role card → **Bio 1** verbatim → save.
 2. **Continue** (`locate-click.py continue`) → **Bio 2** verbatim (skip No-LLMs line) → save.
 3. Operator-aware: **Start assessment** begins the one-attempt clock — for **problem-bank fetch** this is required; chat that you’re entering fetch mode and will **not Submit**.
+   - **Reopen soft-gap fetch (34123 2026-11-10):** if `open` of a saved `/workers/tasks/…` URL (or a new `/workers/projects` tab) stays **blank/Untitled** after one F5, do **not** thrash new tabs. Use an **already-loaded** Browse/`DataAnnotation` tab → category filter (e.g. **STEM 7**) → **dbl** the role card → Continue → **Start assessment** (re-attaches the live `task_response_id`). Host may be **Linux Chrome-only** (`windows` shows no Firefox) even when the mirrored desktop paints a Windows taskbar.
 4. Write `sidebar-inventory.json` from left-nav leaves; walk **in that order**.
 5. For each leaf: scroll-complete + answer-variants; write `problems-{slug}.md`.
 6. `reconcile-steps.js --slug … --sidebar-json …` must exit 0; then `compare-problems.js` on re-catch.

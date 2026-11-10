@@ -6,8 +6,8 @@
 - **Captured:** 2026-11-09 · host 34123 · sleep autonomy (ME V4.1 expired to start)
 - **Live IDs:** task `3545b081-7bfd-4a5d-acc1-8621aec1a4e9` · `project_id=a3a9323d-a733-41bd-9850-a9adf1cb54fe` · `task_response_id=01a1bff6-29eb-7434-b024-4ec518feede3`
 - **Track:** Role bio = **Math Projects assessment**; live qualification title = **[Qualification] Math Starter Assessment** (unique math form — **not** Expert Domain Parallel)
-- **Gaps:** Degree-symbol OCR sometimes reads `°` as `0` (e.g. `1200`); LaTeX below reconstructed from look PNGs — treat PNG assets as source of truth for fractions/°
-- **Live 2026-11-10:** Browse-role bio reconfirmed (STEM · 141 hired recently). Did **not** Start this sleep pass.
+- **Gaps:** Degree-symbol OCR sometimes reads `°` as `0` (e.g. `1200`) — PNG glyph SoT for fractions/°.
+- **Live 2026-11-10 reconnect:** Math Starter via Browse STEM → Start. Q6 hexagon AI reply reconfirmed live (`120°`/`180°`/`30°` on PNG).
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -371,6 +371,8 @@ For the triangles present as pairs in the three sections:
 
 Therefore, the final answer is $30^{\circ}$ for each of the base angles of the triangles.
 
+*Live reconfirm 2026-11-10 · host 34123 — degree glyphs on PNG (`q6-hexagon-ai-live-20261110.png`).*
+
 ### Question
 
 Does the AI's solving process or final answer contain any inaccuracies?
@@ -387,6 +389,8 @@ In 2-3+ complete sentences, please provide your reasoning for your above selecti
 ### Assets
 
 - `assets/mathematician/q4-q5-q6.png`
+- `assets/mathematician/q6-hexagon-degrees-live-20261110.png`
+- `assets/mathematician/q6-hexagon-ai-live-20261110.png`
 - `assets/mathematician/q6-hexagon-ai.png`
 - `assets/mathematician/ai-accuracy-experience.png`
 

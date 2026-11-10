@@ -6,7 +6,8 @@
 - **Captured:** 2026-11-09 · host 34123 · sleep autonomy
 - **Live IDs:** task `9c0d6c30-c43d-49e9-b449-16b48aef2679` · `project_id=a8995013-95b2-4e88-b674-8a9d4a6dc04d` · `task_response_id=01a1c007-5ded-7c9f-89ef-4b4cfbb336bf`
 - **Track:** Role intro = **Biology Projects assessment**; live qualification = **[Qualification] Biology Starter Assessment** (unique biology form — **not** Expert Domain Parallel)
-- **Gaps:** Q7 Medium paragraph line-wrap OCR soft; DNA strand table on Q5 if incomplete — PNG assets remain glyph/table source of truth. Q1A A/B/C + Q7 AI body filled 2026-11-10 host 34123 live OCR. Instructions OCR may say “chemical reactions” (template bleed) — bank as live. **Not** stamping verified.
+- **Gaps:** °C glyphs still OCR as `250C`/`300C` — PNG remains glyph SoT. Soft Medium sentence closed 2026-11-10. Q5 DNA table + 4 choices live. Q1A A/B/C + Q7 AI body + Tell-us-about-yourself filled. Instructions OCR may say “chemical reactions” (template bleed) — bank as live. **Not** stamping verified.
+- **Live 2026-11-10 reconnect:** Q5 Nucleic Acid table + full MCQ choices; Q7 Medium Environment Analysis sentence banked.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -306,15 +307,44 @@ In 2-3+ complete sentences, please provide an explanation for how you arrived at
 ## Question 5 · Nucleic Acid Analysis
 
 **Type:** mcq + explanation  
-**Title:** Question 5: Nucleic Acid Analysis
+**Title:** Question 5: Nucleic Acid Analysis  
+*Live 2026-11-10 · host 34123*
 
 ### Prompt
 
-Consider the following nucleic acid strands that form a piece of DNA: *(full base table on PNG)*.
+Consider the following nucleic acid strands that form a piece of DNA:
+
+```
+5'  3'
+A   T
+T   A
+G   C
+G   C
+T   A
+A   T
+C   G
+G   C
+A   T
+T   A
+A   T
+C   G
+A   T
+T   A
+G   C
+C   G
+A   T
+C   G
+3'  5'
+```
 
 The above strands are linked in a double helix and acted on by DNA helicase followed by Pol III HE with available primase, lipase, ligase, and catalase. Given that, which of the following is/are true about the formation of new DNA? Select the answer which most accurately applies:
 
-**Choices:** *(four long options — full text on `q5-q6-start.png`; includes leading/lagging strand / Okazaki fragment wording)*
+**Choices:**
+
+1. [ ] The strands will each be replicated to make an exact copy by synthesizing a new strand and adding nucleotides starting in the 5' to 3' direction of the strands. The resulting four strands will be relinked by ligase and single-strand binding proteins to form two helices, each with one parent strand and one replicated daughter strand.
+2. [ ] The double helix will be split by DNA helicase and transcribed by Pol III HE to make an exact replica of each strand. Pol III HE will synthesize the new phosphodiester-bonded deoxyribose backbone with the help of primase to act as an RNA primer and supply the 3' piece for Pol III HE to use to synthesize the DNA in the 5' to 3' direction.
+3. [ ] The parent strands separate at the replication fork. The leading strand is synthesized continuously in the 5' to 3' direction, while the lagging strand is synthesized discontinuously as Okazaki fragments. After primer removal and ligation, new helices are formed, each containing one parent strand and one newly synthesized daughter strand.
+4. [ ] The helix will be replicated in two strands, a continuous leading strand and a discontinuous lagging strand. One replicates inward along the leading strand, and one replicates outward, falls off the end, and starts deeper in the fork as it widens. Upon full replication, the parent strands are relinked and the daughter strands are linked to form identical helixes.
 
 ### Explanation (write-in)
 
@@ -324,6 +354,8 @@ In 2-3+ complete sentences, please provide your reasoning for why the answers yo
 
 - `assets/biologist/q4-q5-start.png`
 - `assets/biologist/q5-q6-start.png`
+- `assets/biologist/q5-dna-table-live-20261110.png`
+- `assets/biologist/q5-choices-live-20261110.png`
 
 ---
 
@@ -381,7 +413,7 @@ To determine how many generations are expected to form in Experiment 1, let's ev
 
 1. Environment Analysis:
 
-Medium: *(full sentence on `q7-prompt-live-20261110.png` / `q7-ai-mid-live-20261110.png` — host OCR truncated)*  
+Medium: The experiment is conducted in a YPD liquid culture, or Yeast Extract Peptone Dextrose broth. This is a rich medium with a nitrogen source that is often used to propagate yeast, and it is considered an optimal medium for *S. pombe*.  
 • Verdict: The optimal medium will increase propagation by 40%.
 
 Food source: Maltose is provided as the available food source. While this is usable food for S. pombe, it is not as favorable as glucose due to being a more complex disaccharide.  
@@ -423,6 +455,7 @@ In 2-3+ complete sentences, please provide your reasoning for your above selecti
 - `assets/biologist/q7-prompt-live-20261110.png`
 - `assets/biologist/q7-ai-mid-live-20261110.png`
 - `assets/biologist/q7-ai-end-live-20261110.png`
+- `assets/biologist/q7-medium-env-live-20261110.png`
 
 ---
 

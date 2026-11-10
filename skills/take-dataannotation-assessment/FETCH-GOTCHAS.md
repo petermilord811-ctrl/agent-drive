@@ -54,6 +54,7 @@ Read this before writing a single line into `problems-{slug}.md`.
 | Focus **content pane** → **PageDown** / End | Assume browser PageDown scrolled the problem |
 | `locate-click.py <look> scroll-complete` before leaving a leaf | Trust sticky Next / “Scroll to Bottom” alone |
 | Pass `host:"#####"` on **every** agent-drive call once ≥2 visits are open | Call without `host` (server refuses / wrong machine) |
+| **34123 2026-11-10:** if `open {tab:1, url:…/tasks/<id>}` or `/workers/projects` lands **blank/Untitled** after one F5, reopen via **existing** Browse tab → filter (**STEM 7**) → **dbl** role card → Continue → **Start assessment** (reuses live `task_response_id`) | Keep opening new Chrome tabs to a saved task URL; assume Firefox exists (host may be Linux Chrome-only) |
 
 ## 5. Listen loop (Cursor ≠ ScreenMirror)
 
