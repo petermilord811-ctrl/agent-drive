@@ -280,14 +280,20 @@ public class QCard : Form
     System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
     Timer tick = new Timer();
     int lastScene = -2, lastK = -2;
+    // THE SCHEDULE'S CLOCK starts on a click, not on appearing: the agent sees the card by polling screenshots, a second
+    // or more late, and clicks its corner the moment it does -- so the scenes and its phase marks start together. With
+    // hold 0 (an agent that may not click) it starts on appearing; with hold > 0 it starts by itself after that long.
+    double holdMax, startAt;
+    bool started;
 
     // plan "text:8,scroll:10,...": the scenes and their seconds. rect "x,y,w,h" in the desktop's pixels (empty: the
-    // primary screen's work area). lead: extra seconds on the first scene, for the agent seeing the card a moment late.
-    public static void Run(string plan, string rect, double lead)
+    // primary screen's work area). lead: extra seconds on the first scene, for the agent's mark trailing the start.
+    // hold: seconds to wait for the click that starts the clock (0: start at once).
+    public static void Run(string plan, string rect, double lead, double hold)
     {
         try { SetProcessDPIAware(); } catch { }
         try { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); } catch { }
-        Application.Run(new QCard(plan, rect, lead));
+        Application.Run(new QCard(plan, rect, lead, hold));
     }
 
     public static void Snap(string scene, double u, int w, int h, string path)
@@ -300,8 +306,10 @@ public class QCard : Form
         }
     }
 
-    QCard(string plan, string rect, double lead)
+    QCard(string plan, string rect, double lead, double hold)
     {
+        holdMax = Math.Max(0, Math.Min(30, hold));
+        started = holdMax <= 0;
         string[] parts = (string.IsNullOrEmpty(plan) ? "text:8" : plan).Split(',');
         names = new string[parts.Length];
         ends = new double[parts.Length];
@@ -335,6 +343,7 @@ public class QCard : Form
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.Opaque, true);
         painter = new QCardPainter(r.Width, r.Height);
         KeyDown += delegate(object s, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Close(); };
+        MouseDown += delegate { Begin(); };
         Shown += delegate { Activate(); clock.Start(); tick.Start(); Invalidate(); };
         FormClosed += delegate { tick.Stop(); };
         tick.Interval = 15;
@@ -347,12 +356,21 @@ public class QCard : Form
         return ends.Length - 1;
     }
     double StartOf(int i) { return i <= 0 ? 0 : ends[i - 1]; }
+    void Begin()
+    {
+        if (started) return;
+        started = true;
+        startAt = clock.Elapsed.TotalSeconds;
+    }
+    // seconds into the schedule: 0 while it waits for its click, so the first scene stands still until then
+    double T() { return started ? clock.Elapsed.TotalSeconds - startAt : 0; }
 
     // Only what moves is redrawn: a still scene is ONE frame, so the stream sees a still screen, as it would a real one.
     void Step()
     {
-        double t = clock.Elapsed.TotalSeconds;
-        if (t >= total + 0.8) { Close(); return; }
+        if (!started && clock.Elapsed.TotalSeconds >= holdMax) Begin();
+        double t = T();
+        if (t >= total + 0.3) { Close(); return; }
         int i = SceneAt(t);
         string n = names[i];
         bool moving = n == "scroll" || n == "drag" || n == "video";
@@ -364,7 +382,7 @@ public class QCard : Form
     protected override void OnPaintBackground(PaintEventArgs e) { }
     protected override void OnPaint(PaintEventArgs e)
     {
-        double t = clock.IsRunning ? clock.Elapsed.TotalSeconds : 0;
+        double t = clock.IsRunning ? T() : 0;
         int i = SceneAt(t);
         painter.Paint(e.Graphics, names[i], t - StartOf(i), i, names.Length);
     }

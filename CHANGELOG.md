@@ -6,6 +6,19 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check, after its first live run** (a headless Windows mini PC, 2026-11-09):
+  - The agent's copy of the stream is held awake for the whole check. The pictures it took while waiting for the test
+    card had armed the 45 s re-pause, so the last phases arrived with no frames.
+  - The test card's clock starts on the agent's click on its corner, sent the moment the corner is seen. The corner was
+    seen ~1.5 s after the card appeared, so its scenes ran ~1.1 s ahead of the phase marks.
+  - The card closes 0.3 s after its last scene, and the next phase waits for the screen to repaint.
+  - The reading:
+    - A still screen whose quantiser steps down with each refinement is named slow recovery, not "refinement ignored".
+    - Keyframes that the GOP, refinement and rebuilds don't explain are named across the moving phases.
+    - A keyframe share of almost nothing is not a finding.
+    - "No cursor came back" is said only when frames reached the agent, and a phase with no frames says its arrival
+      side is missing.
+  - The skill carries the run as its evidence, and what it taught as its pitfalls.
 - **The picture-quality check** (`quality`, [core/quality.js](core/quality.js), skill
   [diagnose-screen-quality](skills/diagnose-screen-quality/README.md)): one command arms ScreenMirror's diagnostics
   trace on the agent's own socket, puts the screen through named stresses — the screen as it is, a test card's still

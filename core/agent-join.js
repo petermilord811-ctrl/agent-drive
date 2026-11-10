@@ -1854,6 +1854,11 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // (an Ubuntu Wayland desk: "the screen is not being captured right now") refuses in words -- then the stream is
     // woken for that picture, and paused again once the pictures stop. A `select` (every reconnect) clears a pause.
     let viewPaused = false, repauseTimer = null;
+    // streamHeld: the quality check holds the stream awake for as long as it runs. Without this, every picture it took
+    // (waiting for its test card to appear) armed the 45 s re-pause below, and the stream paused itself mid-check --
+    // measured on a real machine (2026-11-09): the last two phases arrived with no frames at all, and "no cursor came
+    // back" was reported for a pointer whose updates the relay simply does not send to a paused viewer.
+    let streamHeld = 0;
     const WAKE_HOLD_MS = 45000;
     const setPaused = (on) => {
       if (NO_IDLE || viewPaused === on) return;
@@ -1862,7 +1867,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     };
     const pauseSoon = () => {
       clearTimeout(repauseTimer);
-      repauseTimer = setTimeout(() => { if (!ws.dead && !stopped) setPaused(true); }, WAKE_HOLD_MS);
+      if (streamHeld) return;                             // held awake (the quality check): it re-arms this when it ends
+      repauseTimer = setTimeout(() => { if (!ws.dead && !stopped && !streamHeld) setPaused(true); }, WAKE_HOLD_MS);
       if (repauseTimer.unref) repauseTimer.unref();
     };
     const NOT_CAPTURING = /not being captured/i;
@@ -2222,15 +2228,26 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         why = r.why || why;
       }
       if (!full) return { ok: false, why: 'the test card could not be put on the machine: ' + why };
-      const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', full, '-Plan', card.plan, '-Lead', '0.6'];
+      // THE CARD WAITS FOR A CLICK TO START ITS CLOCK (with the keyboard and mouse consent). Seeing it is a screenshot
+      // poll, and on a real machine the corner was seen ~1.5 s after the card appeared -- so its scenes ran ~1.1 s
+      // ahead of the phase marks and each phase's last second held the next scene. A click on its corner, sent the
+      // moment the corner is seen, starts the card's clock and the first phase together (one input's latency apart).
+      // Without that consent it starts by itself, as before, a little ahead of the marks.
+      // where the corner is on THIS visit's screen -- known only when the card's rect and the screen's origin are; a card
+      // whose corner cannot be looked for must not wait for a click on it
+      const mk = rect && deskOrigin ? quality.markerAt(rect) : null;
+      const x = mk ? Math.round(mk.x - deskOrigin[0]) : -1, y = mk ? Math.round(mk.y - deskOrigin[1]) : -1;
+      const findable = !!mk && x >= 6 && y >= 6 && x < SW - 6 && y < SH - 6;
+      const click = !!grantControl && findable;
+      const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', full, '-Plan', card.plan,
+                    '-Lead', click ? '0.1' : '0.6', '-Hold', click ? String(quality.CARD_HOLD_S) : '0'];
       if (rect) args.push('-Rect', rect.join(','));
       const la = await deskOp('launch', { app: 'powershell.exe', args, wait: 8000, focus: true }, 45000);
       if (!la || !la.ok) return { ok: false, why: 'the test card did not start: ' + ((la && la.why) || 'no answer') };
       const pid = la.started && Number(la.started.pid) > 0 ? Number(la.started.pid) : null;
-      let seen = false;
-      if (rect && deskOrigin) {
-        const mk = quality.markerAt(rect), x = Math.round(mk.x - deskOrigin[0]), y = Math.round(mk.y - deskOrigin[1]);
-        if (x >= 6 && y >= 6 && x < SW - 6 && y < SH - 6) {
+      let seen = false, clicked = false;
+      if (findable) {
+        {
           const until = Date.now() + 15000;
           while (!stopped && Date.now() < until) {
             frame = null;
@@ -2238,12 +2255,22 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             if (v.ok) { seen = true; break; }
             await sleep(250);
           }
+          // on the corner the card was just SEEN at: the card is on top there, so nothing else can take this click
+          if (seen && click && !stopped) {
+            const nx = Math.min(x / SW, 0.99999), ny = Math.min(y / SH, 0.99999);
+            ws.send({ type: 'mouse', action: 'move', x: nx, y: ny }); await sleep(40);
+            ws.send({ type: 'mouse', action: 'down', button: 0, x: nx, y: ny }); await sleep(40);
+            ws.send({ type: 'mouse', action: 'up', button: 0, x: nx, y: ny });
+            clicked = true;
+          }
         }
       }
       if (!seen) await sleep(1500);   // not seen: give it the compile time, and say the marks may be a moment off
-      rec.event('card', seen ? 'the test card is on the screen' : 'the test card was started; its corner was not seen, so its scenes may sit up to a second off the phase marks',
-                Date.now(), { pid, seen, rect });
-      return { ok: true, pid, seen, file: full };
+      rec.event('card', !seen ? 'the test card was started; its corner was not seen, so its scenes may sit up to a second off the phase marks'
+                      : clicked ? 'the test card is on the screen, and its clock was started with a click on its corner'
+                      : 'the test card is on the screen; it started by itself, a little ahead of the phase marks',
+                Date.now(), { pid, seen, clicked, rect });
+      return { ok: true, pid, seen, clicked, file: full };
     };
     const qualityRun = async (cmd) => {
       let before = null;
@@ -2278,8 +2305,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const w0 = ws;
       const onText = (m) => rec.text(m, Date.now()), onBin = (b) => rec.binary(b, Date.now());
       w0.on(onText); w0.onBinary(onBin);
-      // THE STREAM, for as long as the check runs: this client pauses its copy the rest of the time (setPaused)
-      clearTimeout(repauseTimer); setPaused(false);
+      // THE STREAM, for as long as the check runs: this client pauses its copy the rest of the time (setPaused) -- and
+      // HELD awake, so the pictures the check takes (waiting for its card) cannot arm the re-pause (streamHeld)
+      streamHeld++; clearTimeout(repauseTimer); setPaused(false);
       const arm = () => { traceAskAt = Date.now(); try { ws.send({ type: 'trace', on: 1 }); } catch (_) {} };
       traceRefusedAt = 0; arm();
       const tick = setInterval(() => rec.tick(Date.now()), 1000);
@@ -2308,7 +2336,12 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           else if (ph.name === 'wheel') { wheel = await qWheel(end, cmd); if (wheel && !wheel.ok) rec.event('wheel-failed', wheel.why, Date.now()); }
           await qWait(end);
           rec.phase(ph.name, false, Date.now());
-          if (cardUp && (i === pl.phases.length - 1 || !quality.KINDS[pl.phases[i + 1].name].card)) cardUp = false;   // it closes itself
+          if (cardUp && (i === pl.phases.length - 1 || !quality.KINDS[pl.phases[i + 1].name].card)) {
+            cardUp = false;   // it closes itself, a moment after its last scene
+            // ...and the screen it uncovers repaints whole: a phase after the card starts once that is over, or its first
+            // seconds measure the card going away (measured: a keyframe and a full repaint inside the pointer phase)
+            if (i < pl.phases.length - 1) await qWait(Date.now() + quality.CARD_GONE_MS);
+          }
         }
         if (!stoppedWhy && (stopped || ws.dead)) stoppedWhy = stopped || 'the connection to the machine dropped';
       } finally {
@@ -2317,6 +2350,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         if (!traceRefusedAt) { try { ws.send({ type: 'trace', on: 0 }); } catch (_) {} }
         traceAskAt = 0;
         w0.off(onText); w0.off(onBin);
+        streamHeld = Math.max(0, streamHeld - 1);
         pauseSoon();   // the stream pauses again once the pictures stop
         // a check that was STOPPED takes its card with it; one that finished leaves it to close itself a moment later
         if (stoppedWhy && cardPid && !ws.dead) { try { await runExec('taskkill /PID ' + cardPid + ' /T /F', 10000); } catch (_) {} }
