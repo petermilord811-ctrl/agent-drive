@@ -6,6 +6,15 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check no longer reads a missing quantiser as a sharp picture.** A live run on Intel Quick Sync, which
+  gives the host no quantiser, called every phase sharp and the comparison "better" while each moving frame got a
+  third of the data.
+  - A phase with no quantiser reads "not measured", and one `qp-unmeasured` cause names the encoder.
+  - The rate causes judge such a phase by the data each moving frame got (`Motion is starved: N kb a frame`, under
+    0.05 bits a pixel).
+  - `compare` says the sharpness was not compared, counts the data per frame in its place, and lists the causes only
+    a quantiser shows as not measurable (`causesUnmeasured`) rather than gone.
+  - `carried` counts against what the stream may send (its own frame rate), not every frame the card drew.
 - **The quality check names why a host encodes in software, and who asked for its keyframes**, from ScreenMirror's
   new trace fields (`hwwhy` `hwhr` `encn` `capm`, `kreq`):
   - The encoder cause names the reason, each with its own fix: preferHardware off, no hardware H.264 encoder, none
