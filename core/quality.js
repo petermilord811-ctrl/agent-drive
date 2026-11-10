@@ -242,6 +242,8 @@ function hist(set, k) {
   for (const r of set) { const v = r[k] || 'none'; m[v] = (m[v] || 0) + 1; }
   return m;
 }
+// the last value a host reported for a string field: '' is a value (a hardware encoder's empty reason), absent is null
+const lastStr = (set, k) => { for (let i = set.length - 1; i >= 0; i--) if (typeof set[i][k] === 'string') return set[i][k]; return null; };
 const share = (h, name, n) => (h && n ? (h[name] || 0) / n : 0);
 const topOf = (h) => { if (!h) return null; let best = null; for (const [k, v] of Object.entries(h)) if (!best || v > best[1]) best = [k, v]; return best ? best[0] : null; };
 const kbps = (bits) => (bits == null ? '—' : bits >= 1e6 ? (bits / 1e6).toFixed(1) + ' Mb/s' : Math.round(bits / 1e3) + ' kb/s');
@@ -264,6 +266,11 @@ function phaseStats(p, H, R, A) {
       bits: minOf(h, 'bits'), breq: maxOf(h, 'breq'), mode: topOf(hist(h, 'mode')),
       wire: pct(wire, 0.5), wireMax: wire.length ? Math.max(...wire) : null,
       enc95: med(h, 'enc95'), cap95: med(h, 'cap95'), hwEnc: hw.length ? hw[hw.length - 1] : null,
+      // WHY software, and how the screen is captured (tools/TRACE.md: hwwhy hwhr encn capm; absent on hosts before
+      // them). Read from the last record that has them, as hwEnc is: hwWhy '' is a hardware encoder, null not reported
+      hwWhy: lastStr(h, 'hwwhy'), hwHr: lastStr(h, 'hwhr'), encName: lastStr(h, 'encn') || null, capMode: lastStr(h, 'capm') || null,
+      // the keyframe REQUESTS the host spent (kreq): a viewer joining or resyncing, a relay backlog drop
+      kreq: sum(h, 'kreq'), kreqSeen: h.some((r) => typeof r.kreq === 'number'),
       drop: sum(h, 'drop'), stall: sum(h, 'stall'), rsk: sum(h, 'rsk'), rc: sum(h, 'rc'), gop: med(h, 'gop', (v) => v > 0),
       rate: med(h, 'rate', (v) => v > 0), link: med(h, 'link', (v) => v > 0), gp: med(h, 'gp', (v) => v > 0),
       refine: sum(h, 'refine'), rebuild: sum(h, 'rebuild'), ished: sum(h, 'ished'), wsmv: sum(h, 'wsmv'), uinj: sum(h, 'uinj'),
@@ -328,6 +335,23 @@ function pictureOf(st) {
 //            the product's own behaviour, i.e. the ones a code change improves
 //   input    the pointer and keyboard path
 const SEV = { high: 0, warn: 1, info: 2 };
+// WHY THE HOST ENCODES IN SOFTWARE, when it says (hwwhy): each reason has its own fix. Before the host named it they
+// were all one "hw 0", and five live runs on a machine with a GPU could not tell them apart (2026-11-10).
+const HW_WHY = {
+  cfg: { title: 'preferHardware is off', fix: () => 'preferHardware is off in this host\'s config: turn it on.' },
+  none: { title: 'no hardware H.264 encoder is installed',
+          fix: () => 'No hardware H.264 encoder is installed on the machine. A GPU driver that ships one (Intel Quick Sync, NVIDIA NVENC, AMD AMF) is the only way to a hardware encode; until then a smaller encode (maxEncodeHeight) is the lever.' },
+  act: { title: 'its hardware encoders would not start',
+         fix: () => 'Hardware encoders are installed and none would start: the GPU driver is the suspect -- update or reinstall it.' },
+  // the one reason that is not a software encoder: the hardware MFT stays in charge, without its GPU device (hw 0)
+  d3d: { lead: 'The machine\'s encoder runs without its GPU device and cannot keep up', kind: 'hardware encoder without its GPU device',
+         title: 'the hardware encoder refused the capture device',
+         fix: (h) => 'A hardware encoder started and refused the capture device' + (h.hwHr ? ' (' + h.hwHr + ')' : '') + '. The screen is likely captured on another adapter than the encoder\'s; a virtual display (an IddCx driver) is the case to suspect. Capturing a screen the GPU itself drives, or giving the encoder a device on its own adapter (a host change), is the fix.' },
+  gdi: { title: 'the GDI capture forces it',
+         fix: () => 'The screen is captured with GDI, which forces the software encoder: DXGI duplication was unavailable (a session without a GPU-driven output).' },
+  wall: { title: 'the merged wall of screens forces it',
+          fix: () => 'A merged wall of screens is captured, which forces the software encoder: watch one screen at a time for a hardware encode.' },
+};
 function causesOf(stats, ctx) {
   const out = new Map();
   const add = (id, sev, area, phase, title, evidence, fix) => {
@@ -437,10 +461,17 @@ function causesOf(stats, ctx) {
       }
       const interval = h.fps > 0 ? 1000 / h.fps : null;
       if (share(S, 'encode', n) >= 0.3 || (interval && h.enc95 != null && h.enc95 > interval)) {
-        add('encoder', h.hwEnc === 0 ? 'high' : 'warn', 'machine', P,
-            h.hwEnc === 0 ? 'The machine encodes in SOFTWARE and cannot keep up' : 'The machine\'s encoder cannot keep up',
-            'encode p95 ' + fmt(h.enc95, 1) + ' ms against a ' + fmt(interval, 1) + ' ms frame · ' + (h.hwEnc === 0 ? 'software encoder' : h.hwEnc === 1 ? 'hardware encoder' : 'encoder kind not reported') + ' · ' + fmt(h.w) + '×' + fmt(h.h),
-            h.hwEnc === 0 ? 'No hardware H.264 encoder is in use: check the GPU driver and the host\'s preferHardware.' : 'A smaller encode or a lower frame rate; or a busy GPU on that machine.');
+        const sw = h.hwEnc === 0, why = sw && h.hwWhy ? HW_WHY[h.hwWhy] : null;
+        add('encoder', sw ? 'high' : 'warn', 'machine', P,
+            sw ? ((why && why.lead) || 'The machine encodes in SOFTWARE and cannot keep up') + (why ? ': ' + why.title : '') : 'The machine\'s encoder cannot keep up',
+            'encode p95 ' + fmt(h.enc95, 1) + ' ms against a ' + fmt(interval, 1) + ' ms frame · ' +
+              (sw ? (why && why.kind) || 'software encoder' : h.hwEnc === 1 ? 'hardware encoder' : 'encoder kind not reported') +
+              (h.encName ? ' "' + h.encName + '"' : '') + (h.capMode ? ' · capture ' + h.capMode : '') +
+              (sw && h.hwWhy ? ' · hwwhy ' + h.hwWhy + (h.hwWhy === 'd3d' && h.hwHr ? ' (' + h.hwHr + ')' : '') : '') + ' · ' + fmt(h.w) + '×' + fmt(h.h),
+            !sw ? 'A smaller encode or a lower frame rate; or a busy GPU on that machine.'
+                : why ? why.fix(h)
+                : 'No hardware H.264 encoder is in use: check the GPU driver and the host\'s preferHardware.' +
+                  (h.hwWhy == null ? ' This host does not report why (hwwhy); a newer one does, and the check then names the reason.' : ''));
       }
       if (share(S, 'capture', n) >= 0.3) {
         add('capture', 'warn', 'machine', P, 'Capturing the screen is slow on the machine', 'capture p95 ' + fmt(h.cap95, 1) + ' ms · swhy capture',
@@ -469,11 +500,18 @@ function causesOf(stats, ctx) {
       // is ~100% by construction (measured: 96% for a still card whose only bytes were two refinement keyframes)
       if (!s.still && h.keyShare != null && h.keyShare >= 0.5 && h.kf >= 2 && h.bytes * 8 / Math.max(1, s.secs) >= KF_MIN_BPS) {
         const forced = h.refine + h.rebuild, gopKf = h.gop > 0 ? Math.floor(h.frames / h.gop) : 0, other = Math.max(0, h.kf - forced - gopKf);
+        // with kreq the host COUNTS the requests it spent, so "asked for or inserted" splits in two. A spent request can
+        // share its keyframe with a refinement, a rebuild or the other flag in the same pass, so the count is a ceiling
+        // on the keyframes requests caused -- hence min(other, kreq).
+        const asked = h.kreqSeen ? Math.min(other, h.kreq) : 0, own = other - asked;
         add('keyframes', h.keyShare >= 0.7 ? 'high' : 'warn', 'codec', P,
             'Keyframes are ' + Math.round(100 * h.keyShare) + '% of what is sent',
-            h.kf + ' keyframes · ' + h.refine + ' from refinement, ' + h.rebuild + ' from encoder rebuilds, ' + gopKf + ' from the GOP (' + fmt(h.gop) + ' frames), ' + other + ' asked for or inserted',
+            h.kf + ' keyframes · ' + h.refine + ' from refinement, ' + h.rebuild + ' from encoder rebuilds, ' + gopKf + ' from the GOP (' + fmt(h.gop) + ' frames), ' +
+              (h.kreqSeen ? asked + ' asked for (' + h.kreq + ' requests spent), ' + own + ' inserted by the encoder' : other + ' asked for or inserted'),
             forced >= h.kf / 2 ? 'Most are forced by refinement/rebuilds: those are the product\'s own choices -- spend fewer.'
-                               : 'Most are neither the GOP nor the product\'s own: find who asks for them (a viewer\'s resync, a viewer joining) or whether the encoder inserts them.');
+              : !h.kreqSeen ? 'Most are neither the GOP nor the product\'s own: find who asks for them (a viewer\'s resync, a viewer joining) or whether the encoder inserts them.'
+              : asked >= own ? 'Most were ASKED FOR (a viewer joining or resyncing, a relay backlog drop): find who keeps asking.'
+              : 'Most were inserted by the ENCODER itself (' + (h.kreq ? 'only ' + h.kreq + ' asked for' : 'none asked for') + '): a software encoder\'s scene-change keyframes, or a GOP it does not hold -- its settings, not the relay.');
       }
       if (h.gop && h.fps && h.gop < 2 * h.fps) {
         add('gop', 'warn', 'codec', P, 'A keyframe is forced every ' + fmt(h.gop) + ' frames', 'GOP ' + fmt(h.gop) + ' at ' + fmt(h.fps) + ' fps',
@@ -550,19 +588,29 @@ function causesOf(stats, ctx) {
   // pointer moved. No single phase shows it as a share; the interval across the moving phases does.
   {
     const mv = stats.filter((s) => !s.still && s.host && s.host.frames > 0);
-    let kf = 0, secs = 0, explained = 0;
+    let kf = 0, secs = 0, explained = 0, kreq = 0, kreqSeen = false;
     for (const s of mv) {
       const h = s.host;
       kf += h.kf; secs += Math.max(0, s.secs - PH_LEAD / 1000);
       explained += h.refine + h.rebuild + (h.gop > 0 ? Math.floor(h.frames / h.gop) : 0);
+      kreq += h.kreq || 0; kreqSeen = kreqSeen || h.kreqSeen;
     }
     const other = kf - explained;
     if (other >= 3 && secs > 0 && secs / other <= 5) {
       const g = mv.find((s) => s.host.gop > 0);
+      // A host that counts the keyframe requests it spent (kreq) settles "asked for, or inserted?" -- the question the
+      // first five live runs could only leave open. A host without kreq keeps the open question.
+      const asked = kreqSeen ? Math.min(other, kreq) : 0, own = other - asked;
+      const every = 'A keyframe every ~' + fmt(secs / other, 1) + ' s while the picture moves';
       add('kf-unexplained', 'warn', 'codec', mv[0].name,
-          'A keyframe every ~' + fmt(secs / other, 1) + ' s while the picture moves, which the GOP, refinement and rebuilds do not explain',
-          other + ' of ' + kf + ' keyframes in ' + Math.round(secs) + ' s of motion · GOP ' + fmt(g ? g.host.gop : null) + ' frames · refine and rebuild counted out',
-          'Each is a whole picture. Find who asks for them -- a viewer\'s resync or rejoin (the relay\'s keyframe requests) -- or whether the encoder inserts them itself (a software encoder may not hold the GOP it is given).');
+          !kreqSeen ? every + ', which the GOP, refinement and rebuilds do not explain'
+            : asked >= own ? every + ': most were ASKED FOR (' + kreq + ' keyframe requests spent)'
+            : every + ', inserted by the ENCODER itself (' + (kreq ? 'only ' + kreq + ' asked for' : 'none asked for') + ')',
+          other + ' of ' + kf + ' keyframes in ' + Math.round(secs) + ' s of motion · GOP ' + fmt(g ? g.host.gop : null) + ' frames · refine and rebuild counted out' +
+            (kreqSeen ? ' · ' + kreq + ' requests spent by the host (kreq)' : ''),
+          !kreqSeen ? 'Each is a whole picture. Find who asks for them -- a viewer\'s resync or rejoin (the relay\'s keyframe requests) -- or whether the encoder inserts them itself (a software encoder may not hold the GOP it is given).'
+            : asked >= own ? 'Each is a whole picture, asked for: a viewer joining or resyncing, or the relay dropping a slow viewer\'s backlog (each drop asks for one). Find who keeps asking: the relay\'s drops and the viewers\' resyncs in the trace.'
+            : 'Each is a whole picture the encoder chose: a software encoder\'s own scene-change keyframes, or a GOP it does not hold. The encoder\'s settings (or a hardware encoder: see the encoder cause), not the relay or the viewers.');
       for (const s of mv.slice(1)) out.get('kf-unexplained').phases.includes(s.name) || out.get('kf-unexplained').phases.push(s.name);
     }
   }

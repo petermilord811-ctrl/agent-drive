@@ -6,6 +6,15 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check names why a host encodes in software, and who asked for its keyframes**, from ScreenMirror's
+  new trace fields (`hwwhy` `hwhr` `encn` `capm`, `kreq`):
+  - The encoder cause names the reason, each with its own fix: preferHardware off, no hardware H.264 encoder, none
+    would start, a GDI or wall capture, or a hardware encoder that refused the capture device. That last one is named
+    as an encoder without its GPU device, not as software, and its fix carries the HRESULT. The evidence names the
+    encoder and how the screen is captured.
+  - The keyframe causes split "asked for or inserted" into the requests the host spent and the keyframes the encoder
+    inserted itself.
+  - A host without the fields gets the old wording, and the encoder cause says a newer host names the reason.
 - **The quality check tells a rate held for a watcher from one the ABR won't raise** (`rate-viewer`). When a voting
   watcher reported congestion and the relay handed it to the host, the shared stream was slowed for that watcher, and
   the check says so, naming who. Three of the first five live runs were this, not an ABR fault.

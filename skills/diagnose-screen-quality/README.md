@@ -67,10 +67,15 @@ it says, phase by phase, whether the picture got better.
   support (both fixed in the reading since): "no cursor came back" while the agent's own copy of the stream was paused,
   and "refinement ignored" for a quantiser that was stepping 49 → 42 → 34.
 - **A capable GPU can still mean a software encoder.** `hw:0` on a machine with a GPU that encodes H.264 (Intel UHD,
-  for one) means the host is not using it: the machine's Health events say how it captures ("capturing via …" --
-  GDI capture forces the software encoder). A headless machine whose screens are virtual displays is the case to
+  for one) means the host is not using it. A host that sends `hwwhy` says why, and the encoder cause names the reason
+  with its fix: preferHardware off, no hardware encoder, none would start, a hardware encoder that refused the capture
+  device, or a GDI or wall capture. On an older host, the machine's Health events say how it captures ("capturing via
+  …" -- GDI capture forces the software encoder). A headless machine whose screens are virtual displays is the case to
   suspect. With the run-commands consent, `Get-CimInstance Win32_VideoController` and `WmiMonitorID` (root\wmi) say
   which GPU and which monitors there are, read-only.
+- **"A keyframe nothing explains" is two questions until the host counts its requests.** A host that sends `kreq`
+  counts the keyframe requests it spent (a viewer joining or resyncing, a relay backlog drop), and the keyframe causes
+  then say which: asked for, or inserted by the encoder itself. On an older host, the cause leaves both open.
 - **A look before the check may show someone's private screen.** Use it to decide whether to start, then delete it;
   never post it. The report is the result -- say in the chat why there is no picture.
 - **"The rate is held" has two owners.** Before calling the ABR at fault, read who was congested. A voting watcher's
