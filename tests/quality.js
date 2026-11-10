@@ -435,6 +435,12 @@ const ids = (an) => an.causes.map((c) => c.id);
   const flat571 = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qpsrc: 'flat' }) }])).causes.find((c) => c.id === 'qp-unmeasured');
   ok(!!flat571 && /its slice headers were read and their QP never moved: no measure/.test(flat571.evidence[0]),
      'a host 1.57.1\'s own reason for no QP ("flat") is said in the cause');
+  // A HELD QUANTISER (qhold, host 1.58.0): one QP in every second is the point -- measured, never set aside as "flat"
+  const heldRun = Q.analyze(run([{ name: 'text', secs: 6, h: flatH({ fr: 1, by: 900, qp: 20, qhold: 20 }) }, { name: 'scroll', secs: 6, h: flatH({ qp: 20, qhold: 20 }) },
+                                 { name: 'video', secs: 6, h: flatH({ by: 300000, qp: 20, qhold: 20 }) }, { name: 'rest', secs: 6, h: flatH({ fr: 1, by: 700, qp: 20, qhold: 20 }) }]));
+  ok(heldRun.flatQp == null && !heldRun.causes.some((c) => c.id === 'qp-unmeasured') && heldRun.phases[0].picture === 'sharp' &&
+     heldRun.notes.some((n) => /HELD at QP 20 by the viewer's picture-quality mode/.test(n)),
+     'a slice QP held at 20 by the mode is the measurement, and the run says it was held (' + heldRun.phases[0].line + ')');
   // THE STREAM IS CAPPED AT ITS OWN FRAME RATE: 27 of a card's 52 at 30 fps is the cap, not a drop
   ok(!withCard(520, { fr: 27 }).causes.some((c) => c.id === 'carried'), 'a 30 fps stream carrying 27 of a card\'s 52 frames a second is not a drop');
   const capDrop = withCard(520, { fr: 16, swhy: 'encode', enc95: 45 }).causes.find((c) => c.id === 'carried');
