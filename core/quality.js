@@ -277,6 +277,10 @@ function phaseStats(p, H, R, A) {
       qcap: med(h, 'qcap'), top: med(h, 'top', (v) => v > 0), rateMax: maxOf(h, 'rate'),
       // ...and whose quantiser qp is (host 1.57.0): "mft" the encoder's own, "slice" read from the slice headers
       qpSrc: lastStr(h, 'qpsrc'),
+      // ...and the quantiser the viewer's picture-quality mode HOLDS every frame at (host 1.58.0: Best 6, Normal 20,
+      // Speed 32; 0 = the rate controller decides). Under a hold the rate causes cannot coarsen the picture: a busy
+      // screen pays in frame rate, which the frame-rate causes still read.
+      qhold: med(h, 'qhold', (v) => v > 0),
       drop: sum(h, 'drop'), stall: sum(h, 'stall'), rsk: sum(h, 'rsk'), rc: sum(h, 'rc'), gop: med(h, 'gop', (v) => v > 0),
       rate: med(h, 'rate', (v) => v > 0), link: med(h, 'link', (v) => v > 0), gp: med(h, 'gp', (v) => v > 0),
       refine: sum(h, 'refine'), rebuild: sum(h, 'rebuild'), ished: sum(h, 'ished'), wsmv: sum(h, 'wsmv'), uinj: sum(h, 'uinj'),
@@ -369,7 +373,8 @@ function capOf(h, ctx) {
 // The one value a host 1.57.0 slice-header QP sat at, when it never moved while the frames' sizes varied severalfold
 // (at least 20 seconds read from the slices, every one the same QP, the bytes a frame across seconds 8x apart) -- or null.
 function flatSliceQp(H) {
-  const sl = H.filter((r) => r.qpsrc === 'slice' && r.qp > 0);
+  // ...never under a HELD quantiser (qhold, ScreenMirror host 1.58.0): one QP in every second is then the point
+  const sl = H.filter((r) => r.qpsrc === 'slice' && r.qp > 0 && !(r.qhold > 0));
   if (sl.length < 20 || new Set(sl.map((r) => r.qp)).size !== 1) return null;
   const per = H.filter((r) => r.fr > 0 && r.by > 0).map((r) => r.by / r.fr);
   return per.length >= 10 && Math.max(...per) >= 8 * Math.min(...per) ? sl[0].qp : null;
@@ -762,6 +767,12 @@ function analyze(recs, opts) {
   const notes = [];
   // ...and a quantiser read from the slice headers (qpsrc "slice", host 1.57.0) is the same measure as the encoder's own:
   // on Microsoft's software MFT the two agree sample for sample (ScreenMirror tests/host_slice_qp.js)
+  {
+    const held = stats.find((s) => s.host && s.host.qhold > 0);
+    if (held)
+      notes.push('The picture was HELD at QP ' + Math.round(held.host.qhold) + ' by the viewer\'s picture-quality mode (Best 6, Normal 20, Speed 32): ' +
+                 'its sharpness is the mode\'s, not the rate\'s, and a busy screen pays in frame rate instead -- read the frames a second, not the quantiser.');
+  }
   if (stats.some((s) => s.host && s.host.qpSrc === 'slice'))
     notes.push('The quantiser was read from the slice headers (the encoder reports none of its own): on Microsoft\'s software encoder the two readings agree frame for frame, so it compares fairly with a software run.');
   const frames = A.reduce((n, r) => n + (r.fr || 0), 0);
