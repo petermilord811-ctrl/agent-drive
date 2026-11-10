@@ -95,3 +95,25 @@ It also found five faults in the check itself, fixed after it: the agent's strea
 taken while waiting for the card armed the re-pause), the card ran ~1.1 s ahead of the phase marks (its corner was
 seen late; it now starts on a click there), the pointer phase began while the card was still closing, and two
 readings (recovery taken for "ignored", a keyframe share of almost nothing).
+
+**Runs 2–5, the same machine, nothing changed on it** -- the loop of fix, run, read the raw seconds, fix:
+- run 2 proved the fixes (card in sync, frames in every phase) and measured the pointer for the first time: ~360 ms
+  median round trip on the agent's path. Its comparison with run 1 read "12 worse", and none of that was the machine.
+  compare learnt to keep arrival figures, the idle phase, tiny latencies and still keyframe shares out of the verdict,
+  and to say when two runs come from different versions of the check.
+- run 3: the card's own counts showed the stream really dropping frames: 43 drawn and 14 carried while scrolling.
+  They also showed the card itself drawing its video scene at 3.4 fps on this Celeron. The video frames are now
+  prepared, and the scene draws ~40.
+- run 4: a watcher's window made the encode full-size. compare learnt that a different encode size is a different
+  picture, and the reading learnt "refreshes held to the bitrate cap" from "refinement ignored".
+- run 5 against run 4, the same check on an unchanged machine: **the picture as sent is the same**, while delivery
+  to the agent (its own link) varied on its own line.
+
+All five runs, re-read with the final check, name the same causes:
+- software encoding;
+- the rate held while the uplink is idle;
+- a keyframe every ~3 s that nothing explains;
+- the watcher's window, in four of the five;
+- a still screen that recovers slowly or is held to the cap after the load;
+- the stream carrying ~a third of what is drawn, from run 3 on;
+- the pointer at ~400 ms p95, from run 2 on.

@@ -52,6 +52,8 @@ public class QCardPainter
         px = new int[lw * lh];
         blocky = new Bitmap(Math.Max(16, W / 4), Math.Max(12, Hc / 4), PixelFormat.Format32bppRgb);
         grain = MakeGrain(256);
+        // before the card shows, not when the video scene starts: made then, the scene would open on a second's stall
+        MakeVideoFrames();
     }
 
     string Sentence(int n)
@@ -192,16 +194,40 @@ public class QCardPainter
         blocky.UnlockBits(d);
     }
 
+    // THE VIDEO SCENE'S FRAMES ARE MADE ONCE. Drawn live -- a colour field scaled up and grain composited over the whole
+    // screen, every frame -- the scene ran at 3.4 frames a second on a 4-thread Celeron (measured, 2026-11-10): the card,
+    // not the stream, was the limit, and the phase measured nothing about the encoder. Made at the start and cycled at
+    // 30 a second, each is a plain copy to the screen, and only the shapes moving over it are drawn live.
+    const int VF = 12;
+    Bitmap[] vframes;
+    void MakeVideoFrames()
+    {
+        vframes = new Bitmap[VF];
+        Rectangle area = new Rectangle(0, 0, W, Hc);
+        for (int i = 0; i < VF; i++)
+        {
+            Bitmap b = new Bitmap(W, Hc, PixelFormat.Format32bppRgb);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                Plasma(i * 0.21);
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.InterpolationMode = InterpolationMode.Bilinear;
+                g.DrawImage(lo, area);
+                using (TextureBrush tb = new TextureBrush(grain))
+                {
+                    tb.TranslateTransform(rnd.Next(256), rnd.Next(256));
+                    g.FillRectangle(tb, area);
+                }
+            }
+            vframes[i] = b;
+        }
+    }
+
     void PaintVideo(Graphics g, Rectangle area, double u)
     {
-        Plasma(u);
-        g.InterpolationMode = InterpolationMode.Bilinear;
-        g.DrawImage(lo, area);
-        using (TextureBrush tb = new TextureBrush(grain))
-        {
-            tb.TranslateTransform(rnd.Next(256), rnd.Next(256));
-            g.FillRectangle(tb, area);
-        }
+        if (vframes == null) MakeVideoFrames();
+        Bitmap f = vframes[((int)(u * 30)) % VF];
+        g.DrawImage(f, area, area, GraphicsUnit.Pixel);
         for (int i = 0; i < 3; i++)
         {
             int r = Hc / (6 + i * 2);
@@ -285,15 +311,21 @@ public class QCard : Form
     // hold 0 (an agent that may not click) it starts on appearing; with hold > 0 it starts by itself after that long.
     double holdMax, startAt;
     bool started;
+    // WHAT THE CARD ITSELF DREW, scene by scene. On a slow machine the card is not free: a 4-thread Celeron encoding in
+    // software drew its video scene at a few frames a second, and a stream at 5 fps there could be the card's 5 or the
+    // encoder dropping from 30. The paints are counted and written at the close to `stats`, which the agent reads and
+    // deletes, so the report can put the card's rate beside the stream's.
+    int[] painted;
+    string statsPath;
 
     // plan "text:8,scroll:10,...": the scenes and their seconds. rect "x,y,w,h" in the desktop's pixels (empty: the
     // primary screen's work area). lead: extra seconds on the first scene, for the agent's mark trailing the start.
-    // hold: seconds to wait for the click that starts the clock (0: start at once).
-    public static void Run(string plan, string rect, double lead, double hold)
+    // hold: seconds to wait for the click that starts the clock (0: start at once). stats: where to write what it drew.
+    public static void Run(string plan, string rect, double lead, double hold, string stats)
     {
         try { SetProcessDPIAware(); } catch { }
         try { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); } catch { }
-        Application.Run(new QCard(plan, rect, lead, hold));
+        Application.Run(new QCard(plan, rect, lead, hold, stats));
     }
 
     public static void Snap(string scene, double u, int w, int h, string path)
@@ -306,13 +338,15 @@ public class QCard : Form
         }
     }
 
-    QCard(string plan, string rect, double lead, double hold)
+    QCard(string plan, string rect, double lead, double hold, string stats)
     {
         holdMax = Math.Max(0, Math.Min(30, hold));
         started = holdMax <= 0;
+        statsPath = stats;
         string[] parts = (string.IsNullOrEmpty(plan) ? "text:8" : plan).Split(',');
         names = new string[parts.Length];
         ends = new double[parts.Length];
+        painted = new int[parts.Length];
         double acc = Math.Max(0, Math.Min(5, lead));
         for (int i = 0; i < parts.Length; i++)
         {
@@ -345,7 +379,7 @@ public class QCard : Form
         KeyDown += delegate(object s, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Close(); };
         MouseDown += delegate { Begin(); };
         Shown += delegate { Activate(); clock.Start(); tick.Start(); Invalidate(); };
-        FormClosed += delegate { tick.Stop(); };
+        FormClosed += delegate { tick.Stop(); WriteStats(); };
         tick.Interval = 15;
         tick.Tick += delegate { Step(); };
     }
@@ -356,6 +390,25 @@ public class QCard : Form
         return ends.Length - 1;
     }
     double StartOf(int i) { return i <= 0 ? 0 : ends[i - 1]; }
+    // {"scenes":[{"name":"video","painted":52,"secs":10}, ...],"ran":53.1} -- the names come from the plan the agent wrote
+    // (lower-case words), so nothing in it needs escaping. Best effort: a card that cannot write it simply has no stats.
+    void WriteStats()
+    {
+        if (string.IsNullOrEmpty(statsPath)) return;
+        try
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder("{\"scenes\":[");
+            for (int i = 0; i < names.Length; i++)
+            {
+                if (i > 0) sb.Append(',');
+                sb.Append("{\"name\":\"").Append(names[i]).Append("\",\"painted\":").Append(painted[i])
+                  .Append(",\"secs\":").Append((ends[i] - StartOf(i)).ToString("0.###", CultureInfo.InvariantCulture)).Append('}');
+            }
+            sb.Append("],\"ran\":").Append(T().ToString("0.###", CultureInfo.InvariantCulture)).Append('}');
+            System.IO.File.WriteAllText(statsPath, sb.ToString());
+        }
+        catch { }
+    }
     void Begin()
     {
         if (started) return;
@@ -385,5 +438,6 @@ public class QCard : Form
         double t = clock.IsRunning ? T() : 0;
         int i = SceneAt(t);
         painter.Paint(e.Graphics, names[i], t - StartOf(i), i, names.Length);
+        if (started) painted[i]++;
     }
 }

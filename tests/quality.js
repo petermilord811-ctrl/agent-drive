@@ -176,9 +176,16 @@ const ids = (an) => an.causes.map((c) => c.id);
   const rv = rec2.causes.find((c) => c.id === 'recovery');
   ok(!!rv && /QP 49 → 31/.test(rv.title) && rv.area === 'codec' && !rec2.causes.some((c) => c.id === 'refine'),
      'a quantiser stepping 49 → 31 with each refinement is SLOW RECOVERY, not refinement ignored (' + (rv && rv.title) + ')');
-  const flat = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 42, fr: 1, by: 9000, kb: 0 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
-  ok(flat.causes.some((c) => c.id === 'refine' && /although refinement ran 2×/.test(c.title)) && !flat.causes.some((c) => c.id === 'recovery'),
-     '...while one that stays at 42 through two refinements is still "refinement did nothing" (the control)');
+  // under QP 33 the bitrate is not what holds a still screen (the host's own rule for the rate limit is QP >= 33): one that
+  // stays at 31 through two refinements is "refinement did nothing" ...
+  const flat = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 31, fr: 1, by: 9000, kb: 0 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
+  ok(flat.causes.some((c) => c.id === 'refine' && /although refinement ran 2×/.test(c.title)) && !flat.causes.some((c) => c.id === 'recovery' || c.id === 'refine-capped'),
+     '...while one that stays at 31 through two refinements is still "refinement did nothing" (the control)');
+  // ... while at QP 42 it is the cap, even when the host's label names a bigger limit (a watcher's window) first
+  const viewportCapped = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 42, fr: 1, by: 9000, kb: 0, qwhy: 'viewport', qval: 87 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
+  const vcap = viewportCapped.causes.find((c) => c.id === 'refine-capped');
+  ok(!!vcap && /the host's rule for the rate limit \(labelled viewport, which outranks it\)/.test(vcap.evidence[0]),
+     '...and at QP 42 it is held to the cap even when the label says viewport -- by the host\'s own rule, and said so');
   // keyframes every 2 s while the picture moves, at GOP 300 with no refinement or rebuild: named across the phases
   const every2 = Array.from({ length: 10 }, (_, i) => (i % 2 ? { kf: 1, kb: 40000 } : {}));
   const kfr = Q.analyze(run([{ name: 'scroll', secs: 10, hs: every2 }, { name: 'video', secs: 10, hs: every2 }]));
@@ -217,7 +224,85 @@ const ids = (an) => an.causes.map((c) => c.id);
   const worse = Q.compare(after, bad);
   ok(worse.overall === 'worse' && worse.causesNew.length > 0, 'and the reverse is worse, with the new causes');
   const rep = Q.report(bad, cmp);
-  ok(/^🔬 \*\*Picture-quality check\*\* — Main cause/.test(rep) && /\*\*Causes\*\*/.test(rep) && /Compared with the earlier run: better/.test(rep), 'the report: verdict, a line a phase, causes, the comparison');
+  ok(/^🔬 \*\*Picture-quality check\*\* — Main cause/.test(rep) && /\*\*Causes\*\*/.test(rep) && /Compared with the earlier run: the picture as sent is better/.test(rep), 'the report: verdict, a line a phase, causes, the comparison');
+  ok(cmp.delivery === 'better' && cmp.dBetter >= 1 && /delivery to the agent \(its own link too\) is better/.test(cmp.summary),
+     'delivery to the agent (behind live 1500 → 40 ms) is its own tally, beside the picture\'s');
+
+  // ---- comparing FAIRLY: what two live runs half an hour apart, with nothing changed on the machine, taught (2026-11-10)
+  // a run whose copy of the stream was paused has NO arrival figures in that phase -- its zeros are not the best ever
+  const noFrames = { fr: 0, by: 0, gap50: 0, gap95: 0, exc50: 0, exc95: 0 };
+  const pausedRun = Q.analyze(run([{ name: 'scroll', secs: 6 }, { name: 'rest', secs: 6, a: noFrames }]));
+  const fullRun = Q.analyze(run([{ name: 'scroll', secs: 6 }, { name: 'rest', secs: 6, a: { exc95: 400, gap95: 300 } }]));
+  const fair = Q.compare(pausedRun, fullRun);
+  const restRow = fair.phases.find((r) => r.phase === 'rest');
+  ok(restRow && restRow.arrival === false && !restRow.moves.some((m) => m.where === 'arrive') && fair.dWorse === 0,
+     'arrival figures are compared only where both runs received frames (0 → 400 ms behind is not a regression)');
+  ok(fair.lines.some((l) => /^rest: .*\(no arrival figures: one run received no frames here\)$/.test(l)), '...and the line says why they are missing');
+  // the screen as it was is listed, not counted
+  const idleA = Q.analyze(run([{ name: 'idle', secs: 6, h: { fr: 20 } }, { name: 'scroll', secs: 6 }]));
+  const idleB = Q.analyze(run([{ name: 'idle', secs: 6, h: { fr: 2, qp: 40 } }, { name: 'scroll', secs: 6 }]));
+  const ic = Q.compare(idleA, idleB);
+  ok(ic.overall === 'same' && ic.lines.some((l) => /^idle \(the screen as it was -- not counted\): .*quantiser 24→40/.test(l)),
+     'the idle phase (whatever was on screen) is listed but does not decide better or worse');
+  // a relative margin needs a real size too: 6 → 55 ms behind live is "nine times" and invisible
+  const lowA = Q.analyze(run([{ name: 'scroll', secs: 6, a: { exc95: 6 } }])), lowB = Q.analyze(run([{ name: 'scroll', secs: 6, a: { exc95: 55 } }]));
+  ok(Q.compare(lowA, lowB).dWorse === 0, 'behind live 6 → 55 ms is under the 50 ms floor: not a change');
+  // a still phase's keyframe share is not compared (a still screen sends little BUT keyframes)
+  const stillA = Q.analyze(run([{ name: 'text', secs: 6, h: { kb: 5000 } }])), stillB = Q.analyze(run([{ name: 'text', secs: 6, h: { kb: 95000 } }]));
+  ok(!Q.compare(stillA, stillB).phases[0].moves.some((m) => m.metric === 'keyShare'), 'a still phase\'s keyframe share is not compared');
+  // and the two versions of the check: the stamp, or for a run from before it, what the run did (a card clicked = 2)
+  const v1run = run([{ name: 'scroll', secs: 6 }]);
+  const v2run = run([{ name: 'scroll', secs: 6 }]); v2run.splice(1, 0, { c: 'a', ev: 'card', d: 'x', clicked: true, t: 500 });
+  const v3run = run([{ name: 'scroll', secs: 6 }]); v3run[0].qv = 3;
+  ok(Q.analyze(v1run).qv === 1 && Q.analyze(v2run).qv === 2 && Q.analyze(v3run).qv === 3, 'a run\'s check version: its stamp, else 2 for a clicked card, else 1');
+  const vc = Q.compare(Q.analyze(v1run), Q.analyze(v2run));
+  ok(vc.notes.some((n) => /different versions of the check \(1 and 2\)/.test(n)) && /part of any difference is the check's own/.test(vc.summary),
+     'runs from different versions of the check say so');
+  ok(!Q.compare(Q.analyze(v2run), Q.analyze(v2run)).notes.length, '...and runs from the same version do not (the control)');
+  // THE CARD'S OWN RATE beside the stream's: on a slow machine a stream at 5 fps in the video scene may be the card's 5
+  const withCard = (painted, host) => {
+    const r = run([{ name: 'video', secs: 10, h: Object.assign({ fr: 5, fps: 30 }, host || {}) }]);
+    r.push({ c: 'a', ev: 'card-stats', d: 'x', scenes: [{ name: 'video', painted, secs: 10 }], ran: 10, t: 12000 });
+    return Q.analyze(r);
+  };
+  const slowCard = withCard(60);
+  ok(slowCard.phases[0].cardFps === 6 && /5\/30 fps \(the card drew 6\)/.test(slowCard.phases[0].line), 'the phase line puts the card\'s own rate beside the stream\'s (' + slowCard.phases[0].line + ')');
+  ok(slowCard.notes.some((n) => /In video the test card itself drew only 6 frames a second.*the frame rate there is the card's, not a drop/.test(n)) && !slowCard.causes.some((c) => c.id === 'carried'),
+     'a stream that kept up with a card drawing 6 fps is the card\'s rate, not a drop');
+  const dropped = withCard(300, { swhy: 'encode', enc95: 45 });
+  const cr = dropped.causes.find((c) => c.id === 'carried');
+  ok(!!cr && /carried 5 of the 30 frames/.test(cr.title) && cr.area === 'machine', 'a card drawing 30 fps that the stream carried at 5, with the encoder slow, is a drop on the machine (' + (cr && cr.title) + ')');
+  ok(!dropped.notes.some((n) => /drew only/.test(n)), '...and is not explained away as a slow card (the control)');
+  const unread = Q.analyze(run([{ name: 'video', secs: 10 }]));
+  ok(unread.notes.some((n) => /counts were not read back/.test(n)), 'a run with card scenes but no counts says the frame rate cannot be told from the card\'s');
+  // A DIFFERENT ENCODE SIZE IS A DIFFERENT PICTURE: a watcher's window took the encode from 1678x944 to 1920x1080 between
+  // two live runs and the quantiser rose with the pixels -- shown, not counted
+  const sizeA = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39, w: 1678, h: 944 } }]));
+  const sizeB = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 48, w: 1920, h: 1080 } }]));
+  const sc = Q.compare(sizeA, sizeB);
+  ok(sc.overall === 'same' && sc.lines.some((l) => /quantiser 39→48 \(a different encode size: not counted\).*\[encode 1678×944 → 1920×1080\]/.test(l)) &&
+     sc.notes.some((n) => /encode size changed/.test(n)), 'QP 39 → 48 across a 30% larger encode is shown, not counted, and said why');
+  const sameSize = Q.compare(Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39 } }])), Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 48 } }])));
+  ok(sameSize.overall === 'worse', '...while the same rise at the same size is worse (the control)');
+  // HELD TO THE CAP is not IGNORED: refreshes at the same coarse QP while the rate verdict holds are the bitrate's doing
+  const capped = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 48, fr: 1, by: 20000, kb: 0, qwhy: 'rate' }, hs: [{}, {}, { refine: 1, kf: 1, kb: 20000 }, {}, {}, { refine: 1, kf: 1, kb: 20000 }] }]));
+  ok(capped.causes.some((c) => c.id === 'refine-capped' && /held to the bitrate cap/.test(c.title)) && !capped.causes.some((c) => c.id === 'refine'),
+     'refinements that come out at the same QP under the rate verdict are "held to the cap", not "ignored"');
+  ok(Q.QV === 3, 'the check is version 3: the video scene\'s frames are prepared');
+  // THE MARGINS ARE AN UNCHANGED MACHINE'S: three live runs moved a moving phase's QP by up to 4 and a recovering still
+  // phase's by up to 5 -- each must read "same", while a real change (QP 39 -> 30) still reads better
+  const qpRun = (scrollQp, restQp) => Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: scrollQp } }, { name: 'rest', secs: 6, h: { qp: restQp, fr: 1 } }]));
+  ok(Q.compare(qpRun(27, 46), qpRun(31, 51)).overall === 'same', 'QP 27 → 31 moving and 46 → 51 still: the noise of an unchanged machine, "same"');
+  ok(Q.compare(qpRun(39, 46), qpRun(30, 46)).overall === 'better', '...while QP 39 → 30 while moving is better (the control)');
+  ok(Q.compare(qpRun(30, 40), qpRun(30, 47)).overall === 'worse', '...and a still phase 7 worse is worse (the still margin is 6, not unlimited)');
+  {
+    const cs = Q.cardSource();
+    ok(/MakeVideoFrames\(\);\s*\n\s*\}/.test(cs) && /Bitmap f = vframes\[\(\(int\)\(u \* 30\)\) % VF\];/.test(cs),
+       'the video scene\'s frames are made before the card shows, and cycled at 30 a second (live, it drew 3.4 fps on a Celeron)');
+  }
+  // the keyframe-share cause itself waits for motion
+  const stillKf = Q.analyze(run([{ name: 'rest', secs: 8, h: { fr: 1, by: 60000, kb: 0 }, hs: [{}, {}, { kf: 1, kb: 58000, refine: 1 }, {}, { kf: 1, kb: 58000, refine: 1 }] }]));
+  ok(!stillKf.causes.some((c) => c.id === 'keyframes'), 'a still phase made of refinement keyframes is not a keyframe problem');
 }
 
 // ---- the card ----------------------------------------------------------------------------------------------------
@@ -225,7 +310,16 @@ const ids = (an) => an.causes.map((c) => c.id);
   const s = Q.cardScript();
   let ascii = true; for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) { ascii = false; break; }
   ok(ascii, 'the card script is ASCII (PowerShell 5.1 reads a file with no BOM as ANSI)');
-  ok(/^param\(\[string\]\$Plan.*\[double\]\$Hold = 0\)/.test(s) && /\[QCard\]::Run\(\$Plan, \$Rect, \$Lead, \$Hold\)/.test(s), 'it takes the plan, the rect, the lead and the hold, and runs the card');
+  ok(/^param\(\[string\]\$Plan.*\[double\]\$Hold = 0, \[string\]\$Stats = ""\)/.test(s) && /\[QCard\]::Run\(\$Plan, \$Rect, \$Lead, \$Hold, \$Stats\)/.test(s),
+     'it takes the plan, the rect, the lead, the hold and where to write what it drew, and runs the card');
+  {
+    // WHAT THE CARD DREW: counted per scene while its clock runs, written at its close to the path it was given
+    const cs = Q.cardSource();
+    ok(/if \(started\) painted\[i\]\+\+;/.test(cs) && /FormClosed \+= delegate \{ tick\.Stop\(\); WriteStats\(\); \};/.test(cs) && /System\.IO\.File\.WriteAllText\(statsPath, sb\.ToString\(\)\);/.test(cs),
+       'the card counts its paints per scene once started, and writes them when it closes');
+    ok(Q.CARD_STATS_NAME.test('agent-drive-qcard-0123456789abcdef.json') && !Q.CARD_STATS_NAME.test('agent-drive-qcard-0123456789abcdef.ps1') && !Q.CARD_STATS_NAME.test('notes.json'),
+       'its counts file has the card\'s own name, and only that name is ever read or deleted');
+  }
   // ITS CLOCK STARTS ON A CLICK (the agent's, on the corner it has just seen) or by itself after the hold: the first real
   // run saw the corner ~1.5 s after the card appeared, and every scene ran ~1.1 s ahead of its phase mark
   {
@@ -287,7 +381,12 @@ const ids = (an) => an.causes.map((c) => c.id);
      'while the check holds the stream, a picture cannot arm the re-pause, and one already armed does not fire');
   ok(/const click = !!grantControl && findable;/.test(serve) && /if \(seen && click && !stopped\) \{/.test(serve) && /'-Hold', click \? String\(quality\.CARD_HOLD_S\) : '0'/.test(serve),
      'the card waits for a click only when the agent may click AND knows where its corner is, and is clicked the moment the corner is seen');
-  ok(/if \(i < pl\.phases\.length - 1\) await qWait\(Date\.now\(\) \+ quality\.CARD_GONE_MS\);/.test(serve), 'a phase after the card starts once the card is gone');
+  ok(/cardUp = false;[^\n]*\n(?:\s*\/\/[^\n]*\n)*\s*await qWait\(Date\.now\(\) \+ quality\.CARD_GONE_MS\);/.test(serve), 'a phase after the card starts once the card is gone');
+  ok(/const cs = await qCardStats\(cardStatsAt\);/.test(serve) && /if \(!p \|\| !quality\.CARD_STATS_NAME\.test\(leaf\(p\)\)\) return/.test(serve) &&
+     /try \{ await runExec\('del \/q "' \+ p \+ '"', 10000\); \} catch \(_\) \{\}\s*\n\s*return out;/.test(serve),
+     'once the card has closed its counts are read, recorded, and deleted -- whatever was in them');
+  ok(/if \(cardStatsAt && !ws\.dead && quality\.CARD_STATS_NAME\.test\(leaf\(cardStatsAt\)\)\) \{ try \{ await runExec\('del \/q "' \+ cardStatsAt/.test(serve),
+     '...and a stopped check deletes a counts file it never read');
   ok(/w0\.off\(onText\); w0\.off\(onBin\);/.test(serve) && /ws\.send\(\{ type: 'trace', on: 0 \}\)/.test(serve), 'the taps come off and the trace is disarmed in the finally');
   ok(verbs.V.quality && verbs.ACTING.has('quality'), 'quality is in the verb table and counts as acting (a pause or a hold stops it)');
   const v = verbs.vet({ do: 'quality-check', stresses: ['idle'], baseline: 'a.ndjson' });

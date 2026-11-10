@@ -368,7 +368,13 @@ severe first, each `{sev, area, title, phases, evidence, fix}`, where `area` is 
 **setting** / **codec** — codec meaning ScreenMirror's own behaviour, the ones a code change improves), `notes`,
 `coverage`, `file` (the run, an ordinary trace: `node tools/trace-report.js <file> --phase scroll` in ScreenMirror
 reads any phase in full; `node core/quality.js <file> [--compare <earlier>]` re-reads it here), and with `compare`, a
-phase-by-phase **better / worse / same** past the run-to-run noise, and the causes gone and new. The room gets the
+phase-by-phase **better / worse / same** past the run-to-run noise, and the causes gone and new. `compare` judges the
+**picture as sent** (the host's numbers: the machine's) and says **delivery to the agent** beside it (behind live, gaps,
+the pointer: the agent's own link too), compares arrival figures only where both runs received frames, lists the
+phases that show the screen as it was (idle, watch, wheel) without counting them, and says when the two runs were
+made by different versions of the check (`qv`). The card writes what it drew in each scene at its close, beside its
+script; the agent reads it and deletes it, and a phase line says `(the card drew N)` -- a stream that kept up with a
+slow card is the card's rate, one that carried far fewer frames than it drew is a drop. The room gets the
 report in chat (`quiet:1` keeps it to the answer). A run takes about 1–2 minutes: through MCP it answers `pending`,
 and `ping` collects it.
 

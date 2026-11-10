@@ -6,6 +6,26 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check, after its third and fourth live runs** (check version 3):
+  - The video scene's frames are prepared before the card shows. A 4-thread Celeron drew the live-drawn scene at 3.4
+    frames a second, so the phase measured the card; prepared, it draws ~43.
+  - compare's margins are an unchanged machine's noise. The quantiser margin is 4 for moving phases and 6 for still
+    ones, and the keyframe share margin is 0.15.
+  - A quantiser at a different encode size (a watcher's window, read mode) is shown but not counted.
+  - Refinements held to the bitrate cap are named as such (`refine-capped`), not as "ignored".
+- **The quality check, after its second live run** (the same machine, half an hour later, nothing changed on it):
+  - `compare` says two things apart:
+    - the **picture as sent**, which is the machine's and decides the verdict;
+    - **delivery to the agent**, which includes the agent's own link and is said beside it.
+  - Arrival figures are compared only where both runs received frames.
+  - Latency changes need 50 ms as well as a share.
+  - A still phase's keyframe share isn't compared.
+  - The phases that show the screen as it was (idle, watch, wheel) are listed but not counted.
+  - Each run carries the check's version (`qv`), and runs from different versions say so.
+  - The test card counts what it drew in each scene and writes it at its close; the agent reads that, then deletes it. A
+    stream that kept up with a slow card is the card's frame rate. A stream that carried far fewer frames than the card
+    drew is named as a drop, with whose it was.
+  - A still phase made of refinement keyframes is no longer a keyframe problem.
 - **The quality check, after its first live run** (a headless Windows mini PC, 2026-11-09):
   - The agent's copy of the stream is held awake for the whole check. The pictures it took while waiting for the test
     card had armed the 45 s re-pause, so the last phases arrived with no frames.
