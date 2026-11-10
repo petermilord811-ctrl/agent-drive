@@ -6,6 +6,13 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check, after its third and fourth live runs** (check version 3):
+  - The video scene's frames are prepared before the card shows. A 4-thread Celeron drew the live-drawn scene at 3.4
+    frames a second, so the phase measured the card; prepared, it draws ~43.
+  - compare's margins are an unchanged machine's noise. The quantiser margin is 4 for moving phases and 6 for still
+    ones, and the keyframe share margin is 0.15.
+  - A quantiser at a different encode size (a watcher's window, read mode) is shown but not counted.
+  - Refinements held to the bitrate cap are named as such (`refine-capped`), not as "ignored".
 - **The quality check, after its second live run** (the same machine, half an hour later, nothing changed on it):
   - `compare` says two things apart:
     - the **picture as sent**, which is the machine's and decides the verdict;

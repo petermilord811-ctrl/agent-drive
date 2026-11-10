@@ -268,6 +268,20 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(!dropped.notes.some((n) => /drew only/.test(n)), '...and is not explained away as a slow card (the control)');
   const unread = Q.analyze(run([{ name: 'video', secs: 10 }]));
   ok(unread.notes.some((n) => /counts were not read back/.test(n)), 'a run with card scenes but no counts says the frame rate cannot be told from the card\'s');
+  // A DIFFERENT ENCODE SIZE IS A DIFFERENT PICTURE: a watcher's window took the encode from 1678x944 to 1920x1080 between
+  // two live runs and the quantiser rose with the pixels -- shown, not counted
+  const sizeA = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39, w: 1678, h: 944 } }]));
+  const sizeB = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 48, w: 1920, h: 1080 } }]));
+  const sc = Q.compare(sizeA, sizeB);
+  ok(sc.overall === 'same' && sc.lines.some((l) => /quantiser 39→48 \(a different encode size: not counted\).*\[encode 1678×944 → 1920×1080\]/.test(l)) &&
+     sc.notes.some((n) => /encode size changed/.test(n)), 'QP 39 → 48 across a 30% larger encode is shown, not counted, and said why');
+  const sameSize = Q.compare(Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39 } }])), Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 48 } }])));
+  ok(sameSize.overall === 'worse', '...while the same rise at the same size is worse (the control)');
+  // HELD TO THE CAP is not IGNORED: refreshes at the same coarse QP while the rate verdict holds are the bitrate's doing
+  const capped = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 48, fr: 1, by: 20000, kb: 0, qwhy: 'rate' }, hs: [{}, {}, { refine: 1, kf: 1, kb: 20000 }, {}, {}, { refine: 1, kf: 1, kb: 20000 }] }]));
+  ok(capped.causes.some((c) => c.id === 'refine-capped' && /held to the bitrate cap/.test(c.title)) && !capped.causes.some((c) => c.id === 'refine'),
+     'refinements that come out at the same QP under the rate verdict are "held to the cap", not "ignored"');
+  ok(Q.QV === 3, 'the check is version 3: the video scene\'s frames are prepared');
   // THE MARGINS ARE AN UNCHANGED MACHINE'S: three live runs moved a moving phase's QP by up to 4 and a recovering still
   // phase's by up to 5 -- each must read "same", while a real change (QP 39 -> 30) still reads better
   const qpRun = (scrollQp, restQp) => Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: scrollQp } }, { name: 'rest', secs: 6, h: { qp: restQp, fr: 1 } }]));

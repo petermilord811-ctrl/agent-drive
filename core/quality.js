@@ -385,11 +385,19 @@ function causesOf(stats, ctx) {
               'A still picture sharpens slowly after motion: QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' over the phase, a step every ~' + fmt(s.secs / h.refine) + ' s',
               'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · median QP ' + fmt(h.qp),
               'Refinement works, in small steps: after heavy motion text stays soft for several seconds. A bigger first step, or a shorter interval while the quantiser is high, would bring it back sooner.');
+        } else if (h.refine && share(Q, 'rate', n) >= 0.5) {
+          // HELD TO THE CAP, not ignored: on a real machine at full size (2026-11-10) three refinements ran and each refresh
+          // came out at QP 48-51 with the quality verdict "rate" throughout -- the refresh is a whole picture under the
+          // same bitrate ceiling as motion, so it cannot be finer than the ceiling buys
+          add('refine-capped', 'warn', 'codec', P,
+              'A still picture cannot sharpen: refinement ran ' + h.refine + '× and each refresh was held to the bitrate cap (QP ' + fmt(h.qp) + ')',
+              'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · qwhy rate in ' + Math.round(100 * share(Q, 'rate', n)) + '% of seconds · offered ' + kbps(h.rate) + ' · encode ' + fmt(h.w) + '×' + fmt(h.h),
+              'The refresh of a still screen is held to the same bitrate as motion. A refresh allowed more than the motion rate -- the uplink has room -- would let a still screen come back sharp.');
         } else {
           add('refine', 'warn', 'codec', P,
               h.refine ? 'A still picture stays coarse (QP ' + fmt(h.qp) + ') although refinement ran ' + h.refine + '×' : 'A still picture stays coarse (QP ' + fmt(h.qp) + '): the idle refinement did not run',
               'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · refine ' + h.refine + ' · rebuild ' + h.rebuild,
-              h.refine ? 'The quantiser did not come down after the refinements: the encoder may be accepting the refinement and ignoring it.'
+              h.refine ? 'The quantiser did not come down after the refinements, and the bitrate was not what held it: the encoder may be accepting the refinement and ignoring it.'
                        : 'A still screen should be refined to a low QP within a few seconds: check why the refinement pass is not firing (its QP gate and its keyframe budget).');
         }
       }
@@ -661,6 +669,12 @@ function compare(before, after) {
     // the arrival side is compared only where BOTH runs received frames: a run whose copy of the stream was paused has
     // no arrival figures for that phase, and its zeros would read as the best latency ever measured
     const bothArrived = !!(p0.arrive && p0.arrive.frames > 0 && p1.arrive && p1.arrive.frames > 0);
+    // A DIFFERENT ENCODE SIZE IS A DIFFERENT PICTURE. A watcher's window (or read mode) sets the encode: 1678×944 in one
+    // run and 1920×1080 the next (2026-11-10) put 30% more pixels under the same bitrate cap, and the quantiser rose with
+    // them -- "QP 39 -> 48" that nothing on the machine did. Shown; not counted.
+    const a0 = p0.host && p0.host.w && p0.host.h ? p0.host.w * p0.host.h : 0, a1 = p1.host && p1.host.w && p1.host.h ? p1.host.w * p1.host.h : 0;
+    const resized = !!(a0 && a1 && Math.abs(a1 - a0) > 0.1 * a0);
+    const size = resized ? Math.round(p0.host.w) + '×' + Math.round(p0.host.h) + ' → ' + Math.round(p1.host.w) + '×' + Math.round(p1.host.h) : '';
     const moves = [];
     for (const [k, label, where, dir, margin, unit, floor] of CMP) {
       if (where === 'arrive' && !bothArrived) continue;
@@ -673,12 +687,14 @@ function compare(before, after) {
       const big = rel ? Math.abs(d) > Math.max(m * Math.max(Math.abs(b0), 1), floor || 0) : Math.abs(d) > m;
       if (!big) continue;
       const good = dir === 'lower' ? d < 0 : d > 0;
+      const sizeBound = resized && k === 'qp';   // the quantiser follows the pixels it has to fit
       if (counted && where === 'arrive') { if (good) dBetter++; else dWorse++; }
-      else if (counted) { if (good) better++; else worse++; }
-      moves.push({ metric: k, label, before: b0, after: b1, better: good, where });
+      else if (counted && !sizeBound) { if (good) better++; else worse++; }
+      moves.push({ metric: k, label, before: b0, after: b1, better: good, where, sizeBound });
     }
-    rows.push({ phase: p1.name, counted, pictureBefore: p0.picture, pictureAfter: p1.picture, moves, arrival: bothArrived });
+    rows.push({ phase: p1.name, counted, pictureBefore: p0.picture, pictureAfter: p1.picture, moves, arrival: bothArrived, size });
   }
+  if (rows.some((r) => r.size)) notes.push('The encode size changed between the runs (a watcher\'s window, or read mode): the quantiser at a different size is a different picture, so it is shown and not counted.');
   const ids0 = new Set(A0.causes.map((c) => c.id)), ids1 = new Set(A1.causes.map((c) => c.id));
   const gone = A0.causes.filter((c) => !ids1.has(c.id)).map((c) => c.title);
   const fresh = A1.causes.filter((c) => !ids0.has(c.id)).map((c) => c.title);
@@ -687,7 +703,8 @@ function compare(before, after) {
   const lines = rows.map((r) => r.only ? r.phase + ': only in the new run' :
     r.phase + (r.counted ? '' : ' (the screen as it was -- not counted)') + ': ' +
     (r.pictureBefore !== r.pictureAfter ? 'picture ' + (r.pictureBefore || '?') + '→' + (r.pictureAfter || '?') + '; ' : '') +
-    (r.moves.length ? r.moves.map((m) => (m.better ? '▲ ' : '▼ ') + fmt(m)).join(', ') : 'no change past the noise') +
+    (r.moves.length ? r.moves.map((m) => (m.sizeBound ? '· ' : m.better ? '▲ ' : '▼ ') + fmt(m) + (m.sizeBound ? ' (a different encode size: not counted)' : '')).join(', ') : 'no change past the noise') +
+    (r.size ? ' [encode ' + r.size + ']' : '') +
     (r.arrival ? '' : ' (no arrival figures: one run received no frames here)'));
   const delivery = dBetter && !dWorse ? 'better' : dWorse && !dBetter ? 'worse' : dBetter || dWorse ? 'mixed' : 'same';
   return { overall, better, worse, delivery, dBetter, dWorse, phases: rows, causesGone: gone, causesNew: fresh, lines, notes,
@@ -761,7 +778,11 @@ const KF_MIN_BPS = 100000;
 // The version of the check that recorded a run, written in its meta line (`qv`); a run without one is version 1 (the
 // first live run's, before the held stream and the click-started card). Raise it whenever what the check MEASURES
 // changes, so compare can say when two runs were not measured alike.
-const QV = 2;
+//   1  the first live run: a stream that paused mid-check, a card a second ahead of the marks
+//   2  the stream held, the card started by a click, the card's counts read back
+//   3  the video scene's frames prepared: a slow machine draws it at full rate (it drew 3.4 fps before, so a version-2
+//      video phase measured the card)
+const QV = 3;
 
 module.exports = { KINDS, CARD_ORDER, plan, Recorder, ndjson, parseNdjson, phasesOf, inPhase, PH_LEAD, PH_LAG,
                    analyze, compare, report, cardScript, cardSource, CARD_NAME, CARD_STATS_NAME, MARK, markerAt, MAGIC, HEADER,
