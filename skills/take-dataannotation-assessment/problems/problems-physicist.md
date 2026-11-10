@@ -6,8 +6,8 @@
 - **Captured:** 2026-11-09 · host 34123 · sleep autonomy
 - **Live IDs:** task `1ff5229d-1531-4705-81c6-47c1f4f379af` · `project_id=01833c35-1c20-4a01-9dff-5ed039372765` · `task_response_id=01a1c003-3ce8-7159-bea5-a30949654632`
 - **Track:** Role intro = **Physics Projects assessment**; live qualification = **[Qualification] Physics Starter Assessment** (unique physics form — **not** Expert Domain Parallel)
-- **Gaps:** Formula/° OCR noise on Q1 table & Brewster AI reply — PNG assets are source of truth; Professional Experience may be multi-select (“fields”). In-assessment formula re-OCR still pending (not opened this sleep pass).
-- **Live 2026-11-10:** Browse-role bio reconfirmed (STEM · 39 hired recently; Overview / What you'll actually do / What we look for / No degree required). Did **not** Start assessment this pass.
+- **Gaps:** ° OCR still reads `300`/`37.00` for degree glyphs — PNG glyph SoT. Professional Experience may be multi-select (“fields”).
+- **Live 2026-11-10 reconnect:** Physics Starter via Browse STEM → Start (direct task URL blanked). Q1 six-step table + Q6 Brewster AI reply (`tan θ_B = n_air/n_water` → 53.0°) re-banked live.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -135,7 +135,8 @@ Good luck, and we look forward to receiving your submission!
 ## Question 1 · Forces at an Angle
 
 **Type:** mcq + explanation  
-**Title:** Question 1: Forces at an Angle
+**Title:** Question 1: Forces at an Angle  
+*Live 2026-11-10 · host 34123 · `q1-forces-table-live-20261110.png`*
 
 ### Prompt
 
@@ -143,12 +144,16 @@ Imagine a user asked the following request to an AI assistant:
 
 > Consider a 5 kg box being pushed across a rough horizontal surface. A 20 N force is applied at an angle of 30° **downward** from the horizontal, increasing the box’s contact pressure with the surface. The coefficient of kinetic friction is 0.2. What is the acceleration of the box?
 
-Three AI solutions (**Response A / B / C**) are shown side-by-side (full table on PNG). Differing key step is effective normal force:
+The following are three solutions that were returned by the AI *(host OCR may show `300` for `30°` — PNG is glyph SoT)*:
 
-| | Response A | Response B | Response C |
+| Step | Response A | Response B | Response C |
 |---|---|---|---|
-| $N$ | $mg - F_y = 39\,\mathrm{N}$ | $mg + F_y = 59\,\mathrm{N}$ | $mg = 49\,\mathrm{N}$ |
-| $a$ | $1.90\,\mathrm{m/s}^{2}$ | $1.10\,\mathrm{m/s}^{2}$ | $1.50\,\mathrm{m/s}^{2}$ |
+| 1. Vertical $F_y$ | $F_y=20\sin(30°)=10\,\mathrm{N}$ | $F_y=20\sin(30°)=10\,\mathrm{N}$ | $F_y=20\sin(30°)=10\,\mathrm{N}$ |
+| 2. Effective $N$ | $N=mg-F_y=(5\cdot9.8)-10=39\,\mathrm{N}$ | $N=mg+F_y=(5\cdot9.8)+10=59\,\mathrm{N}$ | $N=mg=5\cdot9.8=49\,\mathrm{N}$ |
+| 3. Friction $F_f$ | $F_f=\mu N=0.2\cdot39=7.8\,\mathrm{N}$ | $F_f=\mu N=0.2\cdot59=11.8\,\mathrm{N}$ | $F_f=\mu N=0.2\cdot49=9.8\,\mathrm{N}$ |
+| 4. Horizontal $F_x$ | $F_x=20\cos(30°)\approx17.32\,\mathrm{N}$ | $F_x=20\cos(30°)\approx17.32\,\mathrm{N}$ | $F_x=20\cos(30°)\approx17.32\,\mathrm{N}$ |
+| 5. Net $F_{net}$ | $F_{net}=F_x-F_f=17.32-7.8=9.52\,\mathrm{N}$ | $F_{net}=F_x-F_f=17.32-11.8=5.52\,\mathrm{N}$ | $F_{net}=F_x-F_f=17.32-9.8=7.52\,\mathrm{N}$ |
+| 6. Acceleration $a$ | $a=9.52/5=1.90\,\mathrm{m/s}^{2}$ | $a=5.52/5=1.10\,\mathrm{m/s}^{2}$ | $a=7.52/5=1.50\,\mathrm{m/s}^{2}$ |
 
 ### Question
 
@@ -168,6 +173,7 @@ In 2-3+ complete sentences, please provide your reasoning for your above selecti
 
 - `assets/physicist/q1-forces.png`
 - `assets/physicist/q1-q2.png`
+- `assets/physicist/q1-forces-table-live-20261110.png`
 
 ---
 
@@ -282,12 +288,29 @@ Next, your job is to read an AI's reply to a user's question and determine if th
 
 > Imagine you are out for a stroll on a sunny day when you encounter a lake. Unpolarized light from the sun is reflected off the lake into your eyes. However, you notice when you put on your vertically polarized sunglasses, the light reflected off the lake no longer reaches your eyes. What is the angle between the unpolarized light and the surface of the water, in degrees, measured from the horizontal? You may assume the index of refraction of air is $n_{\mathrm{air}}=1$ and the index of refraction of water is $n_{\mathrm{water}}=1.33$. Round your answer to three significant figures.
 
-### AI Response (banked)
+### AI Response
 
-- Identifies Brewster's angle; claims $\tan\theta_{B}=n_{\mathrm{air}}/n_{\mathrm{water}}$ (ratio **air/water** — verify against PNG).
-- Computes $\theta_{B}=\arctan(1/1.33)\approx 37.0^{\circ}$.
-- Converts to angle from horizontal: $90^{\circ}-37.0^{\circ}=53.0^{\circ}$.
-- **Final answer shown:** $53.0^{\circ}$.
+*Live 2026-11-10 · host 34123 · `q6-brewster-live-20261110.png` (PNG = ° glyph SoT)*
+
+Yes, I can help you solve that. The angle of reflection where light becomes perfectly polarized is called Brewster's Angle. This happens when the reflected and refracted light rays are perpendicular to each other. The formula for Brewster's Angle is:
+
+$$\tan\theta_{B}=\frac{n_{\mathrm{air}}}{n_{\mathrm{water}}}$$
+
+This is because light bends toward the medium with a lower refractive index, so the ratio is air over water.
+
+Substituting the values:
+
+$$\tan\theta_{B}=\frac{1}{1.33}$$
+
+Solving for $\theta_{B}$:
+
+$$\theta_{B}=\arctan\left(\frac{1}{1.33}\right)\approx 37.0^{\circ}$$
+
+Brewster's Angle is measured from the normal to the surface. The angle from the horizontal is:
+
+$$\theta_{\mathrm{horizontal}}=90^{\circ}-\theta_{B}=90^{\circ}-37.0^{\circ}=53.0^{\circ}$$
+
+**Final answer:** $53.0^{\circ}$
 
 ### Question
 
@@ -306,6 +329,8 @@ In 2-3+ complete sentences, please provide your reasoning for your above selecti
 
 - `assets/physicist/q5-q6-start.png`
 - `assets/physicist/q6-experience.png`
+- `assets/physicist/q6-brewster-live-20261110.png`
+- `assets/physicist/q6-brewster-end-live-20261110.png`
 
 ---
 
