@@ -275,6 +275,16 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(!dropped.notes.some((n) => /drew only/.test(n)), '...and is not explained away as a slow card (the control)');
   const unread = Q.analyze(run([{ name: 'video', secs: 10 }]));
   ok(unread.notes.some((n) => /counts were not read back/.test(n)), 'a run with card scenes but no counts says the frame rate cannot be told from the card\'s');
+  // A RATE HELD FOR A WATCHER is not an ABR that fails to rise: three of the first five live runs had a voting console
+  // reporting congestion (up to 1.0) that the relay handed to the host, which slowed the shared stream for it
+  const press = (pv, pout) => Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 40, wire: 100 }, r: { pv: [{ me: 1, p: 0, bl: 0, vote: 1 }].concat(pv), pout } }]));
+  const held4 = press([{ tag: 'vv', who: 'someone', p: 1, bl: 0, vote: 1 }], 0.6);
+  const rv4 = held4.causes.find((c) => c.id === 'rate-viewer');
+  ok(!!rv4 && rv4.area === 'viewer' && /held down for a watcher's congested link/.test(rv4.title) && /someone reported 1\.00/.test(rv4.evidence[0]) && !held4.causes.some((c) => c.id === 'rate-held'),
+     'a voting watcher at 1.0 with the pressure handed to the host: the rate is held FOR that watcher, said with who');
+  ok(press([{ tag: 'vv', p: 1, bl: 0, vote: 1 }], 0).causes.some((c) => c.id === 'rate-held'), '...but a report the relay did not hand to the host is not why (the control)');
+  ok(press([{ tag: 'vo', p: 1, bl: 0, vote: 0, hid: 1 }], 0.6).causes.some((c) => c.id === 'rate-held'), '...nor a watcher that does not vote (an off-screen tab)');
+  ok(press([], 0).causes.some((c) => c.id === 'rate-held' && /no watcher reported congestion/.test(c.fix)), '...and nobody congested at all is the ABR not rising, said so');
   // A DIFFERENT ENCODE SIZE IS A DIFFERENT PICTURE: a watcher's window took the encode from 1678x944 to 1920x1080 between
   // two live runs and the quantiser rose with the pixels -- shown, not counted
   const sizeA = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39, w: 1678, h: 944 } }]));

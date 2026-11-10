@@ -73,6 +73,10 @@ it says, phase by phase, whether the picture got better.
   which GPU and which monitors there are, read-only.
 - **A look before the check may show someone's private screen.** Use it to decide whether to start, then delete it;
   never post it. The report is the result -- say in the chat why there is no picture.
+- **"The rate is held" has two owners.** Before calling the ABR at fault, read who was congested. A voting watcher's
+  console that reported congestion the relay handed to the host (`rate-viewer`) means the host slowed the shared stream
+  for that watcher, and the fix is on their side. Only a rate held with nobody congested (`rate-held`) is the ABR not
+  rising.
 - **The MCP server learns a new verb only when it restarts** (`/mcp` → reconnect). Until then the kit's own client
   runs it: `node core/agent-join.js --host <n> --task "…" --control --shell --serve work/<visit>`, commands through
   `<visit>/cmd.json`, answers in `done.json`.

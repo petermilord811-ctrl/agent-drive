@@ -279,12 +279,19 @@ function phaseStats(p, H, R, A) {
     // the relay's per-viewer rows mark the reader's own with me:1 -- which is how "the relay shed frames" is told
     // apart into "to this agent" (this machine's own downlink) and "to somebody else watching"
     let mine = 0, mineBl = 0, others = 0;
+    // ...and the worst a VOTING watcher reported (its reading set the bar the host was given -- abrVoter in the relay),
+    // with who it was: a rate held down for a watcher's congested link is the host protecting that watcher, not an ABR
+    // that fails to rise (three of the first five live runs were that, 2026-11-10)
+    let voterP = 0, voter = '';
     for (const r of rr) for (const row of Array.isArray(r.pv) ? r.pv : []) {
       if (row && row.me) { mine = Math.max(mine, Number(row.p) || 0); mineBl = Math.max(mineBl, Number(row.bl) || 0); }
-      else if (row) others = Math.max(others, Number(row.p) || 0);
+      else if (row) {
+        others = Math.max(others, Number(row.p) || 0);
+        if (row.vote && (Number(row.p) || 0) > voterP) { voterP = Number(row.p) || 0; voter = String(row.who || row.tag || 'a watcher').slice(0, 48); }
+      }
     }
     st.relay = { drop: sum(rr, 'drop'), bl95: maxOf(rr, 'bl95'), why: hist(rr, 'why'), viewers: maxOf(rr, 'v'),
-                 mineP: mine, mineBlKB: mineBl, othersP: others };
+                 mineP: mine, mineBlKB: mineBl, othersP: others, voterP, voter, pout: maxOf(rr, 'pout') || 0 };
   }
   if (a.length) {
     st.arrive = { fr: med(a, 'fr'), bitrate: med(a, 'by') == null ? null : med(a, 'by') * 8, kf: sum(a, 'kf'),
@@ -370,12 +377,21 @@ function causesOf(stats, ctx) {
         // holding the rate -- the product's own choice) want opposite fixes, and one id merged across phases would
         // let the second overwrite the first
         const full = h.wire != null && h.wire >= 60;
-        add(full ? 'rate-link' : 'rate-held', h.qp >= 38 ? 'high' : 'warn', full ? 'link' : 'codec', P,
-            'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
-            // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 Mb/s of 1.5 Mb/s" read as nonsense
-            'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ') · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%',
+        // THREE causes now: the uplink full (the link); a WATCHER's congestion handed to the host (the relay's pressure
+        // out, and a voting watcher at >= 0.5 -- the host is slowing the shared stream for that watcher); and neither,
+        // the rate held with nobody congested (the ABR not rising: the product's own behaviour)
+        const forViewer = !full && rl && rl.voterP >= 0.5 && rl.pout > 0;
+        const id = full ? 'rate-link' : forViewer ? 'rate-viewer' : 'rate-held';
+        const evidence = 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ') · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%' +
+                         // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 of 1.5" read as nonsense
+                         (rl ? ' · watchers\' pressure to the host ' + fmt(rl.pout, 2) + (rl.voterP >= 0.5 ? ' (' + rl.voter + ' reported ' + fmt(rl.voterP, 2) + ')' : '') : '');
+        add(id, h.qp >= 38 ? 'high' : 'warn', full ? 'link' : forViewer ? 'viewer' : 'codec', P,
+            forViewer ? 'Motion is coarse: the rate is held down for a watcher\'s congested link (QP ' + fmt(h.qp) + ')'
+                      : 'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
+            evidence,
             full ? 'The uplink is full while it moves: the rate cannot rise until less is sent (keyframes first).'
-                 : 'The uplink has room (' + fmt(h.wire) + '% busy) yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
+                 : forViewer ? 'A watcher reported congestion and the stream is shared, so the host slowed for them: that watcher\'s downlink (or decoder) is the limit. Look at their connection, or let a slow watcher watch at low priority -- the host was not the cause.'
+                 : 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
       }
       if (s.still && h.qp != null && h.qp > 28 && h.qpSeen >= 3) {
         // RECOVERING SLOWLY is not STUCK. Read on a real machine as "refinement ran 2x and QP stayed 42 -- the encoder may

@@ -6,6 +6,9 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check tells a rate held for a watcher from one the ABR won't raise** (`rate-viewer`). When a voting
+  watcher reported congestion and the relay handed it to the host, the shared stream was slowed for that watcher, and
+  the check says so, naming who. Three of the first five live runs were this, not an ABR fault.
 - **The quality check, after its third and fourth live runs** (check version 3):
   - The video scene's frames are prepared before the card shows. A 4-thread Celeron drew the live-drawn scene at 3.4
     frames a second, so the phase measured the card; prepared, it draws ~43.
