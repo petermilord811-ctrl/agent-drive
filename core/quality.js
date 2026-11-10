@@ -266,6 +266,10 @@ function phaseStats(p, H, R, A) {
       refine: sum(h, 'refine'), rebuild: sum(h, 'rebuild'), ished: sum(h, 'ished'), wsmv: sum(h, 'wsmv'), uinj: sum(h, 'uinj'),
       quality: hist(h, 'qwhy'), speed: hist(h, 'swhy'), input: hist(h, 'iwhy'),
       qval: med(h, 'qval'),
+      // the quantiser's PATH through the phase, not only its middle: a still screen refining from 49 to 31 has a median
+      // of 42 and is recovering, which is a different finding from one that sits at 42 (measured, 2026-11-09)
+      qpFirst: (h.find((r) => r.qp > 0) || {}).qp || null, qpLast: (h.slice().reverse().find((r) => r.qp > 0) || {}).qp || null,
+      frames: sum(h, 'fr'), bytes: by,
     };
   }
   if (rr.length) {
@@ -370,11 +374,21 @@ function causesOf(stats, ctx) {
                  : 'The uplink has room (' + fmt(h.wire) + '% busy) yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
       }
       if (s.still && h.qp != null && h.qp > 28 && h.qpSeen >= 3) {
-        add('refine', 'warn', 'codec', P,
-            h.refine ? 'A still picture stays coarse (QP ' + fmt(h.qp) + ') although refinement ran ' + h.refine + '×' : 'A still picture stays coarse (QP ' + fmt(h.qp) + '): the idle refinement did not run',
-            'QP ' + fmt(h.qp) + ' on a still screen · refine ' + h.refine + ' · rebuild ' + h.rebuild,
-            h.refine ? 'The encoder may be accepting the refinement and ignoring it: compare QP the second after each refine.'
-                     : 'A still screen should be refined to a low QP within a few seconds: check why the refinement pass is not firing (its QP gate and its keyframe budget).');
+        // RECOVERING SLOWLY is not STUCK. Read on a real machine as "refinement ran 2x and QP stayed 42 -- the encoder may
+        // be ignoring it", when the seconds said 49 -> 42 -> 34 -> 31: every refinement landed, a step every ~3 s.
+        const fell = h.refine > 0 && h.qpFirst != null && h.qpLast != null && h.qpLast <= h.qpFirst - 5;
+        if (fell) {
+          add('recovery', 'warn', 'codec', P,
+              'A still picture sharpens slowly after motion: QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' over the phase, a step every ~' + fmt(s.secs / h.refine) + ' s',
+              'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · median QP ' + fmt(h.qp),
+              'Refinement works, in small steps: after heavy motion text stays soft for several seconds. A bigger first step, or a shorter interval while the quantiser is high, would bring it back sooner.');
+        } else {
+          add('refine', 'warn', 'codec', P,
+              h.refine ? 'A still picture stays coarse (QP ' + fmt(h.qp) + ') although refinement ran ' + h.refine + '×' : 'A still picture stays coarse (QP ' + fmt(h.qp) + '): the idle refinement did not run',
+              'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · refine ' + h.refine + ' · rebuild ' + h.rebuild,
+              h.refine ? 'The quantiser did not come down after the refinements: the encoder may be accepting the refinement and ignoring it.'
+                       : 'A still screen should be refined to a low QP within a few seconds: check why the refinement pass is not firing (its QP gate and its keyframe budget).');
+        }
       }
       // -- speed
       if ((h.wire != null && h.wire >= 70) || share(S, 'send', n) + share(S, 'senddrop', n) >= 0.3) {
@@ -402,13 +416,16 @@ function causesOf(stats, ctx) {
         add('choppy', 'warn', 'link', P, 'Motion is choppy: ' + fmt(h.fr) + ' of ' + fmt(h.fps) + ' frames a second, paced down by the ABR',
             'frames ' + fmt(h.fr) + '/' + fmt(h.fps) + ' · swhy paced', 'The frame rate was lowered for the link: the cause is the rate and the link above.');
       }
-      if (h.keyShare != null && h.keyShare >= 0.5 && h.kf >= 2) {
-        const forced = h.refine + h.rebuild;
+      // A share of NOTHING is not a finding: a still phase that sends a few KB can be "70% keyframes" from one refresh.
+      // So it needs volume (KF_MIN_BPS), and the keyframes are attributed by count -- the GOP accounts for frames/gop of
+      // them, refinement and rebuilds for theirs, and the rest were asked for or inserted by the encoder itself.
+      if (h.keyShare != null && h.keyShare >= 0.5 && h.kf >= 2 && h.bytes * 8 / Math.max(1, s.secs) >= KF_MIN_BPS) {
+        const forced = h.refine + h.rebuild, gopKf = h.gop > 0 ? Math.floor(h.frames / h.gop) : 0, other = Math.max(0, h.kf - forced - gopKf);
         add('keyframes', h.keyShare >= 0.7 ? 'high' : 'warn', 'codec', P,
             'Keyframes are ' + Math.round(100 * h.keyShare) + '% of what is sent',
-            h.kf + ' keyframes · ' + h.refine + ' from refinement, ' + h.rebuild + ' from encoder rebuilds, the rest periodic (GOP ' + fmt(h.gop) + ') or asked for by a viewer',
+            h.kf + ' keyframes · ' + h.refine + ' from refinement, ' + h.rebuild + ' from encoder rebuilds, ' + gopKf + ' from the GOP (' + fmt(h.gop) + ' frames), ' + other + ' asked for or inserted',
             forced >= h.kf / 2 ? 'Most are forced by refinement/rebuilds: those are the product\'s own choices -- spend fewer.'
-                               : 'Most are periodic or requested: a longer GOP, or find who asks for them (a resync, a viewer joining).');
+                               : 'Most are neither the GOP nor the product\'s own: find who asks for them (a viewer\'s resync, a viewer joining) or whether the encoder inserts them.');
       }
       if (h.gop && h.fps && h.gop < 2 * h.fps) {
         add('gop', 'warn', 'codec', P, 'A keyframe is forced every ' + fmt(h.gop) + ' frames', 'GOP ' + fmt(h.gop) + ' at ' + fmt(h.fps) + ' fps',
@@ -457,7 +474,9 @@ function causesOf(stats, ctx) {
         add('bursty', 'warn', 'link', P, 'Delivery is bursty: frames come in clumps', 'gap p95 ' + fmt(a.gap95) + ' ms against a median of ' + fmt(a.gap50) + ' ms',
             'Jitter, not delay -- a different fault from a slow link: look for a full uplink or a busy relay socket.');
       }
-      if (P === 'pointer' && a.mv > 0) {
+      // ...only when frames REACHED the agent in this phase: a paused copy of the stream gets no cursor updates either
+      // (the relay sends the pointer only to viewers it streams to), and "nothing came back" would be about the agent
+      if (P === 'pointer' && a.mv > 0 && a.frames > 0) {
         if (!a.rttn) add('no-echo', 'info', 'input', P, 'The pointer moved but no cursor position came back to the agent', a.mv + ' moves sent, 0 matched',
             'Real-cursor mode streams no position, or this relay does not send the agent the pointer: the round trip was not measured.');
         else if (a.rtt95 != null && a.rtt95 > 200) {
@@ -477,6 +496,27 @@ function causesOf(stats, ctx) {
         'still: ' + rest.map((s) => s.name).join(', ') + ' sharp · moving: ' + hard.map((s) => s.name).join(', ') + ' coarse',
         'The encoder\'s settings are fine; the limit is what the rate (or the link) allows while the picture changes.');
     for (const s of hard.slice(1)) out.get('motion-only').phases.includes(s.name) || out.get('motion-only').phases.push(s.name);
+  }
+  // CROSS-PHASE: KEYFRAMES NOBODY EXPLAINS. On a real machine (2026-11-09) a keyframe came every 2-3 s whenever anything
+  // moved, with GOP 300, no refinement, no rebuild and no drops -- each a whole picture, half the bytes while only the
+  // pointer moved. No single phase shows it as a share; the interval across the moving phases does.
+  {
+    const mv = stats.filter((s) => !s.still && s.host && s.host.frames > 0);
+    let kf = 0, secs = 0, explained = 0;
+    for (const s of mv) {
+      const h = s.host;
+      kf += h.kf; secs += Math.max(0, s.secs - PH_LEAD / 1000);
+      explained += h.refine + h.rebuild + (h.gop > 0 ? Math.floor(h.frames / h.gop) : 0);
+    }
+    const other = kf - explained;
+    if (other >= 3 && secs > 0 && secs / other <= 5) {
+      const g = mv.find((s) => s.host.gop > 0);
+      add('kf-unexplained', 'warn', 'codec', mv[0].name,
+          'A keyframe every ~' + fmt(secs / other, 1) + ' s while the picture moves, which the GOP, refinement and rebuilds do not explain',
+          other + ' of ' + kf + ' keyframes in ' + Math.round(secs) + ' s of motion · GOP ' + fmt(g ? g.host.gop : null) + ' frames · refine and rebuild counted out',
+          'Each is a whole picture. Find who asks for them -- a viewer\'s resync or rejoin (the relay\'s keyframe requests) -- or whether the encoder inserts them itself (a software encoder may not hold the GOP it is given).');
+      for (const s of mv.slice(1)) out.get('kf-unexplained').phases.includes(s.name) || out.get('kf-unexplained').phases.push(s.name);
+    }
   }
   void ctx;
   return [...out.values()].sort((x, y) => SEV[x.sev] - SEV[y.sev] || y.phases.length - x.phases.length);
@@ -505,6 +545,11 @@ function analyze(recs, opts) {
                    : 'A Linux host never emits the trace, and an older Windows host may not: only the agent\'s own arrival side was measured, so causes on the machine itself cannot be named.' });
   }
   if (!frames) notes.push('No video reached the agent during the check -- every arrival figure is empty. The stream may have been paused for it, or the host stopped capturing.');
+  else {
+    // a phase in which the host encoded and NOTHING reached the agent: its arrival side is missing, not "0 ms behind"
+    const starved = stats.filter((s) => s.arrive && !s.arrive.frames && s.host && s.host.frames > 0).map((s) => s.name);
+    if (starved.length) notes.push('No video reached the agent in ' + starved.join(', ') + ' while the host was encoding: the arrival figures for ' + (starved.length > 1 ? 'those phases' : 'it') + ' (behind live, gaps, the pointer) are missing -- its copy of the stream was paused.');
+  }
   if (!R.length && H.length) notes.push('No relay records: an older relay, so backlog and shedding were not measured.');
   if (stats.some((s) => s.name === 'pointer' && s.host && s.host.wsmv > 0)) notes.push('The pointer phase\'s moves went over the WebSocket: that is the agent\'s path -- a person\'s console sends them by UDP, so "wspath" here is not a finding.');
   const worst = causes.filter((c) => c.sev !== 'info');
@@ -531,7 +576,7 @@ function phaseLine(s) {
     if (lim && lim !== 'none') bits.push('quality limit: ' + lim);
     if (sp && sp !== 'none' && sp !== 'idle') bits.push('speed limit: ' + sp);
   } else bits.push('no host records');
-  if (a) {
+  if (a && a.frames > 0) {
     if (a.exc95 != null) bits.push('behind ' + f(a.exc95) + ' ms');
     if (s.name === 'pointer' && a.rtt95) bits.push('pointer ' + f(a.rtt95) + ' ms');
   }
@@ -624,14 +669,14 @@ function cardScript() {
   // here-string closing '@ must start one.
   const cs = cardSource().split(/\r?\n/).filter((l) => l.trim() && !/^\s*\/\//.test(l)).map((l) => l.replace(/^\s+/, '').replace(/\s+$/, '')).join('\n');
   return [
-    'param([string]$Plan = "text:8", [string]$Rect = "", [double]$Lead = 0.6)',
+    'param([string]$Plan = "text:8", [string]$Rect = "", [double]$Lead = 0.6, [double]$Hold = 0)',
     "$ErrorActionPreference = 'Stop'",
     // read already: PowerShell parses the whole file before it runs a line, so the file can go now
     'try { Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue } catch {}',
     "Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'",
     cs,
     "'@",
-    '[QCard]::Run($Plan, $Rect, $Lead)',
+    '[QCard]::Run($Plan, $Rect, $Lead, $Hold)',
     '',
   ].join('\r\n');
 }
@@ -639,9 +684,16 @@ function cardScript() {
 // the agent waits for on the screen, so phase marks start from the card being VISIBLE rather than from a guess.
 const MARK = { color: '#ff00ff', inset: 10, size: 24 };
 function markerAt(rect) { return { x: rect[0] + MARK.inset + MARK.size / 2, y: rect[1] + rect[3] - MARK.inset - MARK.size / 2 }; }
+// How long the card waits for the click on its corner that starts its clock, before it starts by itself; and how long
+// the agent waits after the card's last scene before the next phase (the card closes 0.3 s after it, and the screen it
+// uncovers repaints whole).
+const CARD_HOLD_S = 8, CARD_GONE_MS = 1500;
+// A phase must send at least this much (bits a second) for its keyframe SHARE to mean anything.
+const KF_MIN_BPS = 100000;
 
 module.exports = { KINDS, CARD_ORDER, plan, Recorder, ndjson, parseNdjson, phasesOf, inPhase, PH_LEAD, PH_LAG,
-                   analyze, compare, report, cardScript, cardSource, CARD_NAME, MARK, markerAt, MAGIC, HEADER };
+                   analyze, compare, report, cardScript, cardSource, CARD_NAME, MARK, markerAt, MAGIC, HEADER,
+                   CARD_HOLD_S, CARD_GONE_MS, KF_MIN_BPS };
 
 // A run read again, here, with no visit: the same summary the check gave, or the comparison with an earlier run.
 if (require.main === module) {

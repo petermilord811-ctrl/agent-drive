@@ -62,10 +62,36 @@ it says, phase by phase, whether the picture got better.
 - **Do not run it while someone is in the middle of something.** The card covers the screen for about a minute.
 - Compare only like with like: the same phases, from the same place. Run-to-run noise is real (the margins in
   `compare` are there for it); one run is evidence, not proof -- run twice before claiming a small change.
+- **Check the raw seconds before you report a cause.** `node core/quality.js <file> --json`, or ScreenMirror's
+  `tools/trace-report.js <file> --phase <name>`. The first live run's summary held two lines its seconds did not
+  support (both fixed in the reading since): "no cursor came back" while the agent's own copy of the stream was paused,
+  and "refinement ignored" for a quantiser that was stepping 49 → 42 → 34.
+- **A capable GPU can still mean a software encoder.** `hw:0` on a machine with a GPU that encodes H.264 (Intel UHD,
+  for one) means the host is not using it: the machine's Health events say how it captures ("capturing via …" --
+  GDI capture forces the software encoder). A headless machine whose screens are virtual displays is the case to
+  suspect. With the run-commands consent, `Get-CimInstance Win32_VideoController` and `WmiMonitorID` (root\wmi) say
+  which GPU and which monitors there are, read-only.
+- **A look before the check may show someone's private screen.** Use it to decide whether to start, then delete it;
+  never post it. The report is the result -- say in the chat why there is no picture.
+- **The MCP server learns a new verb only when it restarts** (`/mcp` → reconnect). Until then the kit's own client
+  runs it: `node core/agent-join.js --host <n> --task "…" --control --shell --serve work/<visit>`, commands through
+  `<visit>/cmd.json`, answers in `done.json`.
 
 ## Evidence
 
 The check, its causes and its comparison are exercised offline by `tests/quality.js` (a synthetic run with known
 faults, each with its control; the real card compiled with PowerShell 5.1 on Windows and its marker found where the
-agent looks). A live run's numbers belong here once one has been done on a real machine -- add the date, the kind of
-machine and what it found.
+agent looks).
+
+**First live run, 2026-11-09**: a headless Windows 11 mini PC (a 4-thread Celeron, Intel UHD graphics, both screens
+virtual displays), the full suite with keyboard-and-mouse and run-commands, 87 s, every record kind present (84 host,
+86 relay, 87 arrival seconds, 578 frames), the card seen. What it found, each checked against the raw seconds:
+- the stream encoded in **software** (encode p95 ~40 ms against a 33 ms frame): scrolling at ~15 fps, video at ~5;
+- a watcher's console window 910 rows tall set the encode to 84% of the screen (`viewport`);
+- motion at QP 37–41 on ~2.9 Mb/s offered while the uplink was ~1% busy (the rate, not the network);
+- a keyframe every 2–3 s whenever anything moved, at GOP 300, with no refinement, rebuild or drops behind them;
+- after heavy motion a still screen recovering in ~3 s refinement steps (QP 49 → 42 → 34).
+It also found five faults in the check itself, fixed after it: the agent's stream paused itself mid-check (pictures
+taken while waiting for the card armed the re-pause), the card ran ~1.1 s ahead of the phase marks (its corner was
+seen late; it now starts on a click there), the pointer phase began while the card was still closing, and two
+readings (recovery taken for "ignored", a keyframe share of almost nothing).

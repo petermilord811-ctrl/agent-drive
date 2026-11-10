@@ -112,7 +112,9 @@ function run(spec) {
       const at = t + s * 1000;
       recs.push(Object.assign({ c: 'h', ms: 1000, fr: 30, fps: 30, by: 100000, kb: 10000, kf: 0, scale: 1000, qp: 24, wire: 200, hw: 1,
                                 enc95: 8, cap95: 30, rate: 4e6, link: 0, gp: 3e6, gop: 300, refine: 0, rebuild: 0, drop: 0, rsk: 0, rc: 0,
-                                w: 1920, h: 1080, mode: 'h264', bits: 8, breq: 0, qwhy: 'none', swhy: 'none', iwhy: 'idle', t: at + 120 }, ph.h || {}));
+                                w: 1920, h: 1080, mode: 'h264', bits: 8, breq: 0, qwhy: 'none', swhy: 'none', iwhy: 'idle', t: at + 120 }, ph.h || {},
+                                // per second: ph.hs[s - 1] overrides that one second (a quantiser stepping down, a keyframe now and then)
+                                (ph.hs && ph.hs[s - 1]) || {}));
       recs.push(Object.assign({ c: 'r', drop: 0, bl95: 0, v: 1, why: 'none', pv: [{ me: 1, p: 0, bl: 0 }], t: at + 140 }, ph.r || {}));
       recs.push(Object.assign({ c: 'a', fr: 30, kf: 0, by: 100000, gap50: 33, gap95: 40, exc50: 20, exc95: 40, mv: 0, rttn: 0, rtt50: 0, rtt95: 0, t: at }, ph.a || {}));
     }
@@ -161,6 +163,33 @@ const ids = (an) => an.causes.map((c) => c.id);
   const slow = Q.analyze(run([{ name: 'pointer', secs: 5, a: { mv: 30, rttn: 20, rtt50: 240, rtt95: 380 } }]));
   ok(slow.causes.some((c) => c.id === 'pointer' && /380 ms/.test(c.title)), 'a 380 ms pointer round trip is named');
 
+  // ---- what the first REAL run (2026-11-09) taught the reading ----
+  // the agent's own copy of the stream paused: no frames reached it, so nothing about the pointer coming back can be
+  // said -- the relay sends cursor updates only to viewers it streams to. Said as missing evidence, not as a finding.
+  const paused = Q.analyze(run([{ name: 'idle', secs: 5 }, { name: 'pointer', secs: 6, a: { mv: 30, rttn: 0, fr: 0, by: 0, gap50: 0, gap95: 0, exc50: 0, exc95: 0 } }]));
+  ok(!paused.causes.some((c) => c.id === 'no-echo'), 'no frames reached the agent: "no cursor came back" is NOT claimed (it was, on the first real run)');
+  ok(paused.notes.some((n) => /No video reached the agent in pointer while the host was encoding/.test(n)), '...the missing arrival side is said instead, for that phase');
+  ok(!/behind \d+ ms/.test(paused.phases[1].line) && /behind \d+ ms/.test(paused.phases[0].line), '...and its phase line prints no "behind 0 ms" that nothing measured (the phase that got frames still does)');
+  // a still screen whose quantiser steps DOWN with each refinement is recovering slowly -- not ignoring them
+  const steps = [49, 49, 49, 42, 42, 42, 34, 31].map((qp, i) => ({ qp, fr: 1, by: 9000, kb: 0, refine: i === 3 || i === 6 ? 1 : 0, kf: i === 3 || i === 6 ? 1 : 0 }));
+  const rec2 = Q.analyze(run([{ name: 'rest', secs: 8, hs: steps }]));
+  const rv = rec2.causes.find((c) => c.id === 'recovery');
+  ok(!!rv && /QP 49 → 31/.test(rv.title) && rv.area === 'codec' && !rec2.causes.some((c) => c.id === 'refine'),
+     'a quantiser stepping 49 → 31 with each refinement is SLOW RECOVERY, not refinement ignored (' + (rv && rv.title) + ')');
+  const flat = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 42, fr: 1, by: 9000, kb: 0 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
+  ok(flat.causes.some((c) => c.id === 'refine' && /although refinement ran 2×/.test(c.title)) && !flat.causes.some((c) => c.id === 'recovery'),
+     '...while one that stays at 42 through two refinements is still "refinement did nothing" (the control)');
+  // keyframes every 2 s while the picture moves, at GOP 300 with no refinement or rebuild: named across the phases
+  const every2 = Array.from({ length: 10 }, (_, i) => (i % 2 ? { kf: 1, kb: 40000 } : {}));
+  const kfr = Q.analyze(run([{ name: 'scroll', secs: 10, hs: every2 }, { name: 'video', secs: 10, hs: every2 }]));
+  const ku = kfr.causes.find((c) => c.id === 'kf-unexplained');
+  ok(!!ku && /every ~(1\.[5-9]|2\.\d) s/.test(ku.title) && ku.phases.join() === 'scroll,video', 'a keyframe every ~2 s that no GOP, refinement or rebuild explains is named across the moving phases (' + (ku && ku.title) + ')');
+  const rare = Q.analyze(run([{ name: 'scroll', secs: 10, hs: [{}, {}, {}, { kf: 1, kb: 40000 }] }, { name: 'video', secs: 10 }]));
+  ok(!rare.causes.some((c) => c.id === 'kf-unexplained'), '...and one keyframe in 20 s is not (the control)');
+  // a share of next to nothing is not a finding: a still phase sending a few KB, most of it one refresh
+  const tiny = Q.analyze(run([{ name: 'text', secs: 6, h: { fr: 1, by: 2000, kb: 0 }, hs: [{}, {}, { kf: 1, kb: 1900 }, { kf: 1, kb: 1900 }] }]));
+  ok(!tiny.causes.some((c) => c.id === 'keyframes'), 'keyframes that are most of ~2 KB a second are not called a keyframe problem');
+
   // coverage: no host records is said FIRST, and a refused trace names the relay
   const refused = Q.analyze([{ c: 'meta', t: 0 }, { c: 'a', ev: 'trace-refused', d: 'x', t: 1500 }, { c: 'a', ev: 'phase', name: 'idle', on: 1, t: 2000 },
                              { c: 'a', fr: 30, by: 1000, t: 3500 }, { c: 'a', fr: 30, by: 1000, t: 4500 }, { c: 'a', ev: 'phase', name: 'idle', on: 0, t: 6000 }]);
@@ -196,7 +225,17 @@ const ids = (an) => an.causes.map((c) => c.id);
   const s = Q.cardScript();
   let ascii = true; for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) { ascii = false; break; }
   ok(ascii, 'the card script is ASCII (PowerShell 5.1 reads a file with no BOM as ANSI)');
-  ok(/^param\(\[string\]\$Plan/.test(s) && /\[QCard\]::Run\(\$Plan, \$Rect, \$Lead\)/.test(s), 'it takes the plan, the rect and the lead, and runs the card');
+  ok(/^param\(\[string\]\$Plan.*\[double\]\$Hold = 0\)/.test(s) && /\[QCard\]::Run\(\$Plan, \$Rect, \$Lead, \$Hold\)/.test(s), 'it takes the plan, the rect, the lead and the hold, and runs the card');
+  // ITS CLOCK STARTS ON A CLICK (the agent's, on the corner it has just seen) or by itself after the hold: the first real
+  // run saw the corner ~1.5 s after the card appeared, and every scene ran ~1.1 s ahead of its phase mark
+  {
+    const cs = Q.cardSource();
+    ok(/MouseDown \+= delegate \{ Begin\(\); \};/.test(cs) && /if \(!started && clock\.Elapsed\.TotalSeconds >= holdMax\) Begin\(\);/.test(cs),
+       'the card starts its schedule on a click, or by itself once the hold is over');
+    ok(/started = holdMax <= 0;/.test(cs) && /double T\(\) \{ return started \? clock\.Elapsed\.TotalSeconds - startAt : 0; \}/.test(cs),
+       '...with no hold it starts on appearing (an agent that may not click), and until it starts its first scene stands still');
+    ok(/if \(t >= total \+ 0\.3\) \{ Close\(\); return; \}/.test(cs) && Q.CARD_GONE_MS >= 1000, 'it closes 0.3 s after its last scene, and the next phase waits CARD_GONE_MS for the screen to repaint');
+  }
   ok(/Remove-Item -LiteralPath \$PSCommandPath/.test(s.split('Add-Type')[0]), 'it deletes its own file BEFORE compiling (nothing is left on the machine)');
   ok(/\r\n'@\r\n/.test(s) && !/^\s*\/\//m.test(s.split("@'")[1].split("'@")[0]), 'the C# rides a here-string closed at a line start, with its comment lines left out');
   ok(s.length < 20000, 'and it is small enough for a few writes (' + s.length + ' bytes)');
@@ -213,7 +252,11 @@ const ids = (an) => an.causes.map((c) => c.id);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-qcard-'));
     const png = path.join(dir, 'video.png');
     const ps1 = path.join(dir, 'snap.ps1');
-    fs.writeFileSync(ps1, s.replace(/try \{ Remove-Item[^\r\n]*/, '').replace('[QCard]::Run($Plan, $Rect, $Lead)', '[QCard]::Snap("video", 2.5, 800, 600, "' + png + '")'));
+    // EVERY Run line becomes the offscreen Snap, whatever its arguments: a replacement that misses it (the call grew a
+    // fourth argument once) runs the real card -- a window over this machine's screen for the length of its plan
+    const snapped = s.replace(/try \{ Remove-Item[^\r\n]*/, '').replace(/\[QCard\]::Run\([^)\r\n]*\)/g, '[QCard]::Snap("video", 2.5, 800, 600, "' + png + '")');
+    ok(!/\[QCard\]::Run\(/.test(snapped), 'the compile check renders offscreen only: no Run line is left to open a window');
+    fs.writeFileSync(ps1, snapped);
     const r = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ps1], { encoding: 'utf8', timeout: 120000 });
     if (r.error && r.error.code === 'ENOENT') console.log('  (no powershell.exe here: the compile check is skipped)');
     else {
@@ -237,7 +280,14 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(/else if \(op === 0x2 && binTaps\.length\)/.test(serve) && /onBinary: \(fn\) => \{ binTaps\.push\(fn\); \}/.test(serve), 'binary frames reach a binary tap (and only when one listens)');
   ok(/traceAskAt && Date\.now\(\) - traceAskAt < 3000\) traceRefusedAt = Date\.now\(\);\s*\n\s*else if \(m\.id == null && REFUSAL\.test\(why\)\) relayOld\(\);/.test(serve),
      'a refused trace switch is the check\'s to report -- it does not silence the agent\'s chat as an "old relay"');
-  ok(/clearTimeout\(repauseTimer\); setPaused\(false\);/.test(serve) && /pauseSoon\(\);   \/\/ the stream pauses again/.test(serve), 'the stream is resumed for the check and paused again after');
+  ok(/streamHeld\+\+; clearTimeout\(repauseTimer\); setPaused\(false\);/.test(serve) && /streamHeld = Math\.max\(0, streamHeld - 1\);\s*\n\s*pauseSoon\(\);   \/\/ the stream pauses again/.test(serve),
+     'the stream is resumed and HELD for the check, and let go and paused again after');
+  // ...and held means the pictures it takes cannot pause it: the first real run lost its last two phases to exactly that
+  ok(/const pauseSoon = \(\) => \{\s*\n\s*clearTimeout\(repauseTimer\);\s*\n\s*if \(streamHeld\) return;/.test(serve) && /!ws\.dead && !stopped && !streamHeld\) setPaused\(true\)/.test(serve),
+     'while the check holds the stream, a picture cannot arm the re-pause, and one already armed does not fire');
+  ok(/const click = !!grantControl && findable;/.test(serve) && /if \(seen && click && !stopped\) \{/.test(serve) && /'-Hold', click \? String\(quality\.CARD_HOLD_S\) : '0'/.test(serve),
+     'the card waits for a click only when the agent may click AND knows where its corner is, and is clicked the moment the corner is seen');
+  ok(/if \(i < pl\.phases\.length - 1\) await qWait\(Date\.now\(\) \+ quality\.CARD_GONE_MS\);/.test(serve), 'a phase after the card starts once the card is gone');
   ok(/w0\.off\(onText\); w0\.off\(onBin\);/.test(serve) && /ws\.send\(\{ type: 'trace', on: 0 \}\)/.test(serve), 'the taps come off and the trace is disarmed in the finally');
   ok(verbs.V.quality && verbs.ACTING.has('quality'), 'quality is in the verb table and counts as acting (a pause or a hold stops it)');
   const v = verbs.vet({ do: 'quality-check', stresses: ['idle'], baseline: 'a.ndjson' });

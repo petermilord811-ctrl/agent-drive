@@ -354,10 +354,13 @@ judges **each phase on its own seconds** — so "fine at rest, falls apart under
 
 The test card is one PowerShell file (its C#, [core/desk/qcard.cs](../../core/desk/qcard.cs), compiled there) written
 to `C:\Users\Public`, started **as the person at the desktop** by `launch`, and waited for on the screen (its magenta
-corner) so the phase marks start when it is visible. It deletes its own file as it starts, closes itself after its
-last scene, and **Esc closes it at once**; the room is told before it appears. Its scenes run back to back. A stopped
-check closes it. While the check runs the agent's copy of the stream is un-paused (it is a viewer like any other for
-those seconds) and paused again after.
+corner). With the keyboard and mouse, the agent **clicks that corner the moment it sees it, and the card's clock starts
+on the click** -- so its scenes and the phase marks begin together (without that consent, or with the corner off this
+visit's screen, it starts on appearing, a moment ahead of the marks). It deletes its own file as it starts, closes
+itself 0.3 s after its last scene -- the next phase waits until the screen it uncovers has repainted -- and **Esc closes
+it at once**; the room is told before it appears. Its scenes run back to back. A stopped check closes it. While the
+check runs the agent's copy of the stream is un-paused and **held** (it is a viewer like any other for those seconds;
+the pictures the check takes cannot pause it), and paused again after.
 
 The answer: `verdict` (the main cause and what to do first), `phases` (a line each: the picture's word — sharp / soft /
 coarse — QP and size, frames, the uplink, what limited it, how far behind live the frames arrived), `causes` (most
