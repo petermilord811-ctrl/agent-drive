@@ -60,7 +60,14 @@ Do **not** wait for the operator to say “parallel.” On every Part A fetch/re
 3. On match → **copy verified bank verbatim** into this slug; stamp `### Parallel: {source} · {date} · stem-matched`. Do not re-OCR long A/B.
 4. On mismatch / no verified source → live OCR that leaf only.
 5. **Always live-fetch** (never parallel):
-   - **Tell us about the most meaningful…** (domain-templated write-in) — every role
+   - **Tell us about the most meaningful…** (domain-templated write-in) — **every role**, every track.
+     The `{Domain}-related` token changes per assessment (e.g. Radiology / Economics / Data Science /
+     Surgical or Perioperative / Internal Medicine / **Medical**). Ellipsis-only stubs (`most meaningful…`) are
+     **not done** — bank the full sentence live. Operator 2026-11-10: never assume shared wording.
+   - **Section 3: Your Background** intro + experience checklist — also domain-specific
+     (e.g. “familiarity with the **Radiology Domain**” / **Medical Domain** / **Internal Medicine Domain**
+     + matching checkboxes). Never parallel Section 3 across assessments — Physician ≠ IM ≠ Surgical ≠ Radiology.
+     Operator 2026-11-10.
    - Section 2 domain string + Goal example cue + Haiku version
    - Experience / Degrees / credential radios / specialization lists
    - Bios / track line / pay
@@ -181,7 +188,7 @@ Then: generate `answer.md` (best-correct + `drafts/meaning.json`) → parse/vali
 |------|-----------------|------|
 | Software Engineer | `nearly-full` | Q5 **pseudocode**; Verify URL fixed; languages fixed |
 | Generalist | `nearly-full` | Instructions expanded; Q1 `$246.64`; Q6 verbatim; plain MD structure 2026-11-08 |
-| Data Scientist | nearly-full | 2026-11-08 structured OCR bank (99588); Q1 chart re-cropped full; Claude setup URL captured; optional Q4 digit re-check vs PNG before `full` |
+| Data Scientist | verified | 2026-11-10 operator — Q4 digit spot-check matched; Section 3 / meaningful live; 99588+34123 bank |
 | (+101 others) | incomplete / stub | full verbatim Bio1+Bio2+assessment |
 
 - Click stack fixed 2026-11-07: zone-safe `locate-click.py` (sidebar/content split, vertical radio columns, Next footer pick, role refuses col-0 default). See [`CLICK.md`](./CLICK.md).
