@@ -2,14 +2,15 @@
 
 ### Bank
 
-- **captureStatus:** nearly-full
-- **Captured:** 2026-11-08 · host **34123**
+- **captureStatus:** verified
+- **Verified:** 2026-11-10 · operator (Section 3 + meaningful live; Q5–Q7 titles live; Experience branches)
+- **Captured:** 2026-11-08 · host **34123** · refreshed 2026-11-10
 - **Assessment:** Radiology Starter Assessment V4.1 / **Radiologists Projects** assessment
 - **IDs:** `task_response_id=01a1bcf2-15db-768c-9291-de599e667b2d` · `project_id=a99b0c81-4d05-4d08-b811-3f9ccebf3b91`
 - **Rule:** never Submit while fetching
 - **Targeting:** Medical filter → **Radiologist** titled card → verify **Radiologists Projects assessment** before Start (**not** Medical Projects / Physician / Medical Starter `01a1b7f8`).
 - **Expand rule:** Selecting a Professional Experience option expands the gate; leaf count/sidebar **branches by option** (see [Experience branches](#experience-branches)).
-- **Gaps:** Q5–Q7 titles assumed parallel Finance/Generalist (Olympics / London Fog / complex prompt) — re-catch verbatim.
+- **Gaps:** none blocking — Q5–Q7 titles + Section 3/meaningful live 2026-11-10; A/B bodies Parallel from verified Economist/Generalist (stem-matched).
 - **Re-fetch 2026-11-08:** Track **Radiologists Projects** ✅; Professional Experience intro + CPA-style note + **8** radios ✅ (`rad_experience_*_refetch.png`). Q4 sandwich spot-seen.
 - **Shared track:** Sonographer / Imaging Specialist verified same Radiology Starter (`01a1bcf2` / Radiologists Projects).
 
@@ -181,9 +182,9 @@ Intro: education/experience for project assignment; **does not impact scoring**.
 | 9 | Question 2 — time-travel |
 | 10 | Question 3 — NYT first issue Response A/B |
 | 11 | Question 4 — sandwich sonnet Response A/B (“Write a love poem about someone longing for a sandwich…”) |
-| 12–14 | Questions 5–7 — parallel Finance/Generalist (re-catch titles) |
+| 12–14 | Questions 5–7 — live titles 2026-11-10 (Olympics / Expert Fog / general prompt+rubrics) |
 | 15 | Section 3: Your Background |
-| 16 | Tell us about the most meaningful… |
+| 16 | Tell us about the most meaningful **Radiology-related**… *(always live — never parallel)* |
 | 17 | (Optional) Any other comments? — **do not Submit** |
 
 Credential notes (US Radiologist cohort): expired/inactive OK; if never US-licensed, change prior answer.
@@ -211,8 +212,34 @@ Triggered by options **2–8** (all non–US-Board-Certified). Verified each rad
 | 12 | Did you get the model to produce…? |
 | 13 | Share Your Conversation |
 | 14 | Section 3: Your Background |
-| 15 | Tell us about the most meaningful… |
+| 15 | Tell us about the most meaningful **Radiology-related**… *(always live — never parallel)* |
 | 16 | (Optional) Any other comments? — **do not Submit** |
+
+### Section 3 · Your Background (live 2026-11-10 · host 34123 · Branch A Step 15)
+
+**Header:** Section 3: Your Background
+
+> That's it for the test questions! We appreciate you taking the time to complete this application. To wrap up, we have just a few quick background questions to help us get a better understanding of your familiarity with the **Radiology Domain**.
+
+#### Academic and Professional Experience
+
+Please indicate your primary field(s) of experience (select any that apply):
+
+1. [ ] Radiologist (any specialization)
+2. [ ] Radiologic Technologist
+3. [ ] MRI Technologist
+4. [ ] Nuclear Medicine Technologist
+5. [ ] Sonographer
+6. [ ] Radiologist Assistant
+7. [ ] Other
+
+**HARD:** Section 3 framing + experience checklist are **Radiology-specific** — never parallel from Economics/Finance/Law/Coding Section 3. Asset: `assets/radiologist/section3-background-live-20261110.png`
+
+### Background write-in (live 2026-11-10 · host 34123 · Branch A Step 16)
+
+> Tell us about the most meaningful Radiology-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!
+
+**HARD:** domain token is **Radiology-related** on this role — never copy Economics/Finance/Law/etc. wording. Asset: `assets/radiologist/section3-meaningful-live-20261110.png`
 
 ### Step 10 · Conversation leaf (verbatim gist)
 
