@@ -90,6 +90,10 @@
 //   FILES    fetch {path,out} . send {file,to,overwrite}  -- a file from / onto the machine, in chunks, said in the room
 //            camera {out,device} . audio {out,seconds}  -- one webcam photo / up to 7 s of what it is PLAYING: the
 //                                     room is asked every time and only a yes allows it (all four need --shell)
+//   QUALITY  quality {phases,secs,out,compare}  the picture-quality check (core/quality.js): the diagnostics trace on
+//                                     this socket while the screen is stressed phase by phase -- a test card (--shell),
+//                                     the pointer (--control) -- each phase judged, the causes named, a run file written;
+//                                     compare:<an earlier run> says whether it got better
 //   RELAY    humanize {text,mode,style,ultra}  rewrite via HTTP POST /api/humanize (x-sm-join-key = SM_JOIN_KEY;
 //                                     omit text = GET ready). Never HUMANIZE_API_KEY / Bearer.
 //            aicheck {text}            AI detect via POST /api/detect (omit text = GET ready)
@@ -140,6 +144,7 @@ const actionTree = require('./action-tree.js');   // what the panel's tree shows
 const live = require('../vision/liveness.js');   // judge a capture's liveness (blank / frozen) by measuring; pure, offline
 const signoff = require('./signoff.js');   // does an operator's chat reply mean "sign off"? pure, offline, tested
 const desk = require('./desk.js');               // windows, apps and controls by name, run on the host through exec; tested
+const quality = require('./quality.js');         // the picture-quality check: phases, the trace recorder, the causes; pure, tested
 const relayAddr = require('./relay-addr.js');   // a relay's last IP, dialled when its name stops resolving; tested
 const consent = require('./consent.js');   // what a reply to `confirm` means: yes / no / unclear; pure, offline, tested
 const mission = require('./mission.js');   // the job's big plan: milestones, proof, replanning out loud; pure, tested
@@ -391,7 +396,9 @@ function open(url, via) {
       reject(err);
     });
     let buf = Buffer.alloc(0), up = false, deadReason = null, deadCb = null;
-    const waiters = [], queue = [], taps = [];
+    // binTaps: who wants the binary frames too -- nobody, except while the `quality` check is recording (core/quality.js
+    // reads each video frame's 20-byte header for its arrival record; the picture itself is never decoded here)
+    const waiters = [], queue = [], taps = [], binTaps = [];
     // A TAP SEES EVERY MESSAGE, including the ones nothing asked for. `waitFor` only ever finds what
     // it was looking for, so a refusal the client never expected -- the relay answers one per message
     // it will not forward -- piled up unread while the run carried on pressing keys into nothing.
@@ -450,8 +457,10 @@ function open(url, via) {
         if (op === 0x8) { try { sock.end(); } catch (_) {} return; }
         if (op === 0x9) { try { sock.write(frame(payload, 0xa)); } catch (_) {} continue; }
         // Binary frames are the video a `select` starts. Nothing here decodes them; they are skipped so
-        // the stream cannot drown the JSON this script is actually reading.
+        // the stream cannot drown the JSON this script is actually reading -- unless a binary tap is listening
+        // (the quality check counts them by their header).
         if (op === 0x1) { try { deliver(JSON.parse(payload.toString('utf8'))); } catch (_) {} }
+        else if (op === 0x2 && binTaps.length) { for (const t of binTaps) { try { t(payload); } catch (_) {} } }
       }
     });
     const frame = (body, opcode) => {
@@ -473,6 +482,9 @@ function open(url, via) {
       // ...and at once, for a redial: a graceful close on a half-open socket waits for a FIN that may never come
       kill: () => { try { sock.destroy(); } catch (_) {} died('closed here, to dial again'); },
       on: (fn) => { taps.push(fn); },
+      // ...and a tap that is only for a while (the quality check's), taken off again; onBinary(fn) sees each binary frame
+      off: (fn) => { let i; while ((i = taps.indexOf(fn)) >= 0) taps.splice(i, 1); while ((i = binTaps.indexOf(fn)) >= 0) binTaps.splice(i, 1); },
+      onBinary: (fn) => { binTaps.push(fn); },
       waitFor: (pred, ms) => new Promise((res) => {
         const i = queue.findIndex(pred);
         if (i >= 0) return res(queue.splice(i, 1)[0]);
@@ -826,13 +838,19 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
   const relayOld = () => { if (relayDegraded) return; relayDegraded = true;
     say('[.] this relay predates the agent chat/progress verbs -- they will not reach the watchers (driving still works; restart the relay to turn them on)'); };
   const REFUSAL = /\b(may not|not allowed|not permitted)\b/i;   // a GRANT_VERBS refusal, NOT a revoke
+  // THE QUALITY CHECK'S TRACE SWITCH is the one verb sent on purpose to relays that may predate it (a relay lets a
+  // grant send `trace` from viewer 2.243.0). Its refusal is the same "may not", and read as relayOld it would silence
+  // the agent's chat for the rest of the visit. So a refusal inside a few seconds of asking is the trace's: it is
+  // recorded (traceRefusedAt) for the check to report, and nothing else is degraded.
+  let traceAskAt = 0, traceRefusedAt = 0;
 
   // Re-armed on every socket by attachWatch(). A genuine revoke/expiry or a host-access refusal STOPS the
   // run; a verb-refusal on an older relay only degrades; a plain socket drop reconnects (ws.dead).
   const attachWatch = (w) => w.on((m) => {
     if (m && m.type === 'access-denied') {
       const why = String(m.why || '');
-      if (m.id == null && REFUSAL.test(why)) relayOld();
+      if (m.id == null && REFUSAL.test(why) && traceAskAt && Date.now() - traceAskAt < 3000) traceRefusedAt = Date.now();
+      else if (m.id == null && REFUSAL.test(why)) relayOld();
       else stopNow(why || 'the relay refused it');
     } else if (m && m.type === 'host-gone') stopNow('that machine went away');
   });
@@ -2139,6 +2157,193 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     const roomNote = (text) => { try { ws.send({ type: 'chat', text }); fs.appendFileSync(chatFile, JSON.stringify({ ts: Date.now(), name: selfName, text, mine: true, sent: true }) + '\n'); } catch (_) {} };
     const leaf = (p) => String(p || '').split(/[\\/]/).pop() || String(p || '');
     const saveLocal = (out, buf) => { const f = path.resolve(String(out)); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); return f; };
+
+    // ---- THE PICTURE-QUALITY CHECK (core/quality.js) -------------------------------------------------------------
+    // Arms the diagnostics trace on THIS socket, puts the screen through the planned phases, records what the host and
+    // the relay say each second plus this client's own arrival record (from each video frame's header -- nothing is
+    // decoded), then judges each phase and names the causes. The run is written as an ordinary trace file, so
+    // ScreenMirror's tools/trace-report.js reads any phase of it in full (--phase <name>).
+    const qWait = async (end) => { while (!stopped && !ws.dead && Date.now() < end) await sleep(Math.max(1, Math.min(250, end - Date.now()))); };
+    // the pointer in a circle around the middle of the screen, ~30 moves a second -- each remembered, so a cursor update
+    // that comes back at the same place closes the round trip (core/quality.js Recorder)
+    const qPointer = async (end, rec) => {
+      const rx = 0.12, ry = 0.12 * SW / SH, t0 = Date.now();
+      for (let k = 0; !stopped && !ws.dead && Date.now() < end; k++) {
+        const a = (Date.now() - t0) / 2000 * 2 * Math.PI;
+        const x = Math.min(0.99999, Math.max(0, 0.5 + rx * Math.cos(a))), y = Math.min(0.99999, Math.max(0, 0.5 + ry * Math.sin(a)));
+        ws.send({ type: 'mouse', action: 'move', x, y });
+        rec.noteMove(x, y, Date.now());
+        if (k % 3 === 0) showPointer(x, y);
+        await sleep(33);
+      }
+    };
+    // the wheel down for half the phase and back UP by as many notches -- the page ends where it started
+    const qWheel = async (end, cmd) => {
+      const a = (cmd.x != null || cmd.lx != null) ? aimAt(cmd) : { ok: true, x: SW / 2, y: SH / 2 };
+      if (!a.ok) return a;
+      const x = Math.min(a.x / SW, 0.99999), y = Math.min(a.y / SH, 0.99999);
+      showPointer(x, y, true);
+      ws.send({ type: 'mouse', action: 'move', x, y }); await sleep(80);
+      const half = Math.max(1, Math.floor((end - Date.now()) / 2 / 170));
+      let n = 0;
+      for (const delta of [-120, 120]) {
+        for (let i = 0; i < half && !stopped && !ws.dead; i++) { ws.send({ type: 'mouse', action: 'wheel', x, y, delta }); showScroll(x, y, delta); n++; await sleep(170); }
+      }
+      return { ok: true, notches: n };
+    };
+    // THE TEST CARD: written to the machine as one PowerShell file (C# compiled there), started as the person at the
+    // desktop over the work area of the screen this visit sees, then waited for ON THE SCREEN -- its magenta corner --
+    // so the phase marks start from the card being visible. It deletes its own file once read, closes itself after its
+    // last scene, and Esc closes it at any time.
+    const qCardStart = async (card, rec) => {
+      let rect = null;
+      const wl = await deskOp('windows', {}, 30000);
+      if (wl && wl.ok) {
+        deskLearnScreen(wl);
+        const m = (Array.isArray(wl.monitors) ? wl.monitors : []).find((mm) => mm && Array.isArray(mm.rect) && deskOrigin &&
+          Number(mm.rect[0]) === deskOrigin[0] && Number(mm.rect[1]) === deskOrigin[1]);
+        if (m) rect = (Array.isArray(m.work) && m.work.length >= 4 ? m.work : m.rect).slice(0, 4).map((v) => Math.round(Number(v) || 0));
+      }
+      if (stopped) return { ok: false, why: stopped };
+      const name = 'agent-drive-qcard-' + crypto.randomBytes(8).toString('hex') + '.ps1';
+      const b64 = Buffer.from(quality.cardScript(), 'utf8').toString('base64');
+      // C:\Users\Public: readable by the person the card runs as even when this agent runs as SYSTEM (whose own temp
+      // folder the person cannot read); the host's own folder if that is refused
+      let full = null, why = '';
+      for (const where of [['C:', 'Users', 'Public', name].join(String.fromCharCode(92)), name]) {
+        const step = Math.max(4, desk.writeChunk('windows', where) || 4);
+        let r = { ok: false, why: 'nothing written' };
+        for (let i = 0; i === 0 || i < b64.length; i += step) {
+          if (stopped) return { ok: false, why: stopped };
+          r = await deskOp('write', { path: where, b64: b64.slice(i, i + step), append: i > 0, at: i > 0 ? (i / 4) * 3 : undefined });
+          if (!r.ok) break;
+        }
+        if (r.ok) { full = r.full || where; break; }
+        why = r.why || why;
+      }
+      if (!full) return { ok: false, why: 'the test card could not be put on the machine: ' + why };
+      const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', full, '-Plan', card.plan, '-Lead', '0.6'];
+      if (rect) args.push('-Rect', rect.join(','));
+      const la = await deskOp('launch', { app: 'powershell.exe', args, wait: 8000, focus: true }, 45000);
+      if (!la || !la.ok) return { ok: false, why: 'the test card did not start: ' + ((la && la.why) || 'no answer') };
+      const pid = la.started && Number(la.started.pid) > 0 ? Number(la.started.pid) : null;
+      let seen = false;
+      if (rect && deskOrigin) {
+        const mk = quality.markerAt(rect), x = Math.round(mk.x - deskOrigin[0]), y = Math.round(mk.y - deskOrigin[1]);
+        if (x >= 6 && y >= 6 && x < SW - 6 && y < SH - 6) {
+          const until = Date.now() + 15000;
+          while (!stopped && Date.now() < until) {
+            frame = null;
+            const v = await evaluate({ any: { rect: { x: x - 6, y: y - 6, w: 12, h: 12 }, is: quality.MARK.color } });
+            if (v.ok) { seen = true; break; }
+            await sleep(250);
+          }
+        }
+      }
+      if (!seen) await sleep(1500);   // not seen: give it the compile time, and say the marks may be a moment off
+      rec.event('card', seen ? 'the test card is on the screen' : 'the test card was started; its corner was not seen, so its scenes may sit up to a second off the phase marks',
+                Date.now(), { pid, seen, rect });
+      return { ok: true, pid, seen, file: full };
+    };
+    const qualityRun = async (cmd) => {
+      let before = null;
+      if (cmd.compare) {
+        try { before = quality.parseNdjson(fs.readFileSync(path.resolve(String(cmd.compare)), 'utf8')); }
+        catch (e) { return { ok: false, why: 'cannot read the earlier run ' + cmd.compare + ': ' + e.message }; }
+        if (!before.some((r) => r.ev === 'phase')) return { ok: false, why: cmd.compare + ' is not a quality-check run (it has no phases)' };
+      }
+      const can = { control: grantControl, shell: grantShell, windows: null };
+      const spec = typeof cmd.phases === 'string' ? cmd.phases.split(/[\s,]+/).filter(Boolean) : cmd.phases;
+      let pl = quality.plan(spec, can, cmd.secs);
+      if (pl.ok && pl.card) {
+        const os = await deskOs();
+        if (!os.ok) return { ok: false, why: 'could not tell what the machine runs (the test card needs Windows): ' + os.why };
+        can.windows = os.os === 'windows';
+        if (!can.windows) pl = quality.plan(spec, can, cmd.secs);
+      }
+      if (!pl.ok) return Object.assign({ refused: true }, pl, { ok: false });
+      const say1 = (t) => { if (cmd.intent == null && !cmd.quiet && !lastDrive.tree) driveStatus(t); };
+      const total = pl.total + (pl.card ? 8 : 0) + 3;
+      if (!cmd.quiet) {
+        roomNote('🔬 **Picture-quality check** on this machine: ' + pl.phases.map((p) => p.name).join(' → ') + ' — about ' + total + ' s. ' +
+                 (pl.card ? 'A test pattern will cover the screen for about ' + Math.round(pl.card.secs) + ' s: it closes by itself, and Esc closes it now. ' : '') +
+                 (pl.phases.some((p) => p.name === 'pointer' || p.name === 'wheel') ? 'The pointer will move by itself for a few seconds. ' : '') +
+                 'Nothing on the machine is changed.');
+      }
+      say1('Checking the picture quality');
+      const rec = new quality.Recorder(Date.now());
+      rec.meta({ by: 'agent-drive quality', host: String(HOST), relay: String(dialed.relay || RELAY || '').replace(/^wss?:\/\//, '').replace(/\/.*$/, ''),
+                 started: new Date().toISOString(), screen: SW + 'x' + SH, control: grantControl ? 1 : 0, shell: grantShell ? 1 : 0,
+                 phases: pl.phases.map((p) => p.name + ':' + p.secs).join(',') });
+      const w0 = ws;
+      const onText = (m) => rec.text(m, Date.now()), onBin = (b) => rec.binary(b, Date.now());
+      w0.on(onText); w0.onBinary(onBin);
+      // THE STREAM, for as long as the check runs: this client pauses its copy the rest of the time (setPaused)
+      clearTimeout(repauseTimer); setPaused(false);
+      const arm = () => { traceAskAt = Date.now(); try { ws.send({ type: 'trace', on: 1 }); } catch (_) {} };
+      traceRefusedAt = 0; arm();
+      const tick = setInterval(() => rec.tick(Date.now()), 1000);
+      // re-armed every few seconds: the host forgets on a reconnect, and an older relay's last-writer-wins switch may
+      // have been turned off by somebody else's trace ending (a relay from 2.243.0 tells the host everyone's OR)
+      const rearm = setInterval(() => { if (!traceRefusedAt) arm(); }, 5000);
+      let cardPid = null, cardUp = false, cardWhy = '', stoppedWhy = '', wheel = null;
+      try {
+        await sleep(1500);   // the first records -- and the refusal, from a relay that predates agent tracing
+        if (traceRefusedAt) rec.event('trace-refused', 'the relay answered the trace switch with "an agent may not do that" -- a relay older than ScreenMirror 2.243.0', Date.now());
+        for (let i = 0; i < pl.phases.length; i++) {
+          if (stopped || ws.dead || ws !== w0) { stoppedWhy = stopped || 'the connection to the machine dropped'; break; }
+          const ph = pl.phases[i], k = quality.KINDS[ph.name];
+          if (pl.card && i === pl.card.first) {
+            say1('Picture-quality check: putting the test card on the screen');
+            const c = await qCardStart(pl.card, rec);
+            if (c.ok) { cardPid = c.pid; cardUp = true; }
+            else { cardWhy = c.why; rec.event('card-failed', c.why, Date.now()); }
+          }
+          if (k.card && !cardUp) continue;   // the card never came up: its scenes cannot run, the rest still can
+          say1('Picture-quality check: ' + ph.name + ' (' + (i + 1) + ' of ' + pl.phases.length + ')');
+          if (ph.name === 'watch' && !cmd.quiet) roomNote('🔬 Recording for ' + Math.round(ph.secs) + ' s: now do what looks bad — scroll, drag a window, play the video.');
+          const end = Date.now() + ph.secs * 1000;
+          rec.phase(ph.name, true, Date.now(), { secs: ph.secs });
+          if (ph.name === 'pointer') await qPointer(end, rec);
+          else if (ph.name === 'wheel') { wheel = await qWheel(end, cmd); if (wheel && !wheel.ok) rec.event('wheel-failed', wheel.why, Date.now()); }
+          await qWait(end);
+          rec.phase(ph.name, false, Date.now());
+          if (cardUp && (i === pl.phases.length - 1 || !quality.KINDS[pl.phases[i + 1].name].card)) cardUp = false;   // it closes itself
+        }
+        if (!stoppedWhy && (stopped || ws.dead)) stoppedWhy = stopped || 'the connection to the machine dropped';
+      } finally {
+        clearInterval(tick); clearInterval(rearm);
+        rec.tick(Date.now());
+        if (!traceRefusedAt) { try { ws.send({ type: 'trace', on: 0 }); } catch (_) {} }
+        traceAskAt = 0;
+        w0.off(onText); w0.off(onBin);
+        pauseSoon();   // the stream pauses again once the pictures stop
+        // a check that was STOPPED takes its card with it; one that finished leaves it to close itself a moment later
+        if (stoppedWhy && cardPid && !ws.dead) { try { await runExec('taskkill /PID ' + cardPid + ' /T /F', 10000); } catch (_) {} }
+      }
+      const recs = rec.records();
+      const stamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+$/, '');
+      let file = '';
+      try { file = saveLocal(cmd.out ? String(cmd.out) : path.join(dir, 'quality-' + HOST + '-' + stamp + '.ndjson'), Buffer.from(quality.ndjson(recs), 'utf8')); }
+      catch (e) { file = ''; say('[!] the quality run could not be written: ' + e.message); }
+      const an = quality.analyze(recs);
+      const cmp = before ? quality.compare(quality.analyze(before), an) : null;
+      if (cardWhy) an.notes.unshift('The test card did not come up (' + cardWhy + '), so its scenes were not run.');
+      if (stoppedWhy) an.notes.unshift('The check was stopped (' + stoppedWhy + '): the phases it reached are judged, the rest are missing.');
+      const text = quality.report(an, cmp);
+      if (!cmd.quiet) roomNote(text.length > 1900 ? text.slice(0, 1880) + '…' : text);
+      say1('Picture-quality check done');
+      const worst = an.causes.filter((c) => c.sev !== 'info');
+      return { ok: !stoppedWhy, why: stoppedWhy || undefined, file, verdict: an.verdict,
+               phases: an.phases.map((s) => s.line),
+               causes: an.causes.slice(0, 10).map((c) => ({ id: c.id, sev: c.sev, area: c.area, title: c.title, phases: c.phases, evidence: c.evidence.slice(0, 3), fix: c.fix })),
+               notes: an.notes.length ? an.notes : undefined, coverage: an.coverage,
+               compare: cmp ? { overall: cmp.overall, summary: cmp.summary, phases: cmp.lines } : undefined,
+               skipped: pl.skipped.length ? pl.skipped : undefined, card: pl.card ? { seen: !!cardPid, why: cardWhy || undefined } : undefined,
+               next: worst.length ? 'Fix the main cause, then run quality again with compare:"' + (file || '<this run>') + '" to see whether it got better.'
+                                  : 'Nothing to fix from here: if it still looks bad to someone, run the check from where they are, or have them record a trace (Ctrl+K → Diagnostics).',
+               read: file ? 'node tools/trace-report.js "' + file + '" --phase <name> in ScreenMirror reads any phase in full; node core/quality.js "' + file + '" re-reads this summary' : undefined };
+    };
 
     // INTO THE CHANGE RECORD (core/undo.js reads what a command changed; this keeps it). A file `send` put there is
     // recorded as the file it made -- read through the same module, so its undo is that module's careful delete
@@ -3831,6 +4036,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           }
         } else if (cmd.do === 'mission') {           // the job's big plan: milestones, proof, replanning out loud
           await missionOp(cmd);
+        } else if (cmd.do === 'quality') {           // the picture-quality check: stress, trace, causes (core/quality.js)
+          reply(await qualityRun(cmd));
         } else reply({ ok: false, why: 'unknown command "' + cmd.do + '"' });
       } catch (e) { reply({ ok: false, why: (e && e.message) || String(e) }); }
       // AN ACTION ON A DEAD LINE DID NOT ARRIVE (or not all of it): the relay dropped while it was sent -- a send cannot tell,

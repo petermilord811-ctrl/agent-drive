@@ -6,6 +6,19 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The picture-quality check** (`quality`, [core/quality.js](core/quality.js), skill
+  [diagnose-screen-quality](skills/diagnose-screen-quality/README.md)): one command arms ScreenMirror's diagnostics
+  trace on the agent's own socket, puts the screen through named stresses — the screen as it is, a test card's still
+  text, the same text scrolling, a window dragged over it, full-screen moving colour, scene cuts, the card still again,
+  the pointer — and judges each phase on its own seconds. It names the causes, most severe first, each with its
+  numbers, where it lives (link / machine / viewer / setting / codec) and the one change worth making, then one
+  verdict. `compare:<an earlier run>` says phase by phase whether a change made it better. The run is an ordinary
+  trace file (ScreenMirror's `tools/trace-report.js --phase <name>` reads it); `node core/quality.js <file>` re-reads
+  it here. The test card ([core/desk/qcard.cs](core/desk/qcard.cs)) is compiled on the machine, runs as the person at
+  the desktop, deletes its own file, closes itself, and Esc closes it. Needs a relay from ScreenMirror 2.243.0 for the
+  host's half (an older one refuses the switch; the check says so and judges the arrival side alone).
+- A skill's README may say `access: control, shell`: intake asks for it at the door, whatever words the request used.
+- The WebSocket client can tap binary frames (`onBinary`) and take a tap off again (`off`).
 - CI tests Node 22 and 24 (Node 20 reached its end of life), with the current checkout and setup-node actions;
   the kit asks for Node ≥ 22.
 - `node kit.js contribute` lists every changed file correctly (the first one lost a character in the pull request).

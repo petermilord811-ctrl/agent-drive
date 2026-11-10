@@ -31,7 +31,7 @@ const needs = (text, c, s, t) => {
 // ---- skills(): the library, read the way `node kit.js skills` lists it
 ok(SK.length >= 15 && SK.every((s) => s.slug && s.name && typeof s.when === 'string' && Array.isArray(s.tags) && typeof s.run === 'string'),
    'skills() reads every skill as {slug, name, when, tags, run} (' + SK.length + ')');
-ok(SK.every((s) => Object.keys(s).join(',') === 'slug,name,when,tags,run'), 'a skill is exactly {slug, name, when, tags, run}');
+ok(SK.every((s) => Object.keys(s).join(',') === 'slug,name,when,tags,run,access' && Array.isArray(s.access)), 'a skill is exactly {slug, name, when, tags, run, access}');
 ok(!SLUGS.has('_template') && !SLUGS.has('README.md'), 'skills/_template and skills/README.md are not skills');
 ok(SK.map((s) => s.slug).join() === SK.map((s) => s.slug).sort().join(), 'skills come sorted by slug');
 const sudoku = SK.find((s) => s.slug === 'solve-a-sudoku');
@@ -354,6 +354,20 @@ const fx = kit(['fill in the form on 10004', '--json'], { SM_SKILLS_DIR: lib });
 let fxo = null;
 try { fxo = JSON.parse(fx.stdout); } catch (_) {}
 ok(fxo && fxo.skill && fxo.skill.slug === 'fill-a-form' && fxo.skill.run === 'node skills/fill-a-form/fill-form.js ./work form.json', 'kit.js intake reads the library SM_SKILLS_DIR names');
+
+// A SKILL'S OWN `access:` -- what it cannot work without, asked for at the door. "Check why the picture is blurry" reads as
+// watching, but the quality check needs the pointer and the test card: without this, a second Allow card a minute in.
+{
+  const q = P('connect 10004 and check why the picture is blurry');
+  ok(q.skill && q.skill.slug === 'diagnose-screen-quality' && q.needs.control && q.needs.shell && !q.needs.terminal,
+     'the quality skill\'s access: control + shell are asked for from its README (' + show(q) + ')');
+  ok(/control \(the diagnose-screen-quality skill needs it\), shell \(the diagnose-screen-quality skill needs it\)/.test(q.why), '...and the reason names the skill');
+  const sticky = P('connect 10004 and read my sticky notes');
+  ok(sticky.skill && sticky.skill.slug === 'work-through-sticky-notes' && !sticky.needs.shell, 'a skill with no access: line asks for nothing extra (the control)');
+  const fxq = intake.parse('connect 10004 and check the picture', [{ slug: 'pic', name: 'Check the picture', when: 'the picture', tags: ['picture'], run: '', access: ['shell', 'nonsense'] }]);
+  ok(fxq.needs.shell && !fxq.needs.control, 'only the listed access is asked for, and a word that is no consent is ignored');
+  ok(intake.skills(path.join(KIT, 'skills')).find((s) => s.slug === 'diagnose-screen-quality').access.join() === 'control,shell', 'skills() reads access: from the frontmatter');
+}
 
 console.log(ran.length ? '  the shell round trip ran in: ' + ran.join(', ') : '  no sh or PowerShell here: the shell round trip was skipped');
 console.log((fail ? 'FAIL' : 'ok') + ' intake: ' + pass + '/' + (pass + fail));
