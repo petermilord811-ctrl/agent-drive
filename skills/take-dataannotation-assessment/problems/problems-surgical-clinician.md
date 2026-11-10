@@ -12,9 +12,10 @@
   - **Opts 1–2** (US Board-Certified / US MD without Surgical specialty) → **19** leaves · Licensure + Assessment + Background (**no** Conversation)
   - **Opts 3–6** (US APP / nurse / pharmacist / other clinical) → **hybrid ~23** · Licensure + Assessment + **Conversation** + Background (Sections 1–4)
   - **Opts 7–15** (outside-US / degree / student / None) → **17** · Assessment + Conversation + Background (**no** Licensure; keeps Specialization)
-- **Gaps:** Q1–Q7 verbatim; exact hybrid step count label; Pharmacist/other-clinical confirm same as nurse.
+- **Gaps:** Q1–Q7 verbatim; Pharmacist/other-clinical confirm same as nurse.
+- **Live 2026-11-10:** task `ca593f18…` / `01a1bd0d` · **hybrid 23** · Specialization **5 opts** + **Surgery** · **Section 4** intro + experience checklist live (**Surgical and Perioperative Domain**).
 - **Specialization vs IM:** Surgical list is **5** domain options (Anesthesiology / Orthopedics / Otolaryngology / Surgery / Other) — **not** the IM 10-option list.
-- **Domain note:** Background leaf is **Surgical or Perioperative-related** (not generic).
+- **Domain note:** Background leaf is **Surgical or Perioperative-related** (not generic). Section 4 framing never parallel from IM/Radiology.
 - **Shared track:** Surgical Medicine Expert / Surgeon expected same Starter (`01a1bd0d`) after track verify.
 
 ### Role
@@ -30,6 +31,10 @@
 2. [Step 1 · Instructions](#step-1--instructions)
 3. [Step 2 · Your Professional Experience](#step-2--your-professional-experience)
 4. [Branch A · US Board-Certified (19 leaves)](#branch-a--us-board-certified-19-leaves)
+5. [Branch Hybrid · US APP/nurse path (23 leaves)](#branch-hybrid--us-appnurse-path-23-leaves)
+6. [Step 3 · Your Medical Specialization](#step-3--your-medical-specialization)
+7. [Section 4 · Your Background](#section-4--your-background)
+8. [Branch B · Conversation path (17 leaves)](#branch-b--conversation-path-17-leaves)
 
 ---
 
@@ -173,11 +178,13 @@ Intro: education/experience for Surgical and Perioperative domain assignment; **
 | 18 | Tell us about the most meaningful **Surgical or Perioperative-related** course or experience… |
 | 19 | (Optional) Any other comments? — **do not Submit** |
 
-### Step 3 · Your Medical Specialization
+## Step 3 · Your Medical Specialization
+
+*Live 2026-11-10 · host 34123 · Step 3 of 23 (hybrid) · Surgery selected*
 
 **Q:** Which of the following options best describes your specialization?
 
-**Choices (verified 2026-11-08 · Branch B view):**
+**Choices:**
 
 1. Anesthesiology
 2. Orthopedics
@@ -188,14 +195,74 @@ Intro: education/experience for Surgical and Perioperative domain assignment; **
 ### Assets
 
 - `assets/surgical-clinician/surg_specialization.png`
+- `assets/surgical-clinician/surg_specialization-live-20261110.png`
 
-### Step 18 · Background (verbatim)
+## Background write-in (verbatim)
+
+*Branch A Step 18 / Hybrid Step 22 · live 2026-11-10*
 
 > Tell us about the most meaningful Surgical or Perioperative-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!
+
+**HARD:** domain token **Surgical or Perioperative-related**. Asset: `assets/surgical-clinician/section4-meaningful-live-20261110.png`
 
 ### Assets
 
 - `assets/surgical-clinician/surg_s18_background.png`
+- `assets/surgical-clinician/section4-meaningful-live-20261110.png`
+
+---
+
+## Branch Hybrid · US APP/nurse path (23 leaves)
+
+*Live 2026-11-10 · host 34123 · Experience opts 3–6 path · task `01a1bd0d`*
+
+Licensure **and** Conversation **and** Background (Section **4**, not 3).
+
+| Step | Label |
+|------|--------|
+| 1 | Instructions |
+| 2 | Your Professional Experience |
+| 3 | Your Medical Specialization |
+| 4 | Section 1: Verifying your Medical Licensure |
+| 5 | State of Licensure |
+| 6 | License Number |
+| 7 | Public Licensing Directory Link |
+| 8 | Supporting document (optional) |
+| 9 | Anything else to add (optional) |
+| 10 | Section 2: Assessment Questions (Q1) |
+| 11–16 | Questions 2–7 |
+| 17 | Section 3: Conversation: Challenging… |
+| 18 | Attached Files |
+| 19 | Did you get the model to produce…? |
+| 20 | Share Your Conversation |
+| 21 | Section 4: Your Background |
+| 22 | Tell us about the most meaningful **Surgical or Perioperative-related**… |
+| 23 | (Optional) Any other comments? — **do not Submit** |
+
+**HARD:** On this path Background is **Section 4** (Conversation is Section 3). Experience checklist still domain-specific — live-fetch; never parallel IM/Radiology Section 3.
+
+## Section 4 · Your Background
+
+*Live 2026-11-10 · host 34123 · Branch Hybrid Step 21 of 23*
+
+**Header:** Section 4: Your Background
+
+> That's it for the test questions! We appreciate you taking the time to complete this application. To wrap up, we have just a few quick background questions to help us get a better understanding of your familiarity with the **Surgical and Perioperative Domain**.
+
+#### Academic and Professional Experience
+
+Please indicate your primary field(s) of experience (select all that apply)
+
+1. [ ] Medicine (MD, DO, MBBS, or equivalent)
+2. [ ] Nursing / Advanced Clinical Practice (e.g., NP, PA)
+3. [ ] Biology / Biological Sciences
+4. [ ] Chemistry / Biochemistry
+5. [ ] Health Sciences / Public Health
+6. [ ] Physics / Medical Physics
+7. [ ] Pharmacology / Pharmacy
+8. [ ] Other (explain in the box below)
+
+**HARD:** framing token is **Surgical and Perioperative Domain** — never parallel from Radiology/Internal Medicine Section 3. Asset: `assets/surgical-clinician/section4-background-live-20261110.png`
 
 ---
 

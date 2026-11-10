@@ -7,10 +7,12 @@
 - **Leaves:** 18 · `assets/physician/sidebar-inventory.json`
 - **Assessment:** Medical Starter / **Medical Projects** assessment
 - **IDs:** `task_response_id=01a1b7f8-6f90-73db-a5d5-af78f2bb4479` · `project_id=2278b968-d80a-4fac-8f44-3cc702fb2edf`
-- **Gaps:** Credential leaf field prompts OCR-truncated; Section 2 Q2–Q7 parallel Finance/Generalist (Q1 Doyle Brunson verified). Re-catch Supporting document note / license field labels before `full`.
+- **Live 2026-11-10:** Section 3 Background + **Medical Domain** experience checklist + meaningful **Medical-related** write-in live (host 34123). Q5–Q7 titles live (Olympics / Expert Fog London Fog diabetes / general prompt+rubrics).
+- **Gaps:** Credential leaf field prompts still OCR-truncated; Section 2 A/B bodies Parallel from verified Generalist/Economist (stem-matched). Stopped before Submit.
 - **Re-fetch 2026-11-08:** Track **Medical Projects** ✅; Experience **14** radios full list ✅ (`phys_experience_*_refetch.png`); Branch A credentials sidebar (18 leaves) when US MD/DO selected.
 - **Rule:** never Submit while fetching (stopped at Step 18 Submit footer)
 - **Targeting:** Medical filter → **Physician** titled card → verify **Medical Projects assessment** before Start.
+- **Domain note:** Background leaf uses **Medical Domain** / **Medical-related** wording (not Radiology / not Internal Medicine / not Surgical). Section 3 never parallel across domains.
 
 ### Role
 
@@ -27,7 +29,7 @@
 4. [Steps 3–8 · Section 1 Credentials](#steps-3-8--section-1-credentials)
 5. [Step 9 · Section 2 / Question 1](#step-9--section-2--question-1)
 6. [Steps 10–15 · Questions 2–7](#steps-10-15--questions-27)
-7. [Steps 16–17 · Section 3 Background](#steps-16-17--section-3-background)
+7. [Steps 16–17 · Section 3 Background](#steps-16-17--section-3-background) (Medical Domain checklist + Medical-related meaningful)
 8. [Step 18 · Optional comments](#step-18--optional-comments)
 
 ---
@@ -158,13 +160,45 @@ Leaves include:
 
 **Steps:** 10–15 of 18  
 
-Parallel Finance/Generalist Section 1 items (time-travel; NYT; sandwich sonnet; Olympics; London Fog rubric; complex prompt).
+| Step | Title (live 2026-11-10) |
+|------|-------------------------|
+| 10 | Question 2 — time-travel historical day |
+| 11 | Question 3 — NYT first issue Response A/B |
+| 12 | Question 4 — sandwich sonnet Response A/B |
+| 13 | Question 5 — first Summer Olympics after WWII winners / gold medals |
+| 14 | Question 6 — Expert Fog London Fog recipe + diabetes / no almond-soy rubrics |
+| 15 | Question 7 — long complex general prompt + two rubric criteria |
+
+A/B bodies Parallel from verified Generalist/Economist (stem-matched) where applicable.
 
 ## Steps 16–17 · Section 3 Background
 
-**Steps:** 16–17 of 18  
+### Section 3 · Your Background (live 2026-11-10 · host 34123 · Step 16)
 
-Section 3: Your Background + meaningful Medical/clinical education or experience write-in.
+**Header:** Section 3: Your Background
+
+> That's it for the test questions! We appreciate you taking the time to complete this application. To wrap up, we have just a few quick background questions to help us get a better understanding of your familiarity with the **Medical Domain**.
+
+#### Academic and Professional Experience
+
+Please indicate your primary field(s) of experience (select all that apply)
+
+1. [ ] Medicine (MD, DO, MBBS, or equivalent)
+2. [ ] Nursing / Advanced Clinical Practice (e.g., NP, PA)
+3. [ ] Biology / Biological Sciences
+4. [ ] Chemistry / Biochemistry
+5. [ ] Health Sciences / Public Health
+6. [ ] Physics / Medical Physics
+7. [ ] Pharmacology / Pharmacy
+8. [ ] Other (explain in the box below)
+
+**HARD:** Section 3 framing + experience checklist are **Medical Domain**-specific — never parallel from Radiology/Internal Medicine/Surgical/Economics Section 3. Asset: `assets/physician/section3-background-live-20261110.png`
+
+### Background write-in (live 2026-11-10 · host 34123 · Step 17)
+
+> Tell us about the most meaningful Medical-related course or experience you had in your education. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you! Once again, we really appreciate detailed responses here!
+
+**HARD:** domain token is **Medical-related** on this role — never copy Radiology/Internal Medicine/Surgical/Economics wording. Asset: `assets/physician/section3-meaningful-live-20261110.png`
 
 ## Step 18 · Optional comments
 
@@ -176,5 +210,7 @@ Footer: **Submit and Begin Next Task** — **do not press**.
 ### Assets
 
 - `assets/physician/phys_s18.png`
+- `assets/physician/section3-background-live-20261110.png`
+- `assets/physician/section3-meaningful-live-20261110.png`
 
 <!-- role: Physician | assessmentId: medical | category: Medical | assessmentVersion: Medical Starter -->

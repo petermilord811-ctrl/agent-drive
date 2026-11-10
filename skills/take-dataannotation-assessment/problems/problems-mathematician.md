@@ -7,6 +7,7 @@
 - **Live IDs:** task `3545b081-7bfd-4a5d-acc1-8621aec1a4e9` · `project_id=a3a9323d-a733-41bd-9850-a9adf1cb54fe` · `task_response_id=01a1bff6-29eb-7434-b024-4ec518feede3`
 - **Track:** Role bio = **Math Projects assessment**; live qualification title = **[Qualification] Math Starter Assessment** (unique math form — **not** Expert Domain Parallel)
 - **Gaps:** Degree-symbol OCR sometimes reads `°` as `0` (e.g. `1200`); LaTeX below reconstructed from look PNGs — treat PNG assets as source of truth for fractions/°
+- **Live 2026-11-10:** Browse-role bio reconfirmed (STEM · 141 hired recently). Did **not** Start this sleep pass.
 - **Rule:** never Submit while fetching
 
 ### Role

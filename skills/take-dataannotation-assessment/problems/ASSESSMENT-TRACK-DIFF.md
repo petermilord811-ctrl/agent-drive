@@ -71,7 +71,7 @@ If any fail → **OCR that leaf**; do not copy.
 2. **Presence of Your Medical Specialization** (Surgical + IM yes; Radiology no).
 3. **Specialization choice list** differs by major (IM **10** vs Surgical **5**; Radiology has none).
 4. **Section 1** credentials vs **Conversation Challenges** on non-credential branches (Medical tracks).
-5. **Background leaf** prompt is **domain-templated** (`{Domain}-related course or experience…`).
+5. **Background leaf** prompt is **domain-templated** (`Tell us about the most meaningful {Domain}-related course or experience…`). **Always live-fetch** — never parallel; never leave `most meaningful…` ellipsis. Confirmed Radiology-related on 34123 2026-11-10.
 6. **Experience lists** are track-specific (Legal radios vs Finance Part1+Part2 role checkboxes vs Medical credential radios).
 
 ## Same *within* a track
@@ -83,7 +83,7 @@ Sibling roles sharing one Starter (`01a1bd0d` Surgical Clinician / Expert / Surg
 1. Internal Medicine — Specialization ✅; Internist + IM Physician bios ✅; Branch B + Q titles pending  
 2. Surgical Medicine — Specialization ✅ (5 options); Experience full list ✅; **3-way branch** (19 / ~23 hybrid / 17) ✅  
 3. Radiology — Q5–Q7 titles; reconfirm no Specialization leaf-by-leaf  
-4. Medical (Physician) — re-verify vs Surgical/IM skeleton  
+4. Medical (Physician) — Section 3 **Medical Domain** checklist + **Medical-related** meaningful live 2026-11-10 ✅  
 5. Legal Expert — Experience 10 ✅; Q1–Q7 ✅; Conversation Haiku **3.5** ✅  
 6. Finance Expert — **16** leaves; Experience **Part 1 + Part 2 (12 roles)** ✅; Q/Conversation pending  
 7. Economics / Accounting / other nearly-full — leaf-by-leaf vs Coding/Generalist verified baselines  

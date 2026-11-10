@@ -6,7 +6,7 @@
 - **Captured:** 2026-11-09 · host 34123 · sleep autonomy
 - **Live IDs:** task `9c0d6c30-c43d-49e9-b449-16b48aef2679` · `project_id=a8995013-95b2-4e88-b674-8a9d4a6dc04d` · `task_response_id=01a1c007-5ded-7c9f-89ef-4b4cfbb336bf`
 - **Track:** Role intro = **Biology Projects assessment**; live qualification = **[Qualification] Biology Starter Assessment** (unique biology form — **not** Expert Domain Parallel)
-- **Gaps:** Q1A plant-cross full Response A/B/C prose + DNA strand table + Q7 AI middle steps — PNG assets are source of truth; Instructions OCR may say “chemical reactions” (template bleed) — bank as live
+- **Gaps:** Q7 Medium paragraph line-wrap OCR soft; DNA strand table on Q5 if incomplete — PNG assets remain glyph/table source of truth. Q1A A/B/C + Q7 AI body filled 2026-11-10 host 34123 live OCR. Instructions OCR may say “chemical reactions” (template bleed) — bank as live. **Not** stamping verified.
 - **Rule:** never Submit while fetching
 
 ### Role
@@ -132,13 +132,57 @@ Good luck, and we look forward to receiving your submission!
 ## Question 1A · Allele Inheritance
 
 **Type:** mcq (Responses A/B/C)  
-**Title:** Question 1A: Allele Inheritance *(see PNG for full plant-cross stem)*
+**Title:** Question 1A: Allele Inheritance  
+**Captured:** 2026-11-10 host 34123 · host `ocr` on live Q1A + look `q1a-live-20261110.png`
 
 ### Prompt
 
-Breed fungus-resistant (D) and high-yielding (Y) plants. Plant E: **DDyy**. Plant M: **DdYy**. Plant C (from E×M): healthy **DD** + high yield. Goal **DDYY**. Which parent (E, M, or another Plant C) crossed with Plant C gives the highest ratio of **DDYY** to plants carrying homozygous recessive **dd** or **yy**?
+Imagine a user asked the following request to an AI assistant:
 
-Three AI Responses A/B/C argue different crosses (see `q1-alleles.png`).
+> "A biologist is attempting to breed a plant that is resistant to a specific fungus but also produces high yields. The biologist has obtained a fungus-resistant plant (Plant E) with the homozygous dominant fungus-resistant trait DD but a homozygous recessive low-yield trait yy. A heterozygous high-yielding sample of a plant (Plant M) that has a heterozygous Dd trait has also been obtained and is crossed with the homozygous plant. The first crop of the crossbred plants is grown, and a healthy plant with a homozygous fungal resistance trait that produced a high yield (Plant C) is selected.
+>
+> The biologist can cross Plant C with either Plant E, Plant M, or another healthy new crossbreed with the same traits as Plant C. The ultimate goal is a homozygous dominant plant for both fungus resistance and high yield (DDYY). Considering the goal, is Plant E, Plant M, or another Plant C the best option to cross with the new Plant C to give the highest ratio of plants that meet the DDYY goal to plants with a homozygous recessive trait (dd or yy)?"
+
+The following are three solutions that were returned by the AI:
+
+### Response A
+
+There are two goals in this scenario:
+
+1. Create a fungus resistant plant breed.
+2. Create a high-yielding plant breed.
+
+A low yield would be contrary to the second goal, but a fungal infection that kills the plant would cause both to fail.
+
+Given that, the only potential choice that is guaranteed to have a homozygous fungus-resistant trait is the original Plant E due to its homozygous DD alleles. Both other options risk creating a plant that is vulnerable to the fungus as well as homozygous recessive in terms of yield.
+
+As Plant C is likely to carry an allele for high yield itself, The biologist should cross Plant C with Plant E for the highest ratio of desired homozygous fungus-resistant plants to undesired ones that risk the entire crop failing due to fungal infection.
+
+Does that help?
+
+### Response B
+
+Lets take stock of what we have:
+
+Plant E is a breed with DD and yy alleles.
+
+Plant M is a breed with Dd and YY alleles.
+
+Plant C is from the new crop and can have multiple possible allele combinations that match the description, either the same configuration as Plant M or the same with an additional dominant D instead of a recessive d.
+
+All of the above have beneficial dominant alleles. Since we are trying to avoid having low yielding or fungally vulnerable plants, and Plant C can have two recessive y alleles, it risks a homozygous recessive trait if it is crossed with another plant from the new crop.
+
+To avoid that, the biologist should cross Plant C with Plant M, which is guaranteed to always have at least one dominant allele of each type. The logic for other pathways is flawed and risks creating a vulnerable plant.
+
+### Response C
+
+The latest crop in which Plant C was grown has some plants with a set of DD fungus-resistance alleles and some with Dd, Yy, and yy alleles. The selected plant has a dominant and recessive yield allele, putting it at risk of a homozygous recessive trait if crossed with another plant with a recessive allele.
+
+It would be a mistake to breed the yielding trait of Plant E into any of the new crops, but it would also be a mistake to choose Plant M, which has the same number of recessive alleles as the other original plant. Instead, the biologist should take advantage of the inherited dominant alleles in the selected plant from the new crop and cross Plant C with another plant like it for the highest ratio of plants that meet the goal to plants that have two recessive alleles of the same trait.
+
+Thus, the biologist should cross Plant C with another new crossbred plant from the same crop.
+
+Let me know if I can assist further.
 
 ### Question
 
@@ -153,6 +197,7 @@ Which of the above uses the correct reasoning to reach the answer?
 ### Assets
 
 - `assets/biologist/q1-alleles.png`
+- `assets/biologist/q1a-live-20261110.png`
 
 ---
 
@@ -304,19 +349,59 @@ Please try to avoid creating a problem that's a copy of the above example…
 ## Question 7 · Evaluating AI Reasoning
 
 **Type:** AI response + mcq + explanation  
-**Title:** Question 7: Evaluating AI Reasoning
+**Title:** Question 7: Evaluating AI Reasoning  
+**Captured:** 2026-11-10 host 34123 · host `ocr` + looks `q7-*-live-20261110.png` (PNG = source where OCR wraps cut)
 
 ### Prompt
 
-**User query:** *Schizosaccharomyces pombe* incubated at 25°C in YPD with maltose in airtight sealed flask for 8 hours (Experiment 1). Table 1 gives generations vs temperature under standard conditions (15°C —, 20°C 1, 25°C 1.4, 30°C 2, 35°C 2.2, 40°C —). Adjustments mentioned for optimal medium (+40%), glucose (+8%), nitrogen (+5%), fermentation rates (obligate aerobes 50% / facultative anaerobes 110%). Ask expected generations for Experiment 1.
+Next, you will read a biology problem and an AI's attempt to solve it. You will evaluate the AI's response and determine whether there are any inaccuracies or reasoning flaws.
 
-### AI Response (banked highlights)
+**User query:**
 
-- Treats YPD as optimal medium → +40%
-- Maltose → no glucose bonus
-- Nitrogen present → +5%
-- Sealed flask / fermentation → 110% rate (+10%)
-- Uses **2 generations** base (30°C table row) × 0.55 = **1.1 generations** final
+> A biologist obtains a sample of Schizosaccharomyces pombe and incubates it in a microbiological incubator at 25°C in a YPD liquid culture with a supply of maltose in an airtight sealed flask. It is left to propagate for 8 hours, then it is removed and the amount of growth is measured. This is Experiment 1.
+>
+> The following table, Table 1, shows the number of Schizosaccharomyces pombe generations propagated at certain temperatures under the laboratory's standard conditions based on previous observations. Given that a optimal medium would increase propagation by 40%, the presence of glucose (a monosaccharide) as food would increase it another 8%, and a source of nitrogen would increase it another 5%, how many generations are expected to have grown during Experiment 1 when accounting for the fact that fermentation is 50% the rate of aerobic respiration for obligate aerobes but 110% the rate of aerobic respiration for facultative anaerobes?
+
+**Table 1:** Schizosaccharomyces pombe generations propagated over an 8 hour period under standard conditions.
+
+| Temperature | Generations |
+|-------------|-------------|
+| 15°C | — |
+| 20°C | 1 |
+| 25°C | 1.4 |
+| 30°C | 2 |
+| 35°C | 2.2 |
+| 40°C | — |
+
+### AI Response
+
+*(Host OCR + live looks 2026-11-10. Garbled wraps / °C glyphs → trust PNGs; do not invent.)*
+
+To determine how many generations are expected to form in Experiment 1, let's evaluate the situation step by step:
+
+1. Environment Analysis:
+
+Medium: *(full sentence on `q7-prompt-live-20261110.png` / `q7-ai-mid-live-20261110.png` — host OCR truncated)*  
+• Verdict: The optimal medium will increase propagation by 40%.
+
+Food source: Maltose is provided as the available food source. While this is usable food for S. pombe, it is not as favorable as glucose due to being a more complex disaccharide.  
+• Verdict: Glucose is not present, so there is no propagation increase.
+
+Nitrogen: The peptones and yeast extract in YPD contain nitrogen. Therefore, a nitrogen source is present.  
+• Verdict: The presence of a nitrogen source will increase propagation by 5%.
+
+Oxygen: The yeast is being incubated in an airtight sealed flask, which is an anaerobic environment. S. pombe is capable of respiration via fermentation, so propagation will occur at 110% the normal rate, meaning an increase in propagation of 10%.
+
+2. Propagation Calculation:
+
+- Experiment 1 was carried out at 30°C for 8 hours. Table 1 indicates that 8 hours at 30°C under standard conditions will see 2 generations propagate. *(see `q7-ai-end-live-20261110.png` — host OCR also emitted “300C” / “6 hours” noise)*
+- Adjusting for the conditions in Experiment 1, the standard propagation is increased by 40% + 5% + 10% = 55%.
+- 2 generations * 0.55 = 1.1 generations
+
+3. Final Answer
+
+- The biologist would see 1.1 generations propagated. Despite the airtight environment, the optimal medium, presence of nitrogen, and fermentation allowed for healthy growth.
+- Answer: 1.1 generations
 
 ### Question
 
@@ -335,12 +420,17 @@ In 2-3+ complete sentences, please provide your reasoning for your above selecti
 
 - `assets/biologist/q6-q7-start.png`
 - `assets/biologist/q7-experience.png`
+- `assets/biologist/q7-prompt-live-20261110.png`
+- `assets/biologist/q7-ai-mid-live-20261110.png`
+- `assets/biologist/q7-ai-end-live-20261110.png`
 
 ---
 
 ## Tell us about yourself
 
-That's it for the test questions! …
+*Live re-confirm 2026-11-10 · host 34123 · task `01a1c007…`*
+
+> That's it for the test questions! We appreciate you taking the time to complete this application. To wrap up, please help us get to know you better by providing some basic information about yourself.
 
 ### Professional Experience
 
@@ -361,27 +451,41 @@ Please indicate your primary field of experience:
 
 ### Coding and Computer Science Experience
 
-*(same 5-option coding ladder as Math/Chem/Physics starters)*
+### Parallel
+
+Stem-match to verified Chemist coding ladder (same 5-option starter wording). Live 2026-11-10 host 34123 confirmed the five choice stems are present on Biology Starter.
 
 ### Biology courses (write-in)
 
-Tell us about the biology courses you specialized in during your studies. Which one was your favorite and why? …
+*Verbatim · live 2026-11-10*
+
+> Tell us about the biology courses you specialized in during your studies. Which one was your favorite and why? We'd love to hear about any topics, projects, or challenges that stood out to you!
+
+> Once again, we really appreciate detailed responses here!
+
+**Asset:** `assets/biologist/section3-background-meaningful-live-20261110.png`
 
 ### English fluency
 
-Native / Fluent non-native / Conversational / Limited English
+*Live 2026-11-10 · host 34123*
+
+1. [ ] Native English speaker
+2. [ ] Fluent English speaker, but not native
+3. [ ] Conversational
+4. [ ] Limited English
 
 ### NPI number
 
-Please enter your NPI number below. If you do not have one, please leave blank.
+> Please enter your NPI number below. If you do not have one, please leave blank.
 
 ### Optional comments
 
-(Optional) Any other comments?
+**(Optional) Any other comments?**
 
 ### Footer
 
-- Save to account · **Submit** (do not click) · Clear Response
+- **Save to account** · **Submit** (do not click) · Clear Response
+- Status chrome may show “Saved to this browser automatically” / “Not yet saved to your account.”
 
 ### Assets
 
