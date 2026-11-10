@@ -6,7 +6,8 @@
 - **Captured:** 2026-11-09 · host 34123 · sleep autonomy
 - **Live IDs:** task `1ff5229d-1531-4705-81c6-47c1f4f379af` · `project_id=01833c35-1c20-4a01-9dff-5ed039372765` · `task_response_id=01a1c003-3ce8-7159-bea5-a30949654632`
 - **Track:** Role intro = **Physics Projects assessment**; live qualification = **[Qualification] Physics Starter Assessment** (unique physics form — **not** Expert Domain Parallel)
-- **Gaps:** Formula/° OCR noise on Q1 table & Brewster AI reply — PNG assets are source of truth; Professional Experience may be multi-select (“fields”)
+- **Gaps:** Formula/° OCR noise on Q1 table & Brewster AI reply — PNG assets are source of truth; Professional Experience may be multi-select (“fields”). In-assessment formula re-OCR still pending (not opened this sleep pass).
+- **Live 2026-11-10:** Browse-role bio reconfirmed (STEM · 39 hired recently; Overview / What you'll actually do / What we look for / No degree required). Did **not** Start assessment this pass.
 - **Rule:** never Submit while fetching
 
 ### Role

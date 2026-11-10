@@ -2,13 +2,15 @@
 
 ### Bank
 
-- **captureStatus:** bio
+- **captureStatus:** nearly-full
 - **Captured:** 2026-11-08 · host **34123**
 - **Assessment:** Internal Medicine Starter Assessment V4.1 / **Internal Medicine Projects** assessment
 - **IDs:** shared with IMC — `task_response_id=01a1bd1a-8021-77c0-979b-6fa6eb6f2717` · `project_id=b41f557f-e309-46f3-9de5-8a2b5dcf206e`
+- **Live 2026-11-10:** Track line **Internal Medicine Projects assessment** reconfirmed on sibling IMC What-it-takes page (host 34123). Steps / Section 3 (**Internal Medicine Domain** + meaningful) live on `problems-internal-medicine-clinician.md` — do not re-fetch duplicates.
+- **Gaps:** Unique Internist bio polish only; assessment leaves shared with IMC.
 - **Rule:** never Submit while fetching
 - **Targeting:** Search Internist → titled card → verify **Internal Medicine Projects assessment** before Start.
-- **Steps:** shared with `problems-internal-medicine-clinician.md` (Branch A 19; Specialization leaf banked on IMC).
+- **Steps:** shared with `problems-internal-medicine-clinician.md` (Branch A 19; Specialization leaf banked on IMC; Section 3 live 2026-11-10).
 
 ### Role
 
