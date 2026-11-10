@@ -2241,6 +2241,9 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const click = !!grantControl && findable;
       const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', full, '-Plan', card.plan,
                     '-Lead', click ? '0.1' : '0.6', '-Hold', click ? String(quality.CARD_HOLD_S) : '0'];
+      // what the card drew, scene by scene, written beside its script at its close (qCardStats reads it, then deletes it)
+      const stats = full.replace(/\.ps1$/i, '.json');
+      if (stats !== full) args.push('-Stats', stats);
       if (rect) args.push('-Rect', rect.join(','));
       const la = await deskOp('launch', { app: 'powershell.exe', args, wait: 8000, focus: true }, 45000);
       if (!la || !la.ok) return { ok: false, why: 'the test card did not start: ' + ((la && la.why) || 'no answer') };
@@ -2270,7 +2273,26 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
                       : clicked ? 'the test card is on the screen, and its clock was started with a click on its corner'
                       : 'the test card is on the screen; it started by itself, a little ahead of the phase marks',
                 Date.now(), { pid, seen, clicked, rect });
-      return { ok: true, pid, seen, clicked, file: full };
+      return { ok: true, pid, seen, clicked, file: full, stats: stats !== full ? stats : null };
+    };
+    // The card's own counts: read once it has closed, then deleted -- nothing of the check is left on the machine. Only a
+    // file of the card's own name is touched (CARD_STATS_NAME), and the path is the one this visit wrote.
+    const qCardStats = async (p) => {
+      if (!p || !quality.CARD_STATS_NAME.test(leaf(p))) return { ok: false, why: 'not the card\'s own file' };
+      let out;
+      const r = await deskOp('read', { path: p }, 20000);
+      if (!r || !r.ok) out = { ok: false, why: (r && r.why) || 'no answer' };
+      else {
+        try {
+          const j = JSON.parse(Buffer.from(String(r.b64 || ''), 'base64').toString('utf8'));
+          out = Array.isArray(j.scenes)
+            ? { ok: true, ran: Number(j.ran) || 0,
+                scenes: j.scenes.slice(0, 20).map((s) => ({ name: String(s && s.name || '').slice(0, 20), painted: Math.max(0, Number(s && s.painted) || 0), secs: Math.max(0, Number(s && s.secs) || 0) })) }
+            : { ok: false, why: 'it holds no scenes' };
+        } catch (e) { out = { ok: false, why: 'it could not be read: ' + e.message }; }
+      }
+      try { await runExec('del /q "' + p + '"', 10000); } catch (_) {}
+      return out;
     };
     const qualityRun = async (cmd) => {
       let before = null;
@@ -2301,7 +2323,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       const rec = new quality.Recorder(Date.now());
       rec.meta({ by: 'agent-drive quality', host: String(HOST), relay: String(dialed.relay || RELAY || '').replace(/^wss?:\/\//, '').replace(/\/.*$/, ''),
                  started: new Date().toISOString(), screen: SW + 'x' + SH, control: grantControl ? 1 : 0, shell: grantShell ? 1 : 0,
-                 phases: pl.phases.map((p) => p.name + ':' + p.secs).join(',') });
+                 phases: pl.phases.map((p) => p.name + ':' + p.secs).join(','), qv: quality.QV });
       const w0 = ws;
       const onText = (m) => rec.text(m, Date.now()), onBin = (b) => rec.binary(b, Date.now());
       w0.on(onText); w0.onBinary(onBin);
@@ -2314,7 +2336,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       // re-armed every few seconds: the host forgets on a reconnect, and an older relay's last-writer-wins switch may
       // have been turned off by somebody else's trace ending (a relay from 2.243.0 tells the host everyone's OR)
       const rearm = setInterval(() => { if (!traceRefusedAt) arm(); }, 5000);
-      let cardPid = null, cardUp = false, cardWhy = '', stoppedWhy = '', wheel = null;
+      let cardPid = null, cardUp = false, cardWhy = '', stoppedWhy = '', wheel = null, cardStatsAt = null;
       try {
         await sleep(1500);   // the first records -- and the refusal, from a relay that predates agent tracing
         if (traceRefusedAt) rec.event('trace-refused', 'the relay answered the trace switch with "an agent may not do that" -- a relay older than ScreenMirror 2.243.0', Date.now());
@@ -2324,7 +2346,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
           if (pl.card && i === pl.card.first) {
             say1('Picture-quality check: putting the test card on the screen');
             const c = await qCardStart(pl.card, rec);
-            if (c.ok) { cardPid = c.pid; cardUp = true; }
+            if (c.ok) { cardPid = c.pid; cardUp = true; cardStatsAt = c.stats; }
             else { cardWhy = c.why; rec.event('card-failed', c.why, Date.now()); }
           }
           if (k.card && !cardUp) continue;   // the card never came up: its scenes cannot run, the rest still can
@@ -2340,7 +2362,14 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
             cardUp = false;   // it closes itself, a moment after its last scene
             // ...and the screen it uncovers repaints whole: a phase after the card starts once that is over, or its first
             // seconds measure the card going away (measured: a keyframe and a full repaint inside the pointer phase)
-            if (i < pl.phases.length - 1) await qWait(Date.now() + quality.CARD_GONE_MS);
+            await qWait(Date.now() + quality.CARD_GONE_MS);
+            // ...and what it drew, now that it has closed and written it
+            if (cardStatsAt && !stopped && !ws.dead) {
+              const cs = await qCardStats(cardStatsAt);
+              cardStatsAt = null;
+              rec.event('card-stats', cs.ok ? 'what the test card itself drew, scene by scene' : 'the test card\'s own counts could not be read: ' + cs.why,
+                        Date.now(), cs.ok ? { scenes: cs.scenes, ran: cs.ran } : {});
+            }
           }
         }
         if (!stoppedWhy && (stopped || ws.dead)) stoppedWhy = stopped || 'the connection to the machine dropped';
@@ -2354,6 +2383,8 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
         pauseSoon();   // the stream pauses again once the pictures stop
         // a check that was STOPPED takes its card with it; one that finished leaves it to close itself a moment later
         if (stoppedWhy && cardPid && !ws.dead) { try { await runExec('taskkill /PID ' + cardPid + ' /T /F', 10000); } catch (_) {} }
+        // ...and a counts file nobody read (a stopped check) does not stay behind either
+        if (cardStatsAt && !ws.dead && quality.CARD_STATS_NAME.test(leaf(cardStatsAt))) { try { await runExec('del /q "' + cardStatsAt + '"', 10000); } catch (_) {} }
       }
       const recs = rec.records();
       const stamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+$/, '');

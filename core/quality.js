@@ -49,6 +49,9 @@ const KINDS = {
   rest:    { needs: 'shell',   secs: 8,  card: true,  still: true,  what: 'the card still again (does the picture come back after the load?)' },
 };
 const CARD_ORDER = ['text', 'scroll', 'drag', 'video', 'cuts', 'rest'];
+// the card's scenes it draws CONTINUOUSLY -- whose frame rate is therefore the card's to report (cuts change 2.5 times a
+// second by design, and the still scenes once)
+const CARD_MOVING = new Set(['scroll', 'drag', 'video']);
 const MAX_TOTAL_S = 300;
 
 // The phases to run. `spec` is what the command asked for (a list of names, or of {name, secs}; nothing = the
@@ -412,6 +415,18 @@ function causesOf(stats, ctx) {
         add('capture', 'warn', 'machine', P, 'Capturing the screen is slow on the machine', 'capture p95 ' + fmt(h.cap95, 1) + ' ms · swhy capture',
             'Usually cursor compositing, a busy GPU or a ring with no free slot on that machine.');
       }
+      // THE STREAM AGAINST WHAT THE CARD DREW: frames the card drew and the stream never carried are a real drop -- and
+      // whose, the speed verdict says. (The other way round -- a stream that kept pace with a slow card -- is a note in
+      // analyze: the frame rate there measures the card, not the stream.)
+      if (s.cardFps != null && CARD_MOVING.has(P) && h.fr != null && s.cardFps >= 4 && h.fr < 0.6 * s.cardFps) {
+        const enc = share(S, 'encode', n) >= 0.3 || (h.enc95 != null && h.fps > 0 && h.enc95 > 1000 / h.fps);
+        const paced = share(S, 'paced', n) >= 0.3;
+        add('carried', 'warn', enc ? 'machine' : paced ? 'link' : 'codec', P,
+            'The stream carried ' + fmt(h.fr) + ' of the ' + fmt(s.cardFps) + ' frames a second the card drew',
+            'card ' + fmt(s.cardFps) + ' fps · stream ' + fmt(h.fr) + ' fps · ' + (enc ? 'encode p95 ' + fmt(h.enc95, 1) + ' ms' : paced ? 'paced by the ABR' : 'no stage said it was slow'),
+            enc ? 'The encoder is the limit: the frames were drawn and never encoded (see the encoder cause).'
+                : paced ? 'The ABR lowered the frame rate for the link.' : 'Frames were drawn and not sent, with no stage saying why: look at the capture loop (skip) in the trace.');
+      }
       if (motion && h.fps > 0 && h.fr != null && h.fr < 0.5 * h.fps && share(S, 'paced', n) >= 0.3) {
         add('choppy', 'warn', 'link', P, 'Motion is choppy: ' + fmt(h.fr) + ' of ' + fmt(h.fps) + ' frames a second, paced down by the ABR',
             'frames ' + fmt(h.fr) + '/' + fmt(h.fps) + ' · swhy paced', 'The frame rate was lowered for the link: the cause is the rate and the link above.');
@@ -419,7 +434,9 @@ function causesOf(stats, ctx) {
       // A share of NOTHING is not a finding: a still phase that sends a few KB can be "70% keyframes" from one refresh.
       // So it needs volume (KF_MIN_BPS), and the keyframes are attributed by count -- the GOP accounts for frames/gop of
       // them, refinement and rebuilds for theirs, and the rest were asked for or inserted by the encoder itself.
-      if (h.keyShare != null && h.keyShare >= 0.5 && h.kf >= 2 && h.bytes * 8 / Math.max(1, s.secs) >= KF_MIN_BPS) {
+      // ...and only while the picture MOVES: a still screen sends almost nothing but its refinements, so its keyframe share
+      // is ~100% by construction (measured: 96% for a still card whose only bytes were two refinement keyframes)
+      if (!s.still && h.keyShare != null && h.keyShare >= 0.5 && h.kf >= 2 && h.bytes * 8 / Math.max(1, s.secs) >= KF_MIN_BPS) {
         const forced = h.refine + h.rebuild, gopKf = h.gop > 0 ? Math.floor(h.frames / h.gop) : 0, other = Math.max(0, h.kf - forced - gopKf);
         add('keyframes', h.keyShare >= 0.7 ? 'high' : 'warn', 'codec', P,
             'Keyframes are ' + Math.round(100 * h.keyShare) + '% of what is sent',
@@ -531,6 +548,14 @@ function analyze(recs, opts) {
   const H = recs.filter((r) => r.c === 'h' && !r.ev), R = recs.filter((r) => r.c === 'r' && !r.ev), A = recs.filter((r) => r.c === 'a' && !r.ev);
   const P = phasesOf(recs);
   const stats = P.map((p) => phaseStats(p, H, R, A));
+  // What the test card itself drew a second, scene by scene (its own counts, read back after it closed)
+  const cardEv = recs.find((r) => r.ev === 'card-stats' && Array.isArray(r.scenes));
+  if (cardEv) {
+    for (const s of stats) {
+      const sc = cardEv.scenes.find((x) => x && x.name === s.name);
+      if (sc && sc.secs > 0) s.cardFps = Math.round(10 * sc.painted / sc.secs) / 10;
+    }
+  }
   for (const s of stats) s.line = phaseLine(s);
   const causes = causesOf(stats, opts);
   const notes = [];
@@ -544,6 +569,11 @@ function analyze(recs, opts) {
       fix: refused ? 'This relay predates agent tracing (ScreenMirror viewer 2.243.0): update the relay. Only the agent\'s own arrival side was measured.'
                    : 'A Linux host never emits the trace, and an older Windows host may not: only the agent\'s own arrival side was measured, so causes on the machine itself cannot be named.' });
   }
+  // a stream that KEPT PACE with a card that drew slowly: the frame rate in that phase is the card's, not a drop
+  const slowCard = stats.filter((s) => s.cardFps != null && CARD_MOVING.has(s.name) && s.host && s.host.fps > 0 &&
+                                       s.cardFps < 0.6 * s.host.fps && s.host.fr != null && s.host.fr >= 0.6 * s.cardFps);
+  for (const s of slowCard) notes.push('In ' + s.name + ' the test card itself drew only ' + s.cardFps + ' frames a second on this machine, and the stream kept up with it: the frame rate there is the card\'s, not a drop.');
+  if (stats.some((s) => s.card) && !cardEv) notes.push('The test card\'s own counts were not read back, so a low frame rate in its scenes cannot be told apart from the card drawing slowly.');
   if (!frames) notes.push('No video reached the agent during the check -- every arrival figure is empty. The stream may have been paused for it, or the host stopped capturing.');
   else {
     // a phase in which the host encoded and NOTHING reached the agent: its arrival side is missing, not "0 ms behind"
@@ -562,7 +592,10 @@ function analyze(recs, opts) {
     verdict = 'Main cause: ' + m.title + ' (' + m.phases.join(', ') + '; ' + m.area + '). ' + m.fix +
       (worst.length > 1 ? ' Also: ' + worst.slice(1, 3).map((c) => c.title + ' (' + c.phases.join(', ') + ')').join('; ') + '.' : '');
   }
-  return { ok: true, meta, phases: stats, causes, verdict, notes,
+  // Which version of the check recorded it: the meta line says (`qv`), and a run from before the stamp is read by what
+  // it did -- a card started by a click (its `card` event says `clicked`) is version 2; anything older is 1.
+  const qv = Number(meta.qv) || (recs.some((r) => r.ev === 'card' && Object.prototype.hasOwnProperty.call(r, 'clicked')) ? 2 : 1);
+  return { ok: true, meta, qv, phases: stats, causes, verdict, notes,
            coverage: { host: H.length, relay: R.length, agent: A.length, frames, refused } };
 }
 function phaseLine(s) {
@@ -570,7 +603,7 @@ function phaseLine(s) {
   const bits = [];
   if (h) {
     bits.push('picture ' + (s.picture || '?') + ' (' + (h.mode === 'tile1' ? 'tile1 ' + f(h.bits) + '-bit' : 'QP ' + f(h.qp)) + ', ' + (h.scale == null ? 'size ?' : h.scale >= 995 ? 'full size' : f(h.scale / 10) + '% size') + ')');
-    bits.push(f(h.fr) + '/' + f(h.fps) + ' fps');
+    bits.push(f(h.fr) + '/' + f(h.fps) + ' fps' + (s.cardFps != null && CARD_MOVING.has(s.name) ? ' (the card drew ' + f(s.cardFps) + ')' : ''));
     if (h.wire != null) bits.push('uplink ' + f(h.wire) + '%');
     const lim = topOf(h.quality), sp = topOf(h.speed);
     if (lim && lim !== 'none') bits.push('quality limit: ' + lim);
@@ -588,36 +621,56 @@ function phaseLine(s) {
 // The other half of improving the picture: a change is only an improvement when the same stresses, run again, read
 // better. Phase by phase, by name; a metric moves only past a margin the run-to-run noise does not reach.
 const CMP = [
-  // [key, label, where, better, margin, unit]
+  // [key, label, where, better, margin, unit, floor] -- a relative (×) margin also needs the absolute floor: 6 -> 55 ms
+  // behind live is "nine times worse" and nothing anybody could see
   ['qp', 'quantiser', 'host', 'lower', 2, ''],
   ['scale', 'size', 'host', 'higher', 50, '‰'],
-  ['fr', 'frames/s', 'host', 'higher', 0.15, '×'],
+  ['fr', 'frames/s', 'host', 'higher', 0.15, '×', 1],
   ['wire', 'uplink busy', 'host', 'lower', 10, '%'],
   ['keyShare', 'keyframe share', 'host', 'lower', 0.1, ''],
-  ['exc95', 'behind live p95', 'arrive', 'lower', 0.25, '×'],
-  ['gap95', 'frame gap p95', 'arrive', 'lower', 0.25, '×'],
-  ['rtt95', 'pointer p95', 'arrive', 'lower', 0.25, '×'],
+  ['exc95', 'behind live p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
+  ['gap95', 'frame gap p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
+  ['rtt95', 'pointer p95 (at the agent)', 'arrive', 'lower', 0.25, '×', 50],
 ];
+// The phases that show the screen AS IT WAS -- the desktop, whatever a person did, a page somebody had open -- are
+// listed but not counted: two runs of them were shown different things. The test card's scenes and the pointer are
+// the same every run, and only they decide better or worse.
+const UNCONTROLLED = new Set(['idle', 'watch', 'wheel']);
 function compare(before, after) {
   const A0 = before && before.phases ? before : analyze(before), A1 = after && after.phases ? after : analyze(after);
-  const rows = [];
-  let better = 0, worse = 0;
+  const rows = [], notes = [];
+  // TWO TALLIES. The picture as SENT (the host's numbers) is the machine's; delivery to the AGENT (behind live, gaps,
+  // the pointer) is that plus the agent's own link at that moment -- which moved by 100+ ms between two runs made half an
+  // hour apart with nothing changed on the machine (2026-11-10). The verdict is the picture's; delivery is said beside it.
+  let better = 0, worse = 0, dBetter = 0, dWorse = 0;
+  // Two runs made by different versions of the check measured differently -- the first live run (version 1) lost its
+  // last phases' arrival side and ran its card a second ahead of the marks, so a version-2 run "regressed" against it
+  // without anything changing on the machine (2026-11-09). Said, so nobody reads the check's own fix as the machine's.
+  const v0 = A0.qv || (A0.meta && Number(A0.meta.qv)) || 1, v1 = A1.qv || (A1.meta && Number(A1.meta.qv)) || 1;
+  if (v0 !== v1) notes.push('The two runs were made by different versions of the check (' + v0 + ' and ' + v1 + '): part of any difference is the check\'s own.');
   for (const p1 of A1.phases) {
     const p0 = A0.phases.find((p) => p.name === p1.name);
     if (!p0) { rows.push({ phase: p1.name, only: 'after' }); continue; }
+    const counted = !UNCONTROLLED.has(p1.name);
+    // the arrival side is compared only where BOTH runs received frames: a run whose copy of the stream was paused has
+    // no arrival figures for that phase, and its zeros would read as the best latency ever measured
+    const bothArrived = !!(p0.arrive && p0.arrive.frames > 0 && p1.arrive && p1.arrive.frames > 0);
     const moves = [];
-    for (const [k, label, where, dir, margin, unit] of CMP) {
-      const v0 = p0[where] ? p0[where][k] : null, v1 = p1[where] ? p1[where][k] : null;
-      if (v0 == null || v1 == null) continue;
+    for (const [k, label, where, dir, margin, unit, floor] of CMP) {
+      if (where === 'arrive' && !bothArrived) continue;
+      if (k === 'keyShare' && (p0.still || p1.still)) continue;   // a still screen sends almost nothing BUT keyframes
+      const b0 = p0[where] ? p0[where][k] : null, b1 = p1[where] ? p1[where][k] : null;
+      if (b0 == null || b1 == null) continue;
       const rel = unit === '×';
-      const d = v1 - v0;
-      const big = rel ? Math.abs(d) > margin * Math.max(Math.abs(v0), 1) : Math.abs(d) > margin;
+      const d = b1 - b0;
+      const big = rel ? Math.abs(d) > Math.max(margin * Math.max(Math.abs(b0), 1), floor || 0) : Math.abs(d) > margin;
       if (!big) continue;
       const good = dir === 'lower' ? d < 0 : d > 0;
-      if (good) better++; else worse++;
-      moves.push({ metric: k, label, before: v0, after: v1, better: good });
+      if (counted && where === 'arrive') { if (good) dBetter++; else dWorse++; }
+      else if (counted) { if (good) better++; else worse++; }
+      moves.push({ metric: k, label, before: b0, after: b1, better: good, where });
     }
-    rows.push({ phase: p1.name, pictureBefore: p0.picture, pictureAfter: p1.picture, moves });
+    rows.push({ phase: p1.name, counted, pictureBefore: p0.picture, pictureAfter: p1.picture, moves, arrival: bothArrived });
   }
   const ids0 = new Set(A0.causes.map((c) => c.id)), ids1 = new Set(A1.causes.map((c) => c.id));
   const gone = A0.causes.filter((c) => !ids1.has(c.id)).map((c) => c.title);
@@ -625,11 +678,17 @@ function compare(before, after) {
   const overall = better && !worse ? 'better' : worse && !better ? 'worse' : better || worse ? 'mixed' : 'same';
   const fmt = (m) => m.label + ' ' + (typeof m.before === 'number' && m.before % 1 ? m.before.toFixed(2) : m.before) + '→' + (typeof m.after === 'number' && m.after % 1 ? m.after.toFixed(2) : m.after);
   const lines = rows.map((r) => r.only ? r.phase + ': only in the new run' :
-    r.phase + ': ' + (r.pictureBefore !== r.pictureAfter ? 'picture ' + (r.pictureBefore || '?') + '→' + (r.pictureAfter || '?') + '; ' : '') +
-    (r.moves.length ? r.moves.map((m) => (m.better ? '▲ ' : '▼ ') + fmt(m)).join(', ') : 'no change past the noise'));
-  return { overall, better, worse, phases: rows, causesGone: gone, causesNew: fresh, lines,
-           summary: 'Compared with the earlier run: ' + overall + ' (' + better + ' better, ' + worse + ' worse)' +
-                    (gone.length ? '. Gone: ' + gone.join('; ') : '') + (fresh.length ? '. New: ' + fresh.join('; ') : '') + '.' };
+    r.phase + (r.counted ? '' : ' (the screen as it was -- not counted)') + ': ' +
+    (r.pictureBefore !== r.pictureAfter ? 'picture ' + (r.pictureBefore || '?') + '→' + (r.pictureAfter || '?') + '; ' : '') +
+    (r.moves.length ? r.moves.map((m) => (m.better ? '▲ ' : '▼ ') + fmt(m)).join(', ') : 'no change past the noise') +
+    (r.arrival ? '' : ' (no arrival figures: one run received no frames here)'));
+  const delivery = dBetter && !dWorse ? 'better' : dWorse && !dBetter ? 'worse' : dBetter || dWorse ? 'mixed' : 'same';
+  return { overall, better, worse, delivery, dBetter, dWorse, phases: rows, causesGone: gone, causesNew: fresh, lines, notes,
+           summary: 'Compared with the earlier run: the picture as sent is ' + overall + ' (' + better + ' better, ' + worse + ' worse' +
+                    (rows.some((r) => !r.only && !r.counted) ? '; the screen-as-it-was phases not counted' : '') + ')' +
+                    '; delivery to the agent (its own link too) is ' + delivery + ' (' + dBetter + ' better, ' + dWorse + ' worse)' +
+                    (gone.length ? '. Gone: ' + gone.join('; ') : '') + (fresh.length ? '. New: ' + fresh.join('; ') : '') + '.' +
+                    (notes.length ? ' ' + notes.join(' ') : '') };
 }
 
 // A report for the room and the caller: short, the verdict first, a line a phase, then the causes with evidence.
@@ -664,19 +723,21 @@ function cardSource() {
 }
 // The file's name: random, and of a shape nothing else uses, so nothing but this check ever matches it.
 const CARD_NAME = /^agent-drive-qcard-[0-9a-f]{16}\.ps1$/;
+// ...and what it drew, written beside it at its close (the same name, .json): read by the agent, then deleted
+const CARD_STATS_NAME = /^agent-drive-qcard-[0-9a-f]{16}\.json$/;
 function cardScript() {
   // Comment lines and indentation go (they are length on the wire, ~4 KB a write); the C# keeps its lines, since its
   // here-string closing '@ must start one.
   const cs = cardSource().split(/\r?\n/).filter((l) => l.trim() && !/^\s*\/\//.test(l)).map((l) => l.replace(/^\s+/, '').replace(/\s+$/, '')).join('\n');
   return [
-    'param([string]$Plan = "text:8", [string]$Rect = "", [double]$Lead = 0.6, [double]$Hold = 0)',
+    'param([string]$Plan = "text:8", [string]$Rect = "", [double]$Lead = 0.6, [double]$Hold = 0, [string]$Stats = "")',
     "$ErrorActionPreference = 'Stop'",
     // read already: PowerShell parses the whole file before it runs a line, so the file can go now
     'try { Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue } catch {}',
     "Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'",
     cs,
     "'@",
-    '[QCard]::Run($Plan, $Rect, $Lead, $Hold)',
+    '[QCard]::Run($Plan, $Rect, $Lead, $Hold, $Stats)',
     '',
   ].join('\r\n');
 }
@@ -690,10 +751,14 @@ function markerAt(rect) { return { x: rect[0] + MARK.inset + MARK.size / 2, y: r
 const CARD_HOLD_S = 8, CARD_GONE_MS = 1500;
 // A phase must send at least this much (bits a second) for its keyframe SHARE to mean anything.
 const KF_MIN_BPS = 100000;
+// The version of the check that recorded a run, written in its meta line (`qv`); a run without one is version 1 (the
+// first live run's, before the held stream and the click-started card). Raise it whenever what the check MEASURES
+// changes, so compare can say when two runs were not measured alike.
+const QV = 2;
 
 module.exports = { KINDS, CARD_ORDER, plan, Recorder, ndjson, parseNdjson, phasesOf, inPhase, PH_LEAD, PH_LAG,
-                   analyze, compare, report, cardScript, cardSource, CARD_NAME, MARK, markerAt, MAGIC, HEADER,
-                   CARD_HOLD_S, CARD_GONE_MS, KF_MIN_BPS };
+                   analyze, compare, report, cardScript, cardSource, CARD_NAME, CARD_STATS_NAME, MARK, markerAt, MAGIC, HEADER,
+                   CARD_HOLD_S, CARD_GONE_MS, KF_MIN_BPS, QV, UNCONTROLLED, CARD_MOVING };
 
 // A run read again, here, with no visit: the same summary the check gave, or the comparison with an earlier run.
 if (require.main === module) {

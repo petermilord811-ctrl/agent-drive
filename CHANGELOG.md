@@ -6,6 +6,19 @@ a **patch** for a fix. Each pull request adds its line under **Unreleased**; a r
 
 ## Unreleased
 
+- **The quality check, after its second live run** (the same machine, half an hour later, nothing changed on it):
+  - `compare` says two things apart:
+    - the **picture as sent**, which is the machine's and decides the verdict;
+    - **delivery to the agent**, which includes the agent's own link and is said beside it.
+  - Arrival figures are compared only where both runs received frames.
+  - Latency changes need 50 ms as well as a share.
+  - A still phase's keyframe share isn't compared.
+  - The phases that show the screen as it was (idle, watch, wheel) are listed but not counted.
+  - Each run carries the check's version (`qv`), and runs from different versions say so.
+  - The test card counts what it drew in each scene and writes it at its close; the agent reads that, then deletes it. A
+    stream that kept up with a slow card is the card's frame rate. A stream that carried far fewer frames than the card
+    drew is named as a drop, with whose it was.
+  - A still phase made of refinement keyframes is no longer a keyframe problem.
 - **The quality check, after its first live run** (a headless Windows mini PC, 2026-11-09):
   - The agent's copy of the stream is held awake for the whole check. The pictures it took while waiting for the test
     card had armed the 45 s re-pause, so the last phases arrived with no frames.
