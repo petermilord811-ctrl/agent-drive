@@ -80,7 +80,10 @@ function skills(dir) {
     try { text = fs.readFileSync(path.join(root, slug, 'README.md'), 'utf8'); } catch (_) { continue; }
     const fm = frontmatter(text) || {};
     out.push({ slug, name: fm.name || firstHeading(text) || slug, when: fm.when || firstProse(text) || '',
-               tags: (fm.tags || '').split(/[,\s]+/).filter(Boolean), run: fm.run || '' });
+               tags: (fm.tags || '').split(/[,\s]+/).filter(Boolean), run: fm.run || '',
+               // `access: control, shell` -- what the skill cannot do its job without, whatever words the request used
+               // (the quality check is ASKED for as "check why it is blurry", which reads as watching)
+               access: (fm.access || '').toLowerCase().split(/[,\s]+/).filter((a) => a === 'control' || a === 'shell' || a === 'terminal') });
   }
   return out;
 }
@@ -536,6 +539,13 @@ function readNeeds(text, unquoted, entry) {
     // no verb at all ("2048 on 10005", "the sudoku on 10002"): what that skill itself does
     const own = firstOf(ACT, ' ' + lower(String(entry.name || '') + ' ; ' + String(entry.when || '')).replace(NOTE_ACTS, ' ') + ' ');
     if (own) { needs.control = true; why.unshift('control (the ' + entry.slug + ' skill: ' + said(own) + ')'); }
+  }
+  // ...and what the skill says it cannot work without (its README's `access:`), asked for at the door rather than as a
+  // second Allow card a minute into the visit
+  for (const a of (entry && Array.isArray(entry.access) ? entry.access : [])) {
+    if (!Object.prototype.hasOwnProperty.call(needs, a) || needs[a]) continue;
+    needs[a] = true;
+    why.push(a + ' (the ' + entry.slug + ' skill needs it)');
   }
   const clause = why.length ? 'asks for ' + why.join(', ')
     : 'watch only: ' + (READS.test(t) ? 'it reads and looks' : 'nothing in it acts on the screen or runs a command');

@@ -133,6 +133,7 @@ it explain each verb.
 | `send` | `file` `to` `overwrite` | put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room | `from`→`file`, `source`→`file`, `path`→`to`, `dest`→`to` |
 | `camera` | `out` `device` `keep` | one photo from the machine's webcam -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `camera`→`device` |
 | `audio` | `out` `seconds` `keep` | up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell) | `file`→`out`, `path`→`out`, `to`→`out`, `secs`→`seconds`, `duration`→`seconds` |
+| `quality` | `phases` `secs` `out` `compare` `x` `y` `lx` `ly` | the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse | `quality-check`, `picture-test`, `quality-test`, `diagnose`, `phase`→`phases`, `stresses`→`phases`, `tests`→`phases`, `seconds`→`secs`, `file`→`out`, `before`→`compare`, `baseline`→`compare`, `against`→`compare` |
 | `humanize` | `text` `mode` `style` `ultra` | rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready | `strength`→`mode`, `body`→`text`, `content`→`text` |
 | `aicheck` | `text` | AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready | `detect`, `ai-check`, `ai_check`, `body`→`text`, `content`→`text`, `detect`→`text` |
 | `aiusage` | — | Humanize/detect usage balance via relay GET /api/aiusage (x-sm-join-key) | `ai-usage`, `ai_usage` |
@@ -328,6 +329,51 @@ every window and control also carries **`cx`/`cy`: its centre on this visit's sc
 
 Limits: on Linux these work on X11 (Wayland refuses `windows`/`focus`), need python3, and `controls` needs AT-SPI.
 Reading a Chromium/Electron window's controls may switch its accessibility support on.
+
+## The picture-quality check (`quality`, [core/quality.js](../../core/quality.js))
+
+"The text is blurry when I scroll", asked of the machine instead of argued from the code. One command arms
+ScreenMirror's **diagnostics trace** on the agent's own socket (the host and the relay each describe every second of
+the stream, with a verdict on what limited quality, speed and input), puts the screen through named **stresses**, and
+judges **each phase on its own seconds** — so "fine at rest, falls apart under motion" is a finding, not a guess.
+
+```
+{"do":"quality"}                                         every phase this visit may run
+{"do":"quality","phases":["idle","scroll","video"]}       just these (a list, or "idle,scroll,video")
+{"do":"quality","phases":[{"name":"watch","secs":30}]}    record while a PERSON reproduces the problem
+{"do":"quality","compare":"work/quality-10000-2026-11-09-12-00-00.ndjson"}   run again and say better or worse
+```
+
+| phase | needs | what the screen does |
+|-------|-------|----------------------|
+| `idle` | — | nothing: the screen as it is (the baseline) |
+| `watch` | — | nothing from the agent: the room is asked to do what looks bad, and it is recorded |
+| `pointer` | control | the pointer circles the middle of the screen; the round trip is measured from the cursor coming back |
+| `wheel` | control | the wheel down at `x,y` (default: the middle) for half the phase and back up as far — the page ends where it began |
+| `text` `scroll` `drag` `video` `cuts` `rest` | shell, Windows | the **test card**: a window over the visit's screen showing the same stress every run — still text (small, coloured, hairlines), that text scrolling, a window dragged over it, full-screen moving colour with grain, the whole picture cut 2.5×/s, and still again (does it recover?) |
+
+The test card is one PowerShell file (its C#, [core/desk/qcard.cs](../../core/desk/qcard.cs), compiled there) written
+to `C:\Users\Public`, started **as the person at the desktop** by `launch`, and waited for on the screen (its magenta
+corner) so the phase marks start when it is visible. It deletes its own file as it starts, closes itself after its
+last scene, and **Esc closes it at once**; the room is told before it appears. Its scenes run back to back. A stopped
+check closes it. While the check runs the agent's copy of the stream is un-paused (it is a viewer like any other for
+those seconds) and paused again after.
+
+The answer: `verdict` (the main cause and what to do first), `phases` (a line each: the picture's word — sharp / soft /
+coarse — QP and size, frames, the uplink, what limited it, how far behind live the frames arrived), `causes` (most
+severe first, each `{sev, area, title, phases, evidence, fix}`, where `area` is **link** / **machine** / **viewer** /
+**setting** / **codec** — codec meaning ScreenMirror's own behaviour, the ones a code change improves), `notes`,
+`coverage`, `file` (the run, an ordinary trace: `node tools/trace-report.js <file> --phase scroll` in ScreenMirror
+reads any phase in full; `node core/quality.js <file> [--compare <earlier>]` re-reads it here), and with `compare`, a
+phase-by-phase **better / worse / same** past the run-to-run noise, and the causes gone and new. The room gets the
+report in chat (`quiet:1` keeps it to the answer). A run takes about 1–2 minutes: through MCP it answers `pending`,
+and `ping` collects it.
+
+What it does not measure: the agent decodes nothing, so a watcher's own decoder, paint and window are not in it — the
+host's `viewport` verdict (the encode follows a watcher's window) is, and is put on the viewer. Everything on the
+arrival side (frames, gaps, behind live, the pointer) is the AGENT's link: a cause it puts on "this agent's own
+downlink" means rerun from a better one before blaming the host. A Linux host emits no trace, and a relay before
+ScreenMirror 2.243.0 refuses the switch for an agent: the answer says which, and judges the arrival side alone.
 
 ## What the task changed, and putting it back
 

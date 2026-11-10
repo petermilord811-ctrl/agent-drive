@@ -115,6 +115,9 @@ const V = {
   send:        { f: ['file', 'to', 'overwrite'], need: (c) => !nonEmpty(c.file) ? 'send needs file: the file here to put on the machine' : !nonEmpty(c.to) ? 'send needs to: the path (or folder) on the machine' : '', what: 'put a file from here ON the machine (needs shell; said in the room) -- never over one that is there unless overwrite:1, which asks the room' },
   camera:      { f: ['out', 'device', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'camera needs out: the .jpg to save the photo to', what: 'one photo from the machine\'s webcam -- the room is asked first, every time, and only a yes allows it (needs shell)' },
   audio:       { f: ['out', 'seconds', 'keep'], need: (c) => nonEmpty(c.out) ? '' : 'audio needs out: the .wav to save the recording to', what: 'up to 7 s of what the machine is PLAYING (never the microphone) -- the room is asked first, every time, and only a yes allows it (needs shell)' },
+  // ---- the picture-quality check (core/quality.js): the diagnostics trace on the agent's own socket while the screen is
+  // put through named stresses, each phase judged on its own seconds, the causes named; compare: an earlier run's file
+  quality:     { f: ['phases', 'secs', 'out', 'compare', 'x', 'y', 'lx', 'ly'], need: (c) => (c.phases == null || Array.isArray(c.phases) || typeof c.phases === 'string') ? '' : 'phases is a list: ["idle","text","scroll","drag","video","cuts","rest","pointer"] (or {name,secs} each) -- leave it out for every phase this visit may run', what: 'the picture-quality check: stress the screen phase by phase (the test card needs shell, the pointer control), record the diagnostics trace and name the causes; compare:<earlier run> says better or worse' },
   // ---- relay HTTP (join key; no host control; same secret as SM_JOIN_KEY / x-sm-join-key)
   humanize:    { f: ['text', 'mode', 'style', 'ultra'], what: 'rewrite prose via relay POST /api/humanize (x-sm-join-key); omit text for GET ready' },
   aicheck:     { f: ['text'], what: 'AI-detect score via relay POST /api/detect (x-sm-join-key); omit text for GET ready' },
@@ -128,7 +131,8 @@ const VERB_ALIAS = { sleep: 'pause', delay: 'pause', type: 'keys', write: 'keys'
                      say: 'chat', message: 'chat', doubleclick: 'dbl', 'double-click': 'dbl', dblclick: 'dbl', rightclick: 'right',
                      'right-click': 'right', hotkey: 'chord', combo: 'chord', shortcut: 'chord', navigate: 'open', goto: 'open',
                      run: 'exec', shell: 'exec', view: 'look', recaptcha: 'captcha', hcaptcha: 'captcha', 'ask-access': 'access', 'request-access': 'access', term: 'terminal', console: 'terminal', 'list-windows': 'windows', activate: 'focus', 'bring-to-front': 'focus', start: 'launch', 'open-app': 'launch', ui: 'controls', accessibility: 'controls',
-                     detect: 'aicheck', 'ai-check': 'aicheck', 'ai_check': 'aicheck', 'ai-usage': 'aiusage', 'ai_usage': 'aiusage' };
+                     detect: 'aicheck', 'ai-check': 'aicheck', 'ai_check': 'aicheck', 'ai-usage': 'aiusage', 'ai_usage': 'aiusage',
+                     'quality-check': 'quality', 'picture-test': 'quality', 'quality-test': 'quality', diagnose: 'quality' };
 const FIELD_ALIAS = {
   keys:      { keys: 'text', value: 'text', string: 'text', chars: 'text', input: 'text', person: 'human', natural: 'human', pace: 'speed' },
   chat:      { message: 'text', msg: 'text', body: 'text' },
@@ -151,6 +155,7 @@ const FIELD_ALIAS = {
   audio:     { file: 'out', path: 'out', to: 'out', secs: 'seconds', duration: 'seconds' },
   humanize:  { strength: 'mode', body: 'text', content: 'text' },
   aicheck:   { body: 'text', content: 'text', detect: 'text' },
+  quality:   { phase: 'phases', stresses: 'phases', tests: 'phases', seconds: 'secs', file: 'out', before: 'compare', baseline: 'compare', against: 'compare' },
 };
 
 // A key as people write it ("esc", "ctrl", "win", "a", "5", "f4") -> the code the hosts map. Unknown names pass
@@ -203,7 +208,9 @@ const VERBS = Object.keys(V);
 // `plan` of sixty clicks is one: it was one decision. Looking, talking, the panel and finishing are never among them,
 // so an agent that is held can still see, explain, ask and report.
 const ACTING = new Set(['click', 'clicks', 'dbl', 'right', 'clickText', 'keys', 'press', 'chord', 'open', 'scroll',
-  'stroke', 'strokes', 'exec', 'terminal', 'launch', 'focus', 'plan', 'send', 'undo']);
+  'stroke', 'strokes', 'exec', 'terminal', 'launch', 'focus', 'plan', 'send', 'undo',
+  // the quality check moves the pointer and puts a test card on the screen: a room that paused the agent stops it too
+  'quality']);
 const isActing = (cmd) => !!cmd && typeof cmd === 'object' && typeof cmd.do === 'string' && ACTING.has(cmd.do);
 function vet(input, opts) {
   try { return vetInner(input, opts); }
