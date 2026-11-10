@@ -82,6 +82,11 @@ it says, phase by phase, whether the picture got better.
   console that reported congestion the relay handed to the host (`rate-viewer`) means the host slowed the shared stream
   for that watcher, and the fix is on their side. Only a rate held with nobody congested (`rate-held`) is the ABR not
   rising.
+- **No quantiser is not a sharp picture.** A hardware encoder may give the host no quantiser reading (Intel's Quick
+  Sync MFT reports `qp` 0, "not measured", in every second). Phases then read "not measured", one `qp-unmeasured`
+  cause says so, and the rate causes judge by the data each moving frame got instead (`Motion is starved: N kb a
+  frame`, under 0.05 bits a pixel). A comparison against a run that had a quantiser counts the data per frame in its
+  place. Don't report "sharp" or "better" off a run where the quantiser was not measured.
 - **The MCP server learns a new verb only when it restarts** (`/mcp` → reconnect). Until then the kit's own client
   runs it: `node core/agent-join.js --host <n> --task "…" --control --shell --serve work/<visit>`, commands through
   `<visit>/cmd.json`, answers in `done.json`.
@@ -126,3 +131,14 @@ All five runs, re-read with the final check, name the same causes:
 - a still screen that recovers slowly or is held to the cap after the load;
 - the stream carrying ~a third of what is drawn, from run 3 on;
 - the pointer at ~400 ms p95, from run 2 on.
+
+**Runs 6 and 7, after the host's trace said why** (2026-11-10):
+- run 6: `hwwhy` was `cfg` in all 89 seconds: the host had been started with preferHardware off. The encoder was
+  Microsoft's software one, and the keyframe every ~2 s during motion was its own (none was asked for).
+- run 7, with preferHardware on: Intel Quick Sync. Motion went from ~16 to ~27 frames a second, and the delay behind
+  live from 200–300 ms to 24–43 ms. But the host reported no quantiser, and the check called every phase sharp and the
+  comparison "better" -- while the rate stayed at 1.75 Mb/s with the uplink idle, so each moving frame got ~55 kb
+  against the software encoder's ~196. The person watching saw it worse. The reading now says "not measured", names
+  the starved motion, and compares the two runs as mixed.
+- run 7 also showed the "carried" cause blaming a 30 fps stream for not carrying all 52 frames a second the card drew.
+  It now counts against what the stream may send.

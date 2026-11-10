@@ -350,6 +350,46 @@ const ids = (an) => an.causes.map((c) => c.id);
   const ks = Q.analyze(run([{ name: 'scroll', secs: 6, hs: heavy }])).causes.find((c) => c.id === 'keyframes');
   ok(!!ks && /, 3 asked for \(3 requests spent\), 0 inserted by the encoder$/.test(ks.evidence[0]) && /^Most were ASKED FOR/.test(ks.fix),
      'a phase\'s keyframe share splits "asked for or inserted" by the requests the host spent (' + (ks && ks.evidence[0]) + ')');
+  // NO QUANTISER IS NOT A SHARP PICTURE: Intel's Quick Sync MFT reported qp 0 in every second of a live run (2026-11-10),
+  // and the check called every phase sharp, its comparison "better", while each moving frame got a third of the data
+  const qsv = { qp: 0, hw: 1, hwwhy: '', encn: 'Intel Quick Sync Video H.264 Encoder MFT', fr: 27, by: 182000, kb: 0, w: 1664, h: 936, rate: 1752224, wire: 12 };
+  const qrun = Q.analyze(run([{ name: 'text', secs: 6, h: Object.assign({}, qsv, { fr: 1, by: 15000 }) }, { name: 'scroll', secs: 6, h: qsv },
+                              { name: 'video', secs: 6, h: Object.assign({}, qsv, { by: 500000 }) }]));
+  ok(qrun.phases.every((p) => p.picture === null && /picture not measured \(no quantiser reported, full size\)/.test(p.line)),
+     'no quantiser reading: every phase reads "not measured", never sharp (' + qrun.phases[1].line + ')');
+  const qun = qrun.causes.find((c) => c.id === 'qp-unmeasured');
+  ok(!!qun && qun.phases.join() === 'text,scroll,video' && /from "Intel Quick Sync Video H\.264 Encoder MFT"$/.test(qun.title) && /hardware encoder/.test(qun.evidence[0]),
+     '...and it is said once, for every phase, naming the encoder (' + (qun && qun.title) + ')');
+  const starvedCause = qrun.causes.find((c) => c.id === 'rate-held');
+  ok(!!starvedCause && starvedCause.title === 'Motion is starved: 54 kb a frame at 27 fps on a rate held at 1.8 Mb/s' && starvedCause.phases.join() === 'scroll' &&
+     /\(0\.035 bits a pixel\) at 27 fps, the quantiser not reported/.test(starvedCause.evidence[0]) && /judged by the data per frame/.test(starvedCause.fix),
+     'with no quantiser the rate is judged by the data per frame: 54 kb at 1664x936 while scrolling is starved (' + (starvedCause && starvedCause.title) + ')');
+  ok(Q.BPP_STARVED === 0.05, 'starved is under 0.05 bits a pixel a frame');
+  const measured = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qp: 30 }) }]));
+  ok(!measured.causes.some((c) => c.id === 'qp-unmeasured' || c.id === 'rate-held') && measured.phases[0].picture === 'soft',
+     '...while the same encoder WITH a quantiser is read by it (the control)');
+  ok(Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { scale: 700 }) }])).phases[0].picture === 'coarse',
+     'with no quantiser a picture sent at 70% size is still coarse: the size alone says that much');
+  // ...and a comparison against a run that had one says the sharpness was not compared, counts the data per frame in
+  // its place, and lists the causes only a quantiser shows as not measurable rather than gone
+  const swRun2 = run([{ name: 'scroll', secs: 6, h: { qp: 38, hw: 0, fr: 16, by: 392000, w: 1678, h: 944 } }, { name: 'rest', secs: 8, hs: steps }]);
+  const hwRun2 = run([{ name: 'scroll', secs: 6, h: qsv }, { name: 'rest', secs: 8, h: { qp: 0, hw: 1, fr: 1, by: 9000, kb: 0 } }]);
+  const swA = Q.analyze(swRun2), qc = Q.compare(swA, Q.analyze(hwRun2));
+  const scrollLine = qc.lines.find((l) => /^scroll: /.test(l)) || '';
+  ok(/picture coarse→not measured/.test(scrollLine) && /▲ frames\/s 16→27/.test(scrollLine) && /▼ kb a frame \(no quantiser to compare\) 196→54/.test(scrollLine) && qc.overall === 'mixed',
+     'software against Quick Sync: smoother, a third of the data a frame -- mixed, not better (' + scrollLine + ')');
+  ok(swA.causes.some((c) => c.id === 'recovery') && qc.causesUnmeasured.some((t) => /sharpens slowly/.test(t)) && !qc.causesGone.some((t) => /sharpens slowly/.test(t)),
+     '...the still screen\'s slow recovery is "not measurable" in the new run, not gone');
+  ok(qc.notes.some((n) => /quantiser was not measured in the new run/.test(n)) && /Not measurable in the new run \(no quantiser\)/.test(qc.summary),
+     '...and the summary says why the sharpness was not compared');
+  const qcSame = Q.compare(swA, Q.analyze(swRun2));
+  ok(!qcSame.notes.some((n) => /quantiser was not measured/.test(n)) && !qcSame.causesUnmeasured.length && !qcSame.phases.some((r) => r.moves && r.moves.some((m) => m.metric === 'bppf')),
+     '...while two runs that both had one compare the quantiser, not the data per frame (the control)');
+  // THE STREAM IS CAPPED AT ITS OWN FRAME RATE: 27 of a card's 52 at 30 fps is the cap, not a drop
+  ok(!withCard(520, { fr: 27 }).causes.some((c) => c.id === 'carried'), 'a 30 fps stream carrying 27 of a card\'s 52 frames a second is not a drop');
+  const capDrop = withCard(520, { fr: 16, swhy: 'encode', enc95: 45 }).causes.find((c) => c.id === 'carried');
+  ok(!!capDrop && capDrop.title === 'The stream carried 16 of the 30 frames a second it may send (the card drew 52)',
+     '...while 16 of them is, said against what it may send (' + (capDrop && capDrop.title) + ')');
 }
 
 // ---- the card ----------------------------------------------------------------------------------------------------

@@ -281,6 +281,12 @@ function phaseStats(p, H, R, A) {
       qpFirst: (h.find((r) => r.qp > 0) || {}).qp || null, qpLast: (h.slice().reverse().find((r) => r.qp > 0) || {}).qp || null,
       frames: sum(h, 'fr'), bytes: by,
     };
+    // NO QUANTISER IS NOT A FINE ONE. A hardware encoder may give the host no reading: on a real machine (2026-11-10)
+    // Intel's Quick Sync MFT left qp at 0 -- "not measured" -- in every second, and this check called each phase sharp.
+    st.host.qpUnmeasured = st.host.mode !== 'tile1' && st.host.qpSeen === 0 && st.host.frames > 0;
+    // the data each frame got, and per pixel: the measure of a moving picture that is left when the quantiser is not
+    st.host.kbPerFrame = st.host.frames > 0 ? by * 8 / st.host.frames / 1000 : null;
+    st.host.bppf = st.host.frames > 0 && st.host.w > 0 && st.host.h > 0 ? by * 8 / (st.host.frames * st.host.w * st.host.h) : null;
   }
   if (rr.length) {
     // the relay's per-viewer rows mark the reader's own with me:1 -- which is how "the relay shed frames" is told
@@ -312,12 +318,14 @@ function phaseStats(p, H, R, A) {
 }
 // One word for the picture of a phase, from what the host says it SENT -- the agent decodes nothing, so this is
 // the stream, never a viewer's screen. sharp: full size and a fine quantiser (or the tile codec at full colour);
-// soft: a little of either lost; coarse: the rest. null when the host reported nothing to judge it by.
+// soft: a little of either lost; coarse: the rest. null when the host reported nothing to judge it by -- which
+// includes H.264 with no quantiser reading: then only a cut SIZE can be judged, since full size says nothing of the QP.
 function pictureOf(st) {
   const h = st.host;
   if (!h) return null;
   const scale = h.scale == null ? 1000 : h.scale;
   if (h.mode === 'tile1') return scale >= 950 && (h.bits == null || h.bits >= 7) ? 'sharp' : scale >= 800 && (h.bits == null || h.bits >= 5) ? 'soft' : 'coarse';
+  if (h.qpUnmeasured) return scale < 800 ? 'coarse' : scale < 950 ? 'soft' : null;
   if (h.qp == null && h.scale == null) return null;
   const qp = h.qp == null ? 0 : h.qp;
   return scale >= 950 && qp <= 28 ? 'sharp' : scale >= 800 && qp <= 34 ? 'soft' : 'coarse';
@@ -396,7 +404,12 @@ function causesOf(stats, ctx) {
         add('qp-floor', 'info', 'setting', P, 'The picture-quality mode holds a quantiser floor (QP ' + fmt(h.qp) + ')',
             'qwhy qp · qpf set', 'Deliberate: a higher picture-quality mode lowers it.');
       }
-      if (motion && h.qp != null && (share(Q, 'rate', n) >= 0.3 || h.qp >= 33)) {
+      // WITH NO QUANTISER, THE DATA PER FRAME. A hardware encoder that reports none (Quick Sync, 2026-11-10) left these
+      // causes silent while each moving frame got ~55 kb at 1664x936 -- 0.035 bits a pixel, against the software encoder's
+      // 0.11-0.13 on the same machine at QP 38-43. Streaming guidance puts 1080p30 at 4.5-6 Mb/s, ~0.07-0.1 bits a pixel
+      // a frame; under BPP_STARVED a moving screen is starved on any H.264 encoder.
+      const starved = motion && h.qpUnmeasured && h.bppf != null && h.bppf < BPP_STARVED;
+      if ((motion && h.qp != null && (share(Q, 'rate', n) >= 0.3 || h.qp >= 33)) || starved) {
         // TWO causes, not one: coarse because the uplink is full (the link) and coarse while it has room (the ABR is
         // holding the rate -- the product's own choice) want opposite fixes, and one id merged across phases would
         // let the second overwrite the first
@@ -406,15 +419,21 @@ function causesOf(stats, ctx) {
         // the rate held with nobody congested (the ABR not rising: the product's own behaviour)
         const forViewer = !full && rl && rl.voterP >= 0.5 && rl.pout > 0;
         const id = full ? 'rate-link' : forViewer ? 'rate-viewer' : 'rate-held';
-        const evidence = 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ') · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%' +
+        const kb = fmt(h.kbPerFrame) + ' kb a frame';
+        const evidence = (starved ? kb + ' at ' + fmt(h.w) + '×' + fmt(h.h) + ' (' + fmt(h.bppf, 3) + ' bits a pixel) at ' + fmt(h.fr) + ' fps, the quantiser not reported'
+                                  : 'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ')') +
+                         ' · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%' +
                          // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 of 1.5" read as nonsense
                          (rl ? ' · watchers\' pressure to the host ' + fmt(rl.pout, 2) + (rl.voterP >= 0.5 ? ' (' + rl.voter + ' reported ' + fmt(rl.voterP, 2) + ')' : '') : '');
-        add(id, h.qp >= 38 ? 'high' : 'warn', full ? 'link' : forViewer ? 'viewer' : 'codec', P,
-            forViewer ? 'Motion is coarse: the rate is held down for a watcher\'s congested link (QP ' + fmt(h.qp) + ')'
-                      : 'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
+        add(id, starved ? (h.bppf < 0.03 ? 'high' : 'warn') : h.qp >= 38 ? 'high' : 'warn', full ? 'link' : forViewer ? 'viewer' : 'codec', P,
+            starved ? (forViewer ? 'Motion is starved: the rate is held down for a watcher\'s congested link (' + kb + ')'
+                                 : 'Motion is starved: ' + kb + ' at ' + fmt(h.fr) + ' fps' + (full ? ' on a full uplink' : ' on a rate held at ' + kbps(h.rate)))
+                    : forViewer ? 'Motion is coarse: the rate is held down for a watcher\'s congested link (QP ' + fmt(h.qp) + ')'
+                    : 'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
             evidence,
             full ? 'The uplink is full while it moves: the rate cannot rise until less is sent (keyframes first).'
                  : forViewer ? 'A watcher reported congestion and the stream is shared, so the host slowed for them: that watcher\'s downlink (or decoder) is the limit. Look at their connection, or let a slow watcher watch at low priority -- the host was not the cause.'
+                 : starved ? 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the offered rate stays at ' + kbps(h.rate) + ': spread over ' + fmt(h.fr) + ' frames a second, each moving frame gets ' + kb + ', too little for a moving screen to be sharp. The ABR is not raising the rate for motion -- a codec/ABR change, not the network. (The quantiser is not reported, so this is judged by the data per frame.)'
                  : 'The uplink has room (' + fmt(h.wire) + '% busy) and no watcher reported congestion, yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
       }
       if (s.still && h.qp != null && h.qp > 28 && h.qpSeen >= 3) {
@@ -480,11 +499,15 @@ function causesOf(stats, ctx) {
       // THE STREAM AGAINST WHAT THE CARD DREW: frames the card drew and the stream never carried are a real drop -- and
       // whose, the speed verdict says. (The other way round -- a stream that kept pace with a slow card -- is a note in
       // analyze: the frame rate there measures the card, not the stream.)
-      if (s.cardFps != null && CARD_MOVING.has(P) && h.fr != null && s.cardFps >= 4 && h.fr < 0.6 * s.cardFps) {
+      // ...against what the stream MAY carry: no more than its own frame rate. A card drawing 52 a second over a 30 fps
+      // stream that carried 27 is the cap, not a drop (2026-11-10).
+      const mayCarry = s.cardFps != null && h.fps > 0 ? Math.min(s.cardFps, h.fps) : s.cardFps;
+      if (s.cardFps != null && CARD_MOVING.has(P) && h.fr != null && s.cardFps >= 4 && h.fr < 0.6 * mayCarry) {
         const enc = share(S, 'encode', n) >= 0.3 || (h.enc95 != null && h.fps > 0 && h.enc95 > 1000 / h.fps);
         const paced = share(S, 'paced', n) >= 0.3;
         add('carried', 'warn', enc ? 'machine' : paced ? 'link' : 'codec', P,
-            'The stream carried ' + fmt(h.fr) + ' of the ' + fmt(s.cardFps) + ' frames a second the card drew',
+            'The stream carried ' + fmt(h.fr) + ' of the ' + fmt(mayCarry) + ' frames a second ' +
+              (mayCarry < s.cardFps ? 'it may send (the card drew ' + fmt(s.cardFps) + ')' : 'the card drew'),
             'card ' + fmt(s.cardFps) + ' fps · stream ' + fmt(h.fr) + ' fps · ' + (enc ? 'encode p95 ' + fmt(h.enc95, 1) + ' ms' : paced ? 'paced by the ABR' : 'no stage said it was slow'),
             enc ? 'The encoder is the limit: the frames were drawn and never encoded (see the encoder cause).'
                 : paced ? 'The ABR lowered the frame rate for the link.' : 'Frames were drawn and not sent, with no stage saying why: look at the capture loop (skip) in the trace.');
@@ -614,6 +637,20 @@ function causesOf(stats, ctx) {
       for (const s of mv.slice(1)) out.get('kf-unexplained').phases.includes(s.name) || out.get('kf-unexplained').phases.push(s.name);
     }
   }
+  // CROSS-PHASE: THE QUANTISER WAS NOT MEASURED. Said once, for every phase it holds in: the picture's sharpness is
+  // unknown there, and "sharp" read off a missing number was this check's one wrong answer on Quick Sync (2026-11-10).
+  {
+    const un = stats.filter((s) => s.host && s.host.qpUnmeasured);
+    const secs = un.reduce((a, s) => a + s.n.host, 0);
+    if (un.length && secs >= 3) {
+      const named = un.find((s) => s.host.encName), hk = un[0].host.hwEnc;
+      add('qp-unmeasured', 'warn', 'codec', un[0].name,
+          'How sharp the picture is was not measured: the host reports no quantiser' + (named ? ' from "' + named.host.encName + '"' : ''),
+          'qp 0 (not measured) in ' + secs + ' host seconds · ' + (hk === 1 ? 'hardware encoder' : hk === 0 ? 'software encoder' : 'encoder kind not reported'),
+          'The encoder gives the host no quantiser reading, so the picture\'s sharpness is unknown: those phases read "not measured", and the rate causes are judged by the data per frame instead. The host needs to read the quantiser back from the encoder, or estimate it.');
+      for (const s of un.slice(1)) out.get('qp-unmeasured').phases.includes(s.name) || out.get('qp-unmeasured').phases.push(s.name);
+    }
+  }
   void ctx;
   return [...out.values()].sort((x, y) => SEV[x.sev] - SEV[y.sev] || y.phases.length - x.phases.length);
 }
@@ -681,7 +718,8 @@ function phaseLine(s) {
   const h = s.host, a = s.arrive, f = (v, d) => (v == null ? '—' : Number(v).toFixed(d || 0));
   const bits = [];
   if (h) {
-    bits.push('picture ' + (s.picture || '?') + ' (' + (h.mode === 'tile1' ? 'tile1 ' + f(h.bits) + '-bit' : 'QP ' + f(h.qp)) + ', ' + (h.scale == null ? 'size ?' : h.scale >= 995 ? 'full size' : f(h.scale / 10) + '% size') + ')');
+    bits.push('picture ' + (s.picture || (h.qpUnmeasured ? 'not measured' : '?')) + ' (' +
+              (h.mode === 'tile1' ? 'tile1 ' + f(h.bits) + '-bit' : h.qpUnmeasured ? 'no quantiser reported' : 'QP ' + f(h.qp)) + ', ' + (h.scale == null ? 'size ?' : h.scale >= 995 ? 'full size' : f(h.scale / 10) + '% size') + ')');
     bits.push(f(h.fr) + '/' + f(h.fps) + ' fps' + (s.cardFps != null && CARD_MOVING.has(s.name) ? ' (the card drew ' + f(s.cardFps) + ')' : ''));
     if (h.wire != null) bits.push('uplink ' + f(h.wire) + '%');
     const lim = topOf(h.quality), sp = topOf(h.speed);
@@ -721,6 +759,12 @@ const CMP = [
 const UNCONTROLLED = new Set(['idle', 'watch', 'wheel']);
 // a still phase's QP is where its refinement steps happen to land (see CMP): it needs the wider margin
 const QP_STILL_MARGIN = 6;
+// the causes only a quantiser can show: in a run without one they are not measurable, not gone
+const QP_ONLY = new Set(['recovery', 'refine-capped', 'refine', 'motion-only', 'qp-floor']);
+// the picture word compare prints: "not measured" where the host gave no quantiser, never a blank "?"
+const pictureWord = (p) => p.picture || (p.host && p.host.qpUnmeasured ? 'not measured' : null);
+// under this many bits a pixel a frame a MOVING screen is starved on any H.264 encoder (see the rate causes)
+const BPP_STARVED = 0.05;
 function compare(before, after) {
   const A0 = before && before.phases ? before : analyze(before), A1 = after && after.phases ? after : analyze(after);
   const rows = [], notes = [];
@@ -763,11 +807,30 @@ function compare(before, after) {
       else if (counted && !sizeBound) { if (good) better++; else worse++; }
       moves.push({ metric: k, label, before: b0, after: b1, better: good, where, sizeBound });
     }
-    rows.push({ phase: p1.name, counted, pictureBefore: p0.picture, pictureAfter: p1.picture, moves, arrival: bothArrived, size });
+    // ...and where either run has NO quantiser, the data each moving frame got stands in for it -- the one measure of a
+    // moving frame both runs have. Decided per pixel (a resize does not move it), shown in kb a frame. Without it, Quick
+    // Sync against the software encoder (2026-11-10) read "better" on frame rate alone, at 55 kb a frame against 196.
+    const noQp = !!((p0.host && p0.host.qpUnmeasured) || (p1.host && p1.host.qpUnmeasured));
+    if (noQp && !p0.still && !p1.still && p0.host && p1.host && p0.host.bppf != null && p1.host.bppf != null) {
+      const d = p1.host.bppf - p0.host.bppf;
+      if (Math.abs(d) > 0.25 * p0.host.bppf) {
+        const good = d > 0;
+        if (counted) { if (good) better++; else worse++; }
+        moves.push({ metric: 'bppf', label: 'kb a frame (no quantiser to compare)', before: Math.round(p0.host.kbPerFrame), after: Math.round(p1.host.kbPerFrame), better: good, where: 'host', sizeBound: false });
+      }
+    }
+    rows.push({ phase: p1.name, counted, pictureBefore: pictureWord(p0), pictureAfter: pictureWord(p1), moves, arrival: bothArrived, size });
   }
   if (rows.some((r) => r.size)) notes.push('The encode size changed between the runs (a watcher\'s window, or read mode): the quantiser at a different size is a different picture, so it is shown and not counted.');
+  // A RUN WITH NO QUANTISER CANNOT SAY THE PICTURE GOT SHARPER: Quick Sync against the software encoder (2026-11-10)
+  // read "coarse -> sharp" in five phases off a number that was never measured, and listed the rate and recovery causes
+  // as gone. Its sharpness is not compared; the causes only a quantiser shows are "not measurable", not gone.
+  const unm = (X) => X.phases.some((p) => p.host && p.host.qpUnmeasured);
+  if (unm(A0) !== unm(A1)) notes.push('The quantiser was not measured in the ' + (unm(A1) ? 'new' : 'earlier') + ' run (an encoder that reports none), so the picture\'s sharpness is not compared: the data each moving frame got stands in for it, beside the frame rate, size, keyframes and delivery.');
   const ids0 = new Set(A0.causes.map((c) => c.id)), ids1 = new Set(A1.causes.map((c) => c.id));
-  const gone = A0.causes.filter((c) => !ids1.has(c.id)).map((c) => c.title);
+  const blind = (c) => QP_ONLY.has(c.id) && c.phases.every((ph) => { const p = A1.phases.find((x) => x.name === ph); return !p || !p.host || p.host.qpUnmeasured; });
+  const unmeasured = A0.causes.filter((c) => !ids1.has(c.id) && blind(c)).map((c) => c.title);
+  const gone = A0.causes.filter((c) => !ids1.has(c.id) && !blind(c)).map((c) => c.title);
   const fresh = A1.causes.filter((c) => !ids0.has(c.id)).map((c) => c.title);
   const overall = better && !worse ? 'better' : worse && !better ? 'worse' : better || worse ? 'mixed' : 'same';
   const fmt = (m) => m.label + ' ' + (typeof m.before === 'number' && m.before % 1 ? m.before.toFixed(2) : m.before) + '→' + (typeof m.after === 'number' && m.after % 1 ? m.after.toFixed(2) : m.after);
@@ -778,11 +841,12 @@ function compare(before, after) {
     (r.size ? ' [encode ' + r.size + ']' : '') +
     (r.arrival ? '' : ' (no arrival figures: one run received no frames here)'));
   const delivery = dBetter && !dWorse ? 'better' : dWorse && !dBetter ? 'worse' : dBetter || dWorse ? 'mixed' : 'same';
-  return { overall, better, worse, delivery, dBetter, dWorse, phases: rows, causesGone: gone, causesNew: fresh, lines, notes,
+  return { overall, better, worse, delivery, dBetter, dWorse, phases: rows, causesGone: gone, causesNew: fresh, causesUnmeasured: unmeasured, lines, notes,
            summary: 'Compared with the earlier run: the picture as sent is ' + overall + ' (' + better + ' better, ' + worse + ' worse' +
                     (rows.some((r) => !r.only && !r.counted) ? '; the screen-as-it-was phases not counted' : '') + ')' +
                     '; delivery to the agent (its own link too) is ' + delivery + ' (' + dBetter + ' better, ' + dWorse + ' worse)' +
-                    (gone.length ? '. Gone: ' + gone.join('; ') : '') + (fresh.length ? '. New: ' + fresh.join('; ') : '') + '.' +
+                    (gone.length ? '. Gone: ' + gone.join('; ') : '') + (fresh.length ? '. New: ' + fresh.join('; ') : '') +
+                    (unmeasured.length ? '. Not measurable in the new run (no quantiser): ' + unmeasured.join('; ') : '') + '.' +
                     (notes.length ? ' ' + notes.join(' ') : '') };
 }
 
@@ -857,7 +921,7 @@ const QV = 3;
 
 module.exports = { KINDS, CARD_ORDER, plan, Recorder, ndjson, parseNdjson, phasesOf, inPhase, PH_LEAD, PH_LAG,
                    analyze, compare, report, cardScript, cardSource, CARD_NAME, CARD_STATS_NAME, MARK, markerAt, MAGIC, HEADER,
-                   CARD_HOLD_S, CARD_GONE_MS, KF_MIN_BPS, QV, UNCONTROLLED, CARD_MOVING };
+                   CARD_HOLD_S, CARD_GONE_MS, KF_MIN_BPS, QV, UNCONTROLLED, CARD_MOVING, BPP_STARVED, QP_ONLY };
 
 // A run read again, here, with no visit: the same summary the check gave, or the comparison with an earlier run.
 if (require.main === module) {
