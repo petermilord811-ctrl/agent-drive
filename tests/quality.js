@@ -275,6 +275,16 @@ const ids = (an) => an.causes.map((c) => c.id);
   ok(!dropped.notes.some((n) => /drew only/.test(n)), '...and is not explained away as a slow card (the control)');
   const unread = Q.analyze(run([{ name: 'video', secs: 10 }]));
   ok(unread.notes.some((n) => /counts were not read back/.test(n)), 'a run with card scenes but no counts says the frame rate cannot be told from the card\'s');
+  // A RATE HELD FOR A WATCHER is not an ABR that fails to rise: three of the first five live runs had a voting console
+  // reporting congestion (up to 1.0) that the relay handed to the host, which slowed the shared stream for it
+  const press = (pv, pout) => Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 40, wire: 100 }, r: { pv: [{ me: 1, p: 0, bl: 0, vote: 1 }].concat(pv), pout } }]));
+  const held4 = press([{ tag: 'vv', who: 'someone', p: 1, bl: 0, vote: 1 }], 0.6);
+  const rv4 = held4.causes.find((c) => c.id === 'rate-viewer');
+  ok(!!rv4 && rv4.area === 'viewer' && /held down for a watcher's congested link/.test(rv4.title) && /someone reported 1\.00/.test(rv4.evidence[0]) && !held4.causes.some((c) => c.id === 'rate-held'),
+     'a voting watcher at 1.0 with the pressure handed to the host: the rate is held FOR that watcher, said with who');
+  ok(press([{ tag: 'vv', p: 1, bl: 0, vote: 1 }], 0).causes.some((c) => c.id === 'rate-held'), '...but a report the relay did not hand to the host is not why (the control)');
+  ok(press([{ tag: 'vo', p: 1, bl: 0, vote: 0, hid: 1 }], 0.6).causes.some((c) => c.id === 'rate-held'), '...nor a watcher that does not vote (an off-screen tab)');
+  ok(press([], 0).causes.some((c) => c.id === 'rate-held' && /no watcher reported congestion/.test(c.fix)), '...and nobody congested at all is the ABR not rising, said so');
   // A DIFFERENT ENCODE SIZE IS A DIFFERENT PICTURE: a watcher's window took the encode from 1678x944 to 1920x1080 between
   // two live runs and the quantiser rose with the pixels -- shown, not counted
   const sizeA = Q.analyze(run([{ name: 'scroll', secs: 6, h: { qp: 39, w: 1678, h: 944 } }]));
@@ -303,6 +313,43 @@ const ids = (an) => an.causes.map((c) => c.id);
   // the keyframe-share cause itself waits for motion
   const stillKf = Q.analyze(run([{ name: 'rest', secs: 8, h: { fr: 1, by: 60000, kb: 0 }, hs: [{}, {}, { kf: 1, kb: 58000, refine: 1 }, {}, { kf: 1, kb: 58000, refine: 1 }] }]));
   ok(!stillKf.causes.some((c) => c.id === 'keyframes'), 'a still phase made of refinement keyframes is not a keyframe problem');
+  // WHY SOFTWARE, when the host says (hwwhy hwhr encn capm): five live runs on a machine with a GPU could only say "hw 0"
+  const swRun = (extra) => Q.analyze(run([{ name: 'video', secs: 6, h: Object.assign({ hw: 0, swhy: 'encode', enc95: 45 }, extra || {}) }]))
+    .causes.find((c) => c.id === 'encoder');
+  const encOld = swRun();
+  ok(!!encOld && encOld.title === 'The machine encodes in SOFTWARE and cannot keep up' && /does not report why \(hwwhy\)/.test(encOld.fix),
+     'a host that does not say why it encodes in software: the old advice, and that a newer host says');
+  const encD3d = swRun({ hwwhy: 'd3d', hwhr: '0x80070057', encn: 'Intel Quick Sync Video H.264 Encoder MFT', capm: 'dxgi' });
+  ok(!!encD3d && encD3d.title === 'The machine\'s encoder runs without its GPU device and cannot keep up: the hardware encoder refused the capture device' &&
+     /hardware encoder without its GPU device "Intel Quick Sync Video H\.264 Encoder MFT" · capture dxgi · hwwhy d3d \(0x80070057\)/.test(encD3d.evidence[0]) &&
+     /\(0x80070057\)/.test(encD3d.fix) && /another adapter/.test(encD3d.fix),
+     'a hardware encoder that refused the capture device is named as that, not as software: its HRESULT in the fix, the encoder and the capture in the evidence (' + (encD3d && encD3d.evidence[0]) + ')');
+  for (const [why, re] of [['cfg', /SOFTWARE.*: preferHardware is off$/], ['none', /SOFTWARE.*: no hardware H\.264 encoder is installed$/], ['act', /SOFTWARE.*: its hardware encoders would not start$/],
+                           ['gdi', /SOFTWARE.*: the GDI capture forces it$/], ['wall', /SOFTWARE.*: the merged wall of screens forces it$/]]) {
+    const e = swRun({ hwwhy: why });
+    ok(!!e && re.test(e.title) && /software encoder · hwwhy /.test(e.evidence[0]) && !/does not report why/.test(e.fix) && e.fix !== encOld.fix,
+       'hwwhy ' + why + ' is named in the title, with its own fix (' + (e && e.title) + ')');
+  }
+  const unknownWhy = swRun({ hwwhy: 'zzz' });
+  ok(!!unknownWhy && unknownWhy.title === encOld.title && /hwwhy zzz/.test(unknownWhy.evidence[0]) && !/undefined|does not report why/.test(unknownWhy.fix),
+     'a reason this check does not know (a later host) is shown as evidence, with the general advice');
+  const hwSlow = Q.analyze(run([{ name: 'video', secs: 6, h: { hw: 1, hwwhy: '', encn: 'NVIDIA H.264 Encoder MFT', capm: 'wgc', swhy: 'encode', enc95: 45 } }]))
+    .causes.find((c) => c.id === 'encoder');
+  ok(!!hwSlow && hwSlow.sev === 'warn' && hwSlow.title === 'The machine\'s encoder cannot keep up' && /hardware encoder "NVIDIA H\.264 Encoder MFT" · capture wgc · 1920/.test(hwSlow.evidence[0]),
+     'a slow HARDWARE encoder names no software reason (its hwwhy is empty), and says which encoder and capture');
+  // KEYFRAMES ASKED FOR, or the encoder's own: a host with kreq counts the keyframe requests it spent
+  const withReq = (n) => every2.map((s) => Object.assign({ kreq: s.kf ? n : 0 }, s));
+  const kfAsk = Q.analyze(run([{ name: 'scroll', secs: 10, hs: withReq(1) }, { name: 'video', secs: 10, hs: withReq(1) }])).causes.find((c) => c.id === 'kf-unexplained');
+  ok(!!kfAsk && /: most were ASKED FOR \(10 keyframe requests spent\)$/.test(kfAsk.title) && /Find who keeps asking/.test(kfAsk.fix) && /10 requests spent by the host \(kreq\)$/.test(kfAsk.evidence[0]),
+     'keyframes the host counts as spent requests are said to be asked for (' + (kfAsk && kfAsk.title) + ')');
+  const kfOwn = Q.analyze(run([{ name: 'scroll', secs: 10, hs: withReq(0) }, { name: 'video', secs: 10, hs: withReq(0) }])).causes.find((c) => c.id === 'kf-unexplained');
+  ok(!!kfOwn && /, inserted by the ENCODER itself \(none asked for\)$/.test(kfOwn.title) && /not the relay or the viewers/.test(kfOwn.fix),
+     'keyframes nobody asked for (kreq 0) are the encoder\'s own (' + (kfOwn && kfOwn.title) + ')');
+  ok(!!ku && /, which the GOP, refinement and rebuilds do not explain$/.test(ku.title) && !/kreq/.test(ku.evidence[0]), '...and a host without kreq keeps the open question (the control)');
+  const heavy = Array.from({ length: 6 }, (_, i) => (i % 2 ? { kf: 1, kb: 80000, kreq: 1 } : { kb: 60000, kreq: 0 }));
+  const ks = Q.analyze(run([{ name: 'scroll', secs: 6, hs: heavy }])).causes.find((c) => c.id === 'keyframes');
+  ok(!!ks && /, 3 asked for \(3 requests spent\), 0 inserted by the encoder$/.test(ks.evidence[0]) && /^Most were ASKED FOR/.test(ks.fix),
+     'a phase\'s keyframe share splits "asked for or inserted" by the requests the host spent (' + (ks && ks.evidence[0]) + ')');
 }
 
 // ---- the card ----------------------------------------------------------------------------------------------------
