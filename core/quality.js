@@ -372,7 +372,8 @@ function causesOf(stats, ctx) {
         const full = h.wire != null && h.wire >= 60;
         add(full ? 'rate-link' : 'rate-held', h.qp >= 38 ? 'high' : 'warn', full ? 'link' : 'codec', P,
             'Motion is coarse: the bitrate ceiling raises the quantiser to ' + fmt(h.qp) + ' while the picture moves',
-            'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ') · sending ' + kbps(h.bitrate) + ' of ' + kbps(h.rate) + ' offered · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%',
+            // "sending X (offered Y)": a software encoder overshoots its target, and "2.2 Mb/s of 1.5 Mb/s" read as nonsense
+            'QP ' + fmt(h.qp) + ' (p95 ' + fmt(h.qp95) + ') · sending ' + kbps(h.bitrate) + ' (offered ' + kbps(h.rate) + ') · link ' + kbps(h.link || h.gp) + ' · uplink busy ' + fmt(h.wire) + '%',
             full ? 'The uplink is full while it moves: the rate cannot rise until less is sent (keyframes first).'
                  : 'The uplink has room (' + fmt(h.wire) + '% busy) yet the rate is held: the ABR is not raising the offered rate for motion -- a codec/ABR change, not the network.');
       }
@@ -385,13 +386,19 @@ function causesOf(stats, ctx) {
               'A still picture sharpens slowly after motion: QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' over the phase, a step every ~' + fmt(s.secs / h.refine) + ' s',
               'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · median QP ' + fmt(h.qp),
               'Refinement works, in small steps: after heavy motion text stays soft for several seconds. A bigger first step, or a shorter interval while the quantiser is high, would bring it back sooner.');
-        } else if (h.refine && share(Q, 'rate', n) >= 0.5) {
+        } else if (h.refine && (share(Q, 'rate', n) >= 0.5 || (h.qp >= 33 && share(Q, 'qp', n) < 0.3))) {
+          // ...and by the host's own rule for 'rate' (QP >= 33 with no quality floor), not only its label: the label names
+          // the bigger limit first, so with a watcher's window binding too it reads "viewport" while the cap still holds
+          // the refresh (the fifth live run: QP 46 -> 43 under three refreshes, labelled viewport throughout)
           // HELD TO THE CAP, not ignored: on a real machine at full size (2026-11-10) three refinements ran and each refresh
           // came out at QP 48-51 with the quality verdict "rate" throughout -- the refresh is a whole picture under the
           // same bitrate ceiling as motion, so it cannot be finer than the ceiling buys
           add('refine-capped', 'warn', 'codec', P,
               'A still picture cannot sharpen: refinement ran ' + h.refine + '× and each refresh was held to the bitrate cap (QP ' + fmt(h.qp) + ')',
-              'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · qwhy rate in ' + Math.round(100 * share(Q, 'rate', n)) + '% of seconds · offered ' + kbps(h.rate) + ' · encode ' + fmt(h.w) + '×' + fmt(h.h),
+              'QP ' + fmt(h.qpFirst) + ' → ' + fmt(h.qpLast) + ' on a still screen · ' + h.refine + ' refinements · ' +
+              (share(Q, 'rate', n) >= 0.5 ? 'qwhy rate in ' + Math.round(100 * share(Q, 'rate', n)) + '% of seconds'
+                                         : 'QP ' + fmt(h.qp) + ' with no quality floor -- the host\'s rule for the rate limit (labelled ' + topOf(Q) + ', which outranks it)') +
+              ' · offered ' + kbps(h.rate) + ' · encode ' + fmt(h.w) + '×' + fmt(h.h),
               'The refresh of a still screen is held to the same bitrate as motion. A refresh allowed more than the motion rate -- the uplink has room -- would let a still screen come back sharp.');
         } else {
           add('refine', 'warn', 'codec', P,

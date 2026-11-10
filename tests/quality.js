@@ -176,9 +176,16 @@ const ids = (an) => an.causes.map((c) => c.id);
   const rv = rec2.causes.find((c) => c.id === 'recovery');
   ok(!!rv && /QP 49 → 31/.test(rv.title) && rv.area === 'codec' && !rec2.causes.some((c) => c.id === 'refine'),
      'a quantiser stepping 49 → 31 with each refinement is SLOW RECOVERY, not refinement ignored (' + (rv && rv.title) + ')');
-  const flat = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 42, fr: 1, by: 9000, kb: 0 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
-  ok(flat.causes.some((c) => c.id === 'refine' && /although refinement ran 2×/.test(c.title)) && !flat.causes.some((c) => c.id === 'recovery'),
-     '...while one that stays at 42 through two refinements is still "refinement did nothing" (the control)');
+  // under QP 33 the bitrate is not what holds a still screen (the host's own rule for the rate limit is QP >= 33): one that
+  // stays at 31 through two refinements is "refinement did nothing" ...
+  const flat = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 31, fr: 1, by: 9000, kb: 0 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
+  ok(flat.causes.some((c) => c.id === 'refine' && /although refinement ran 2×/.test(c.title)) && !flat.causes.some((c) => c.id === 'recovery' || c.id === 'refine-capped'),
+     '...while one that stays at 31 through two refinements is still "refinement did nothing" (the control)');
+  // ... while at QP 42 it is the cap, even when the host's label names a bigger limit (a watcher's window) first
+  const viewportCapped = Q.analyze(run([{ name: 'rest', secs: 8, h: { qp: 42, fr: 1, by: 9000, kb: 0, qwhy: 'viewport', qval: 87 }, hs: [{}, {}, { refine: 1, kf: 1 }, {}, {}, { refine: 1, kf: 1 }] }]));
+  const vcap = viewportCapped.causes.find((c) => c.id === 'refine-capped');
+  ok(!!vcap && /the host's rule for the rate limit \(labelled viewport, which outranks it\)/.test(vcap.evidence[0]),
+     '...and at QP 42 it is held to the cap even when the label says viewport -- by the host\'s own rule, and said so');
   // keyframes every 2 s while the picture moves, at GOP 300 with no refinement or rebuild: named across the phases
   const every2 = Array.from({ length: 10 }, (_, i) => (i % 2 ? { kf: 1, kb: 40000 } : {}));
   const kfr = Q.analyze(run([{ name: 'scroll', secs: 10, hs: every2 }, { name: 'video', secs: 10, hs: every2 }]));
