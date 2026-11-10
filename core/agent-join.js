@@ -1191,7 +1191,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
     // THE BOARD (core/board.js): the room's controls on the panel. Its buttons post chat lines that start with a mark only
     // the panel sends; onChat hands each to onMark and the serve honours it ITSELF -- a button works while the driver is
     // busy or thinking, as ⛔ Stop always has:
-    //   paused {by, at, why}  ⏸: acting commands are refused until “▶ Go on”. A person who takes the mouse or the machine
+    //   paused {by, at, why}  ⏸: acting commands are refused until “▶ Go on” (from anyone). A person who takes the mouse or the machine
     //                         pauses it too (ptr-owner / local-input) -- unless the agent was waiting for them to act.
     //   hold {k, step?, by}   ⏹ the room stopped this task (k 'task': nothing acts until the driver has reported it), or
     //                         ⏯ asked it to stop after a step (k 'after': it becomes 'task' when that step ends)
@@ -1221,7 +1221,7 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       // the person can drive now: an exclusive hold the agent took is let go of (it is the room's machine first)
       if (lockOn) { try { ws.send({ type: 'control-lock', on: false }); } catch (_) {} lockOn = false; }
       try { roomNote('**Paused** — ' + (why ? paused.by + ' ' + why + '. ' : '') + 'I won’t touch anything until you say “▶ Go on”.'); } catch (_) {}
-      roomNotes.push('PAUSED by ' + paused.by + (why ? ' (' + why + ')' : '') + ': acting commands are refused until they say “▶ Go on” -- wait in chat ({"do":"chat-wait","timeout":600000})');
+      roomNotes.push('PAUSED by ' + paused.by + (why ? ' (' + why + ')' : '') + ': acting commands are refused until someone says “▶ Go on” -- wait in chat ({"do":"chat-wait","timeout":600000})');
       try { sendDrive(); } catch (_) {}
       return true;
     };
@@ -1295,9 +1295,16 @@ async function dialAndJoin(relays, onCode, reconnecting, want) {
       switch (mk.kind) {
         case 'pause': pauseNow(who, ''); break;
         case 'resume':
-          // a pause is lifted by whoever made it, or by the person who let the agent in
-          if (paused && !yesFrom(who) && paused.by !== clipS(who, 60)) { try { roomNote('Only ' + paused.by + ' or ' + inviter + ' can say go on.'); } catch (_) {} break; }
-          if (paused) { paused = null; try { roomNote('**Going on.**'); } catch (_) {} roomNotes.push(who + ' said go on: the pause is over'); sendDrive(); }
+          // ANYONE WATCHING MAY SAY GO ON, as anyone may pause. It used to be the pauser's or the inviter's alone, so a pause
+          // made by someone who then left -- or by "someone at the machine", a name no watcher has -- held the room until
+          // that one person came back. Whose pause someone else lifted is said in the room, and to the driver.
+          if (paused) {
+            const by = paused.by, own = by === clipS(who, 60);
+            paused = null;
+            try { roomNote('**Going on.**' + (own ? '' : ' ' + clipS(who, 60) + ' said go on; ' + by + ' had paused it.')); } catch (_) {}
+            roomNotes.push(who + ' said go on' + (own ? '' : ' (' + by + ' had paused it)') + ': the pause is over');
+            sendDrive();
+          }
           break;
         case 'stop-task':
           hold = { k: 'task', by: clipS(who, 60) };

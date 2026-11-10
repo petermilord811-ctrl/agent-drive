@@ -17,7 +17,7 @@ busy or thinking — as ⛔ Stop always has. One record of the visit, readable b
 
 | mark | request | who may | the serve |
 |------|---------|---------|-----------|
-| ⏸ / ▶ | pause / go on | anyone pauses; the pauser or the inviter lets it go on | acting commands refused while paused (`paused`) |
+| ⏸ / ▶ | pause / go on | anyone pauses; anyone lets it go on (the room hears whose pause was lifted) | acting commands refused while paused (`paused`) |
 | ⏹ | stop this task | anyone | refused until the driver reports (`status {fin}`) — the visit stays |
 | ⏯ “step” | stop after a step | anyone | becomes a stop when that step ends |
 | ✅ / ✋ / 🧩 `[qN]` | yes / no / solved | the inviter's yes; anyone's no | answers the question with THAT id — a stale button never answers a newer one |

@@ -9,7 +9,7 @@
 // does not), so every one is an unambiguous request. The serve (core/agent-join.js) reads them in `parseMark` and acts
 // on most of them itself, so a button works even while the driver is busy or thinking:
 //
-//   ⏸ pause / ▶ resume       acting commands are refused while paused ("Paused by Dana")
+//   ⏸ pause / ▶ resume       acting commands are refused while paused ("Paused by Dana"); anyone may say go on
 //   ⏹ stop the task          refused until the driver reports what is done (status fin) -- the visit stays
 //   ⏯ stop after “step”      the same, from the moment that step ends
 //   ⛔ end the visit          (handled before this module: stopNow)
