@@ -385,6 +385,38 @@ const ids = (an) => an.causes.map((c) => c.id);
   const qcSame = Q.compare(swA, Q.analyze(swRun2));
   ok(!qcSame.notes.some((n) => /quantiser was not measured/.test(n)) && !qcSame.causesUnmeasured.length && !qcSame.phases.some((r) => r.moves && r.moves.some((m) => m.metric === 'bppf')),
      '...while two runs that both had one compare the quantiser, not the data per frame (the control)');
+  // A WATCHER'S PICTURE-QUALITY CAP (host 1.57.0: top, qcap). Three runs on Quick Sync were read as "the ABR is not raising
+  // the rate" while a console was on Speed (2026-11-10): the rate had stopped at exactly Speed's top
+  const speed = Object.assign({}, qsv, { qcap: 350, top: 1752224 });
+  const spRun = Q.analyze(run([{ name: 'scroll', secs: 6, h: speed }]));
+  const capC = spRun.causes.find((c) => c.id === 'rate-capped');
+  ok(!!capC && capC.area === 'setting' && capC.title === 'The rate is held at a watcher\'s picture-quality cap: Speed (1.8 Mb/s)' &&
+     /\(qcap 350, top 1\.8 Mb\/s\)/.test(capC.evidence[0]) && /Picture quality on Speed/.test(capC.fix) && /Set it to Best/.test(capC.fix) && /host-wide/.test(capC.fix) &&
+     !spRun.causes.some((c) => c.id === 'rate-held'),
+     'a rate at the top of a Speed cap is the setting, not the ABR (' + (capC && capC.title) + ')');
+  ok(!Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, speed, { rate: 900000 }) }])).causes.some((c) => c.id === 'rate-capped') &&
+     !Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qcap: 1000, top: 4976640 }) }])).causes.some((c) => c.id === 'rate-capped'),
+     '...but a rate well under the cap\'s top, or no cap at all, is not the cap (the controls)');
+  // ...and a host from BEFORE those fields: recognised only when the rate is EXACTLY a preset's top on the screen's ceiling
+  const withScreen = (recs, screen) => recs.map((r) => (r.c === 'meta' ? Object.assign({}, r, { screen }) : r));
+  const oldCap = Q.analyze(withScreen(run([{ name: 'scroll', secs: 6, h: qsv }]), '1920x1080'));
+  const oc = oldCap.causes.find((c) => c.id === 'rate-capped');
+  ok(!!oldCap.inferredCap && oldCap.inferredCap.mode === 'Speed' && !!oc &&
+     /exactly: 1\.8 Mb\/s is Speed's top on the 5\.0 Mb\/s ceiling of a 1920×1080 screen at 30 fps/.test(oc.evidence[0]) && /This host does not report the cap/.test(oc.fix),
+     'an older host\'s rate at exactly 1,752,224 b/s on a 1920x1080 screen at 30 fps is Speed\'s top, said as inferred (' + (oc && oc.evidence[0]) + ')');
+  ok(!Q.analyze(withScreen(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { rate: 1752000 }) }]), '1920x1080')).inferredCap &&
+     !Q.analyze(withScreen(run([{ name: 'scroll', secs: 6, h: qsv }]), '1366x768')).inferredCap &&
+     !Q.analyze(run([{ name: 'scroll', secs: 6, h: qsv }])).inferredCap,
+     '...and nothing is inferred a few bits off, on another screen, or with no screen size (the controls)');
+  // a comparison across a changed cap says a console's setting changed (runs 6 and 7: Normal -> Speed, read as the encoder)
+  const normalRun = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qcap: 600, top: 2992384, rate: 2992384 }) }]));
+  ok(Q.compare(normalRun, spRun).notes.some((n) => /picture-quality cap was not the same in the two runs \(Normal, 60% → Speed, 35%\)/.test(n)) &&
+     !Q.compare(spRun, Q.analyze(run([{ name: 'scroll', secs: 6, h: speed }]))).notes.some((n) => /cap was not the same/.test(n)),
+     'a comparison across a changed cap says a console\'s setting changed (and the same cap twice says nothing)');
+  // a quantiser read from the slice headers (qpsrc "slice", host 1.57.0) is a measurement, and the run says where it came from
+  const sliceRun = Q.analyze(run([{ name: 'scroll', secs: 6, h: Object.assign({}, qsv, { qp: 33, qpsrc: 'slice' }) }]));
+  ok(!sliceRun.causes.some((c) => c.id === 'qp-unmeasured') && sliceRun.phases[0].picture === 'soft' && sliceRun.notes.some((n) => /read from the slice headers/.test(n)),
+     'a quantiser read from the slice headers is measured, and the run says how (' + sliceRun.phases[0].line + ')');
   // THE STREAM IS CAPPED AT ITS OWN FRAME RATE: 27 of a card's 52 at 30 fps is the cap, not a drop
   ok(!withCard(520, { fr: 27 }).causes.some((c) => c.id === 'carried'), 'a 30 fps stream carrying 27 of a card\'s 52 frames a second is not a drop');
   const capDrop = withCard(520, { fr: 16, swhy: 'encode', enc95: 45 }).causes.find((c) => c.id === 'carried');
