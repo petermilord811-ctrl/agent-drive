@@ -120,7 +120,7 @@ const AT_MIN_DELAY = 4;   // browsers clamp nested timers here anyway; stated so
 // with no time between them at all, which is not what a hand does and is trivially detectable). Now
 // it simply HAPPENS: a key is held for its own measured dwell, the next key goes down when the rhythm
 // says, and whenever that is sooner the two overlap by exactly the difference. The rate falls out of
-// the pace, which is also how it works in a person -- and tests/auto_type.js checks that what falls
+// the pace, which is also how it works in a person -- and tests/viewer/auto_type.js checks that what falls
 // out lands inside the band measured above.
 const AT_HOLD = {
   // The dwell. `ms` is the population mean, `sd` the spread BETWEEN people (the persona draws from
@@ -143,7 +143,7 @@ const AT_HOLD = {
 // The rhythm, calibrated so that planned prose keeps [DHAKAL]'s shape: the coefficient of variation,
 // the skewness and the kurtosis of the down-to-down intervals, and the floor. Every entry is
 // [base, spread] and means base + spread * random. Changing one of these changes a measured property
-// of the output, which tests/auto_type.js asserts -- so the tuning cannot quietly rot back.
+// of the output, which tests/viewer/auto_type.js asserts -- so the tuning cannot quietly rot back.
 //
 // HOW `jitter`, `burst` AND `cap` WERE PICKED: not by eye. A 300-point grid over the three was planned
 // against prose at all three speeds and scored on the distance from [DHAKAL]'s cv / skewness /
@@ -667,7 +667,7 @@ function atPlan(text, opts, rand, from) {
   // press one key twice, and a finger doing that has to let go in between -- two downs of one key
   // with no up between them is not an overlap, it is a state no keyboard can be in and no host can
   // make sense of (the Windows host keeps one scan record per key code, so the first up would erase
-  // what the second needs). Found by tests/auto_type.js's cancel-between-steps check going red on a
+  // what the second needs). Found by tests/viewer/auto_type.js's cancel-between-steps check going red on a
   // held "rr", which is exactly the sort of thing the imitation cannot be allowed to invent.
   // The hold that results can be short, shorter than AT_HOLD.min even -- which is right: a bounced
   // double letter is the quickest thing a hand does.
