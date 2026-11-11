@@ -36,7 +36,7 @@ ordinary notifications/logs — the activity strip, fed from the serve run.
 
 ## Why this is the right shape
 2.134.0 already solved the hard part (the strip, the mirror fan-out, reduced-motion, theming). This
-plan is *routing a new source into it*, not new UI. See `tools/viewer.html` `#agentActivity` /
+plan is *routing a new source into it*, not new UI. See `web/viewer.html` `#agentActivity` /
 `agentActivitySet`, and the relay's `mirror()` in `agentRun`.
 
 ## Acceptance

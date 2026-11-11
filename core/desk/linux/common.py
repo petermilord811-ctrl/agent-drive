@@ -4,7 +4,7 @@
 # so the command line carries nothing a shell could split or expand, and needs no base64/gzip binaries).
 # <args> is base64 of the UTF-8 JSON args, {op, ...}.
 #
-# The host runs it with /bin/sh -c (linux/screensender_linux.cpp runCapture: stdout+stderr merged, 10 s, then
+# The host runs it with /bin/sh -c (hosts/linux/screensender_linux.cpp runCapture: stdout+stderr merged, 10 s, then
 # the whole process GROUP is killed). It prints exactly ONE line of JSON, {"ok":..,"op":..,"os":"linux",...},
 # ASCII with \u escapes, and nothing else.
 #

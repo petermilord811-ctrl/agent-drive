@@ -13,8 +13,8 @@
 // 'local:<name>', so whatever reads a host's answer reads this one unchanged.
 //
 // READ BIGGER, AS THE HOSTS DO. Both hosts measured that text of 9-11 px is mostly lost at 1:1 and comes back at
-// 2x, that 3x buys nothing over 2x, and that 12 px and up reads the same either way (single/ScreenSender.cpp above
-// OcrScaleFor; linux/screensender_linux.cpp above kOcrUpscale). So readRegion reads at 2x, eased down past ~10 MP
+// 2x, that 3x buys nothing over 2x, and that 12 px and up reads the same either way (hosts/windows/ScreenSender.cpp above
+// OcrScaleFor; hosts/linux/screensender_linux.cpp above kOcrUpscale). So readRegion reads at 2x, eased down past ~10 MP
 // (Tesseract ~8 MP) by the hosts' own formula: the same region gives the same words whichever side read it, and
 // a whole screen -- where most small print is -- is not read at 1:1 just because it is big.
 //

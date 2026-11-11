@@ -27,7 +27,7 @@ accuracy. Keyboard-driven, so — like a 2048 game — there is little to mis-cl
   **53% afk → invalid**). **WORDS mode fixes this with NO pacing**: it ends the instant you finish the last
   word, so there is no clock to idle against and a burst run counts as **VALID**. Proven live on 10003
   (2026-10-27): words-25 → **412 wpm, 100% accuracy, 0 errors, valid**. So prefer words mode; only if you
-  must use time mode do you need to pace the keystrokes (typing-lab pacing in `CONTROL_API.md`).
+  must use time mode do you need to pace the keystrokes (typing-lab pacing in `docs/CONTROL_API.md`).
   **Since 2026-11-06 `keys` types like a person by default** (≈70 wpm, natural rhythm, the odd corrected slip) —
   a time-mode run is then a person's run, not a burst; `human:0` is the burst, `speed:"fast"` ≈105 wpm.
 - **The mode bar is only on the TEST screen, not the result screen.** To switch time↔words or the count,

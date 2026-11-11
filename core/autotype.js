@@ -7,11 +7,11 @@
 // to type "like a person" -- the viewer's auto-typer has that already (Natural rhythm and pauses, with the odd
 // typo fixed by Backspace): a typist persona, a pace per letter pair, warm-up, bursts, thinking pauses at clause
 // ends, slips onto a neighbouring key and back. So this is THAT planner, not a second imitation of it: the region
-// between the marks below is tools/viewer.html's "Auto-type: the planner", character for character
+// between the marks below is web/viewer.html's "Auto-type: the planner", character for character
 // (tests/humantype.js holds it to the original; `node core/autotype.js --sync` copies it again after the viewer
 // changes it). The desktop app carries the same copy for the same reason. Below the marks, `run` plays a plan.
 //
-// ---- BEGIN copy of tools/viewer.html "Auto-type: the planner" -- do not edit here --------------------------
+// ---- BEGIN copy of web/viewer.html "Auto-type: the planner" -- do not edit here --------------------------
 // Auto-type: the planner
 // =====================================================================
 // Everything the "Type on the remote machine" window sends is decided HERE, ahead of time, as a list
@@ -26,7 +26,7 @@
 //                                        points OVERLAPPED in ONE batch. The planner no longer emits
 //                                        ch2 -- a real hand overlaps keys with TIME between the
 //                                        events, which `hold` below now gives it -- but the field is
-//                                        part of the published step shape (CONTROL_API.md) and is
+//                                        part of the published step shape (docs/CONTROL_API.md) and is
 //                                        still honoured, so a plan made by anything else still runs.
 //   { t: 'key',  code: 'Enter', shift }  press one named key (down + up, by code): Enter Tab Backspace
 //                                        ArrowLeft ArrowRight Escape; shift wraps it in ShiftLeft
@@ -120,7 +120,7 @@ const AT_MIN_DELAY = 4;   // browsers clamp nested timers here anyway; stated so
 // with no time between them at all, which is not what a hand does and is trivially detectable). Now
 // it simply HAPPENS: a key is held for its own measured dwell, the next key goes down when the rhythm
 // says, and whenever that is sooner the two overlap by exactly the difference. The rate falls out of
-// the pace, which is also how it works in a person -- and tests/auto_type.js checks that what falls
+// the pace, which is also how it works in a person -- and tests/viewer/auto_type.js checks that what falls
 // out lands inside the band measured above.
 const AT_HOLD = {
   // The dwell. `ms` is the population mean, `sd` the spread BETWEEN people (the persona draws from
@@ -143,7 +143,7 @@ const AT_HOLD = {
 // The rhythm, calibrated so that planned prose keeps [DHAKAL]'s shape: the coefficient of variation,
 // the skewness and the kurtosis of the down-to-down intervals, and the floor. Every entry is
 // [base, spread] and means base + spread * random. Changing one of these changes a measured property
-// of the output, which tests/auto_type.js asserts -- so the tuning cannot quietly rot back.
+// of the output, which tests/viewer/auto_type.js asserts -- so the tuning cannot quietly rot back.
 //
 // HOW `jitter`, `burst` AND `cap` WERE PICKED: not by eye. A 300-point grid over the three was planned
 // against prose at all three speeds and scored on the distance from [DHAKAL]'s cv / skewness /
@@ -667,7 +667,7 @@ function atPlan(text, opts, rand, from) {
   // press one key twice, and a finger doing that has to let go in between -- two downs of one key
   // with no up between them is not an overlap, it is a state no keyboard can be in and no host can
   // make sense of (the Windows host keeps one scan record per key code, so the first up would erase
-  // what the second needs). Found by tests/auto_type.js's cancel-between-steps check going red on a
+  // what the second needs). Found by tests/viewer/auto_type.js's cancel-between-steps check going red on a
   // held "rr", which is exactly the sort of thing the imitation cannot be allowed to invent.
   // The hold that results can be short, shorter than AT_HOLD.min even -- which is right: a bounced
   // double letter is the quickest thing a hand does.
@@ -694,7 +694,7 @@ function atPlanMs(plan, from) {
 // The wire messages for one step, in order. A character goes as text on an empty code (the hosts'
 // Unicode path); a named key goes by code, wrapped in ShiftLeft when the step says so. Every list is
 // a complete down/up sequence, so a plan interrupted BETWEEN steps never leaves a key held.
-// With no third argument this is the published name (CONTROL_API.md) and means what it always meant:
+// With no third argument this is the published name (docs/CONTROL_API.md) and means what it always meant:
 // the whole press-and-release for one step, in order. `pressOnly` asks for the press alone, which is
 // what a run sends when the step has a dwell to wait out before the release (atHoldKey).
 function atStepMessages(step, oldWin, pressOnly) {
@@ -789,11 +789,14 @@ async function run(plan, send, opts) {
   }
 }
 
-// `--sync`: copy the planner region from tools/viewer.html again (after the viewer changed it).
+// `--sync`: copy the planner region from web/viewer.html again (after the viewer changed it).
 if (require.main === module && process.argv[2] === '--sync') {
   const fs = require('fs'), path = require('path');
   const me = __filename, src = fs.readFileSync(me, 'utf8');
-  const viewer = fs.readFileSync(process.argv[3] || path.join(__dirname, '..', '..', 'viewer.html'), 'utf8');
+  // The ScreenMirror viewer this kit sits beside (at tools/agent-drive): web/viewer.html since the 2026-11
+  // layout, tools/viewer.html before it. A third argument names it anywhere else.
+  const near = [path.join(__dirname, '..', '..', '..', 'web', 'viewer.html'), path.join(__dirname, '..', '..', 'viewer.html')];
+  const viewer = fs.readFileSync(process.argv[3] || near.find((p) => fs.existsSync(p)) || near[0], 'utf8');
   const a = viewer.indexOf("// Auto-type: the planner"), b = viewer.indexOf("// =====================================================================\n// Auto-type: the runner and the floating window", a);
   const B = src.indexOf('// ---- BEGIN copy'), E = src.indexOf('// ---- END copy');
   if (a < 0 || b < 0 || B < 0 || E < 0) { console.error('could not find the planner or the marks'); process.exit(1); }

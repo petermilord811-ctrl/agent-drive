@@ -122,7 +122,7 @@ An offline machine cannot be visited, so `alert-offline --host from-alert` would
 ### What the relay's webhook really sends
 
 In the relay's console, **Health → settings → Send alerts to → a webhook (JSON POST)** posts each message as JSON.
-This is what the relay's health operations (`tools/ws-server.js`) send:
+This is what the relay's health operations (`web/ws-server.js`) send:
 
 - **An alert** is `{event: 'alert-open' | 'alert-close', relay, at, machine, incident}`. The **rule is
   `incident.rule`**: `event` says only opened or closed. `machine` is the relay's **name** for the machine (`Fleet`
