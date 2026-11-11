@@ -7,11 +7,11 @@
 // to type "like a person" -- the viewer's auto-typer has that already (Natural rhythm and pauses, with the odd
 // typo fixed by Backspace): a typist persona, a pace per letter pair, warm-up, bursts, thinking pauses at clause
 // ends, slips onto a neighbouring key and back. So this is THAT planner, not a second imitation of it: the region
-// between the marks below is tools/viewer.html's "Auto-type: the planner", character for character
+// between the marks below is web/viewer.html's "Auto-type: the planner", character for character
 // (tests/humantype.js holds it to the original; `node core/autotype.js --sync` copies it again after the viewer
 // changes it). The desktop app carries the same copy for the same reason. Below the marks, `run` plays a plan.
 //
-// ---- BEGIN copy of tools/viewer.html "Auto-type: the planner" -- do not edit here --------------------------
+// ---- BEGIN copy of web/viewer.html "Auto-type: the planner" -- do not edit here --------------------------
 // Auto-type: the planner
 // =====================================================================
 // Everything the "Type on the remote machine" window sends is decided HERE, ahead of time, as a list
@@ -26,7 +26,7 @@
 //                                        points OVERLAPPED in ONE batch. The planner no longer emits
 //                                        ch2 -- a real hand overlaps keys with TIME between the
 //                                        events, which `hold` below now gives it -- but the field is
-//                                        part of the published step shape (CONTROL_API.md) and is
+//                                        part of the published step shape (docs/CONTROL_API.md) and is
 //                                        still honoured, so a plan made by anything else still runs.
 //   { t: 'key',  code: 'Enter', shift }  press one named key (down + up, by code): Enter Tab Backspace
 //                                        ArrowLeft ArrowRight Escape; shift wraps it in ShiftLeft
@@ -694,7 +694,7 @@ function atPlanMs(plan, from) {
 // The wire messages for one step, in order. A character goes as text on an empty code (the hosts'
 // Unicode path); a named key goes by code, wrapped in ShiftLeft when the step says so. Every list is
 // a complete down/up sequence, so a plan interrupted BETWEEN steps never leaves a key held.
-// With no third argument this is the published name (CONTROL_API.md) and means what it always meant:
+// With no third argument this is the published name (docs/CONTROL_API.md) and means what it always meant:
 // the whole press-and-release for one step, in order. `pressOnly` asks for the press alone, which is
 // what a run sends when the step has a dwell to wait out before the release (atHoldKey).
 function atStepMessages(step, oldWin, pressOnly) {
@@ -789,11 +789,14 @@ async function run(plan, send, opts) {
   }
 }
 
-// `--sync`: copy the planner region from tools/viewer.html again (after the viewer changed it).
+// `--sync`: copy the planner region from web/viewer.html again (after the viewer changed it).
 if (require.main === module && process.argv[2] === '--sync') {
   const fs = require('fs'), path = require('path');
   const me = __filename, src = fs.readFileSync(me, 'utf8');
-  const viewer = fs.readFileSync(process.argv[3] || path.join(__dirname, '..', '..', 'viewer.html'), 'utf8');
+  // The ScreenMirror viewer this kit sits beside (at tools/agent-drive): web/viewer.html since the 2026-11
+  // layout, tools/viewer.html before it. A third argument names it anywhere else.
+  const near = [path.join(__dirname, '..', '..', '..', 'web', 'viewer.html'), path.join(__dirname, '..', '..', 'viewer.html')];
+  const viewer = fs.readFileSync(process.argv[3] || near.find((p) => fs.existsSync(p)) || near[0], 'utf8');
   const a = viewer.indexOf("// Auto-type: the planner"), b = viewer.indexOf("// =====================================================================\n// Auto-type: the runner and the floating window", a);
   const B = src.indexOf('// ---- BEGIN copy'), E = src.indexOf('// ---- END copy');
   if (a < 0 || b < 0 || B < 0 || E < 0) { console.error('could not find the planner or the marks'); process.exit(1); }

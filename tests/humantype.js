@@ -1,5 +1,5 @@
 // humantype.js — core/autotype.js: the agent types "like a person" with the viewer's OWN planner.
-// The copy is held to tools/viewer.html's "Auto-type: the planner" character for character (as the desktop app's
+// The copy is held to web/viewer.html's "Auto-type: the planner" character for character (as the desktop app's
 // copy is, in tests/auto_type.js), and its runner is checked: what reaches the host spells exactly the text --
 // slips and their Backspaces included -- every key pressed is released, and a run takes the plan's own time.
 //   node tests/humantype.js
@@ -12,11 +12,14 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.error('  FAIL: ' + m); } };
 
 // ---- the copy IS the viewer's planner -- checked where the ScreenMirror viewer is at hand: inside the ScreenMirror
-// repository (the kit at tools/agent-drive, the viewer at tools/viewer.html) or wherever SM_VIEWER points
+// repository (the kit at tools/agent-drive, the viewer at web/viewer.html) or wherever SM_VIEWER points
 const mine = fs.readFileSync(path.join(ROOT, 'core', 'autotype.js'), 'utf8');
 const B = mine.indexOf('// ---- BEGIN copy'), E = mine.indexOf('// ---- END copy');
 ok(B > 0 && E > B, 'the copy marks are where they should be');
-const VIEWER = process.env.SM_VIEWER || path.join(ROOT, '..', 'viewer.html');
+// web/viewer.html since ScreenMirror's 2026-11 layout, tools/viewer.html before it. Both are asked: a check
+// that looked in one place only would SKIP itself, silently, on the other layout.
+const VIEWER = process.env.SM_VIEWER ||
+  [path.join(ROOT, '..', '..', 'web', 'viewer.html'), path.join(ROOT, '..', 'viewer.html')].find((p) => fs.existsSync(p)) || '';
 if (fs.existsSync(VIEWER)) {
   const viewer = fs.readFileSync(VIEWER, 'utf8');
   const FROM = '// Auto-type: the planner', TO = '// =====================================================================\n// Auto-type: the runner and the floating window';

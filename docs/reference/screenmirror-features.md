@@ -6,7 +6,7 @@ chat, sticky notes, spotlight, locks, presence — which live in the relay/viewe
 verbs in the serve client. The agent can reach some of (B) today by *driving the host's UI*; the rest
 need the serve client extended (the plans). Status is marked on each.
 
-> All of (B) is real in this codebase. Pointers are into `tools/ws-server.js` / `tools/viewer.html` so
+> All of (B) is real in this codebase. Pointers are into `web/ws-server.js` / `web/viewer.html` so
 > the implementer can wire each one up. Don't invent message shapes — read the handler first.
 
 ## Session chat  — `type: 'chat'`, `chat-*` events (ws-server.js ~18310; viewer chat hub)

@@ -353,7 +353,7 @@ function pictureOf(st) {
 //            the product's own behaviour, i.e. the ones a code change improves
 //   input    the pointer and keyboard path
 const SEV = { high: 0, warn: 1, info: 2 };
-// THE PICTURE-QUALITY CAP a watcher's mode puts on the rate. The viewer's presets (tools/viewer.html Q_PRESETS and
+// THE PICTURE-QUALITY CAP a watcher's mode puts on the rate. The viewer's presets (web/viewer.html Q_PRESETS and
 // qEffective): Best and Auto send 1, Normal 0.6, Speed 0.35, and Auto 0.5 on a 3g-class link or 0.15 on a metered or
 // 2g one. The host takes it in milli and caps the rate at its absolute floor (16 kb/s) + cap x (ceiling - floor).
 const CAP_FLOOR_BPS = 16000;

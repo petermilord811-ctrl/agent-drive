@@ -5,7 +5,7 @@ Allow** — *unless* the machine's **owner** has deliberately turned on auto-all
 see the last section). This note is the honest account of what that means for an *unattended* overnight
 run, why a naive "just connect automatically" does not work without that opt-in, and the relay change +
 habit (or the auto-allow opt-in) that give a real multi-hour window. Facts here are cited to
-`tools/ws-server.js` so they can be re-checked.
+`web/ws-server.js` so they can be re-checked.
 
 ## The short version
 

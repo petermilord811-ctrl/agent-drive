@@ -4,7 +4,7 @@
 # HOW IT TRAVELS. desk.js drops every comment line and leading indentation, gzips the text and ships it inside
 # one short bootstrap:
 #   powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$DA='<args>';$DR=...GZipStream...;Invoke-Expression $DR.ReadToEnd()"
-# The host runs that as `cmd.exe /c <it>` (single/ScreenSender.cpp RunCommandCapture), and cmd.exe refuses a
+# The host runs that as `cmd.exe /c <it>` (hosts/windows/ScreenSender.cpp RunCommandCapture), and cmd.exe refuses a
 # line over 8,191 characters -- so prose stays in the files and never travels, and each op ships only the
 # parts it calls. $DA is base64 of the UTF-8 JSON args ({op, ...}): base64 has none of cmd.exe's special
 # characters (% ! ^ & | < > ") and the bootstrap has no double quote inside, so a title like
