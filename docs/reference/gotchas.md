@@ -46,6 +46,10 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 
 ## Tooling
 - **`python -c` with newlines breaks the pyenv-win batch shim.** Use a script file with `python -I`.
+- **No Python at all on a driver PC (65912 visit, 2026-11-18):** only the Microsoft Store `python` stub,
+  which prints "Python was not found" and exits 9009, so `crop.py` makes no picture. Use
+  `node vision/crop.js <src> <dst.jpg> x0,y0,x1,y1 <scale>`: same arguments, crop.py first, then Windows
+  System.Drawing. `fast.js` uses it.
 - `shot` is slow (first ~15s). Each `drive.js` call waits up to 30s; a long `plan` via `fill.js` waits
   up to 120s.
 
@@ -185,6 +189,14 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
 - **Desktop toasts can cover the taskbar** (e.g. Gmail "Enable notifications") so Firefox icon clicks
   miss — dismiss the toast first, then click the icon (orange/purple blob ~look x 129 on a 900-wide look).
 
+## More from a live run (host 65912, 2026-11-18) — Master sudoku in Chrome
+- **`sudoku.com/master/` is a 404. Master is `/evil/`.** Open it in a **new tab** (`open {url, tab:1}`).
+  The screen was the person's own page, which `fast.js`'s old "light page → clickText sudoku" test would
+  have clicked on. Details and the 21.5 s solve are in
+  [skills/solve-a-sudoku](../../skills/solve-a-sudoku/README.md).
+- **"New Streak Started!"** (orange to blue, white I'm In!) read as a game to `sudoku.js state`. It is
+  named now, and `play` presses I'm In!; that click is not proven live yet.
+
 ## More from a live run (host 34123, 2026-11-07) — DataAnnotation worker_signup
 - **Full workflow (4 big steps):** [skills/dataannotation-assessment-workflow/](../../skills/dataannotation-assessment-workflow/README.md)
   — account → profile → pick assessment → take assessment. Sub-skills:
@@ -261,6 +273,6 @@ Hard-won lessons from real runs. Read before improvising; most of these cost rea
   local file and send it as base64 (`echo … | base64 -d | bash`), or avoid shell variables in one-liners.
 
 ## Cursor plugin logo (ScreenMirror mark)
-- **Local plugin `logo` must be a relative path** (`assets/logo.png`). A `data:` URI or `https://` URL is dropped for `~/.cursor/plugins/local` installs � Customize shows the cube instead of ScreenMirror.
+- **Local plugin `logo` must be a relative path** (`assets/logo.png`). A `data:` URI or `https://` URL is dropped for `~/.cursor/plugins/local` installs — Customize shows the cube instead of ScreenMirror.
 - **Fix / other machines:** `node scripts/install-cursor-plugin.js` then Reload Window. `--check` verifies the logo path and MCP server path.
 - The MCP row may still show Cursor's plug glyph for local plugins; that is separate from the plugin header icon.

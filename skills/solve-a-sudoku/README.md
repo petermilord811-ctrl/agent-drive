@@ -18,8 +18,9 @@ node skills/solve-a-sudoku/fast.js ./work master
 node skills/solve-a-sudoku/sudoku.js ./work play master
 
 # MCP visit: connect answers {dir: work/mcp-…}. Pass that path (absolute is safest). If the
-# screen is not sudoku.com yet, open a NEW tab first, then play — do not invent a hand solve:
-#   open {url:"https://sudoku.com", tab:true}
+# screen is not sudoku.com yet, open a NEW tab first, then play — do not invent a hand solve.
+# Master is /evil/ (sudoku.com/master/ is a 404); easy · medium · hard · expert · extreme are their own names:
+#   open {url:"https://sudoku.com/evil/", tab:true}
 #   node skills/solve-a-sudoku/sudoku.js "<ABS_DIR>" play master
 #   shot → crop → chat-img  (play already status-fin; a second fin will not attach the picture)
 ```
@@ -45,6 +46,23 @@ the absolute `dir` from connect.
 7. **Perfect path:** wait out “Loading game”, then `read <shot>` and confirm a row vs the picture before
    `play`. Live **16.6 s**, 0 mistakes (34123, 2026-11-07). After `play`’s own finish, proof is
    `chat-img` (or `fast.js`) — not a second `status fin:1`.
+
+**Live, 2026-11-18 on 65912 (Chrome, a first visit):** the screen was the person's own page, so
+`open {url:"https://sudoku.com/evil/", tab:1}` came first (their tab untouched; `/master/` is a 404). Then
+`play master` **solved in 21.5 s** (look 7.6 · read 0.00 · solve 0.00 · fill 11.5 · check 2.4), from the
+shipped shapes, no mistakes, first-visit hint closed by `play` itself. Three fixes came out of it:
+- **`fast.js` no longer clicks the word "sudoku" on whatever page is up.** Its old "mostly light page"
+  test fires on a person's own page, and on a sudoku page too. It now asks `sudoku.js state` on one shot,
+  and anything that is not a game or a win screen gets the difficulty's URL in a **new tab**.
+- **The proof crop works with no Python.** The driver PC had only the Microsoft Store `python` stub, so
+  `crop.py` made nothing and `fast.js` finished without a picture. `fast.js` now calls
+  [`vision/crop.js`](../../vision/crop.js): crop.py when Python + Pillow exist, else Windows' own
+  System.Drawing. It takes the same arguments and shrinks a `.jpg` to fit the chat.
+- **The "New Streak Started!" panel** (after the day's first win: orange to blue, a white **I'm In!**
+  button at 1071,646) read as a *game* to `state`, because its week strip looks like a small grid.
+  `state` now names it, and `play` presses I'm In! and looks again. The panel is recognised from the
+  live capture, but **the click that closes it is not proven live yet**. Check it on the next visit
+  that starts from that panel.
 
 **Live targets:** total visit ≤2 min is routine when the board is visible (~30–40 s proven). Puzzle slice
 ≤15 s (look+fill+check, excluding new-game/ads) is the next squeeze — fill is still ~8–16 s of host actions.
@@ -206,7 +224,7 @@ tiles x 983–1301, y 344–650.
    `DigitN` from pitch geometry when the window is offset.
 
 ## Files here
-- `fast.js` — agent visit wrapper (open → play → proof). Prefer this over inventing steps.
+- `fast.js` — agent visit wrapper (state → open in a new tab if needed → play → proof via `vision/crop.js`). Prefer this over inventing steps.
 - `sudoku.js` — core `play` / `solve` / `read` / `learn` / `state`.
 - `glyphs.json` — sudoku.com's digit shapes (53, learned from four boards solved live; ~10 KB). Shared.
 - `glyphs.local.json` — what this machine has learned since. Gitignored; delete it to forget.
