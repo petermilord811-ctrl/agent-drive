@@ -262,6 +262,8 @@ function show(rect, line) {
 function screenState(img) {
   const won = winPanel(img);
   if (won) return { kind: 'won', dy: won.dy };
+  const streak = streakPanel(img);
+  if (streak) return { kind: 'other', streak, why: 'the "New Streak Started!" panel covers the board -- press its I\'m In! button (' + streak.button + ')' };
   const g = locateBoard(img);
   if (!g || !g.ok || (!(g.how === 'pitch') && !confident(g))) {
     return { kind: 'other', why: (g && g.ok) ? 'something grid-like, but not surely a board (square ' + g.square + ', box lines ' + g.boxsep + ')' : ((g && g.why) || 'no board') };
@@ -283,6 +285,22 @@ function winPanel(img) {
     if (![100, 200, 300, 400].every((k) => blue(470, y + k))) return null;
     const dy = y - BASE.winTop;
     return eyes.probe(img, BASE.winWhite[0], BASE.winWhite[1] + dy) === '#ffffff' ? { dy } : null;
+  }
+  return null;
+}
+// "New Streak Started!" (live 65912, 2026-11-18): after the day's first win, sudoku.com shows an orange-to-blue
+// panel with a white "I'm In!" button where the win panel's New Game sits. Its week strip reads as a small grid,
+// so screenState took it for a GAME. Orange at the panel's top down x=470 (y 170 at baseline), blue ~530 px
+// lower, the white button between (902-1242 x 621-670 at baseline).
+function streakPanel(img) {
+  const rgb = (x, y) => { const h = eyes.probe(img, x, y); return h ? [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) : null; };
+  for (let y = 120; y < 420; y++) {
+    const c = rgb(470, y);
+    if (!c || !(c[0] > 220 && c[0] - c[2] > 150 && c[1] > 120 && c[1] < 200)) continue;   // the orange top
+    const b = rgb(470, y + 530);
+    if (!b || b[2] - b[0] < 80) return null;                                                // ...turned blue
+    const white = [[1071, y + 476], [920, y + 460], [1230, y + 490]].every(([x, yy]) => eyes.probe(img, x, yy) === '#ffffff');
+    return white ? { dy: y - 170, button: [1071, y + 476] } : null;
   }
   return null;
 }
@@ -561,6 +579,14 @@ if (cmd === 'play') {
   if (go0) {
     pushTree('Game Over on screen — New Game (do not learn the lost board)');
     recoverFromGameOver(go0);
+    img = capture('board_raw.png'); st = screenState(img);
+  }
+  // "New Streak Started!" over the board (live 65912): I'm In! closes it, and the win panel is what follows.
+  // (The panel is recognised from a live capture; the click that closes it is not proven live yet.)
+  if (st.streak) {
+    pushTree('Closing the streak panel (I\'m In!)');
+    act({ do: 'click', x: st.streak.button[0], y: st.streak.button[1] });
+    act({ do: 'plan', steps: [{ do: 'hold' }, { do: 'hold' }] });
     img = capture('board_raw.png'); st = screenState(img);
   }
   // Video-ad interstitial / "Loading game" (live 34123): poll until a board or win panel appears.

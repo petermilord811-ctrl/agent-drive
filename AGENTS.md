@@ -28,7 +28,7 @@ file explains them.
 6. **Replan out loud** when something new happens — a popup, an error, an extra page, the operator's steer:
    `mission.js add | change | split | skip | fail … --why "…"`. Never work around the plan silently.
 7. **Finish with a picture:** every milestone closed → `mission.js finish --file <crop.jpg>` (a `.jpg` from
-   `vision/crop.py` fits chat). The report, the picture and "Anything else, or shall I sign off?" go out as ONE
+   `vision/crop.py` fits chat; `vision/crop.js` when the PC has no Python). The report, the picture and "Anything else, or shall I sign off?" go out as ONE
    message; the panel turns green. (A one-step task: `status {fin:1, say:"<report>", file:"<crop.jpg>"}`. A
    tool that finished it for you sends no picture — the serve's `remind` says so: `shot {out, quiet:1}` → crop →
    `chat-img`.)
